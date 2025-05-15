@@ -1,5 +1,5 @@
 import { AbiCoder, keccak256, toBeArray } from "ethers";
-import ERC20_ABI from "../abi/contracts/ERC20.json";
+import ERC20_ABI from "../abi/ERC20.json";
 
 export async function SignTx(
   value: string,
