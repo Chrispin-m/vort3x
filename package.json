@@ -6,7 +6,7 @@
   "author": "Crispine Mwangi",
   "license": "MIT",
   "scripts": {
-    "react-app:dev": "yarn workspace @celo-composer-minipay-template/react-app dev",
+    "react-app:dev": "cd packages/react-app && npm run dev",
     "react-app:build": "yarn workspace @celo-composer-minipay-template/react-app build",
     "react-app:start": "yarn workspace @celo-composer-minipay-template/react-app start",
     "react-app:lint": "yarn workspace @celo-composer-minipay-template/react-app lint"

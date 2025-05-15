@@ -1,16 +1,20 @@
-import '@/styles/globals.css';
+import "./../styles/globals.css";
+import { WagmiProvider } from "./config/wagmi";
 
-import { AppProvider } from '@/providers/AppProvider';
+export const metadata = {
+  title: "Vort3x Spin DApp",
+  description: "Spin to win on Celo Alfajores"
+};
 
 export default function RootLayout({
-  children,
-}: Readonly<{
+  children
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body>
-        <AppProvider>{children}</AppProvider>
+        <WagmiProvider>{children}</WagmiProvider>
       </body>
     </html>
   );

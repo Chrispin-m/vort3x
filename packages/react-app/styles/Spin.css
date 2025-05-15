@@ -1,0 +1,334 @@
+.wheel-wrapper {
+  width: 100vw;
+  height: 200vw;
+}
+.three-canvas {
+position: fixed;
+top: 0;
+left: 0;
+width: 100vw;
+height: 100vh;
+z-index: -1; /* Ensure particles are below other content */
+background-color: #000;
+overflow: hidden;
+pointer-events: none;
+}
+
+.container {
+position: relative;
+text-align: center;
+z-index: 10; /* Ensure content is above particles */
+overflow-x: hidden;
+}
+
+.title {
+margin-top: 2rem;
+font-size: 2rem;
+color: white;
+text-shadow: 2px 2px 4px #000000;
+z-index: 10; /* Ensure this is above the canvas */
+position: relative;
+}
+
+.dropdown {
+position: relative;
+top: 2rem;
+right: 1rem;
+z-index: 1000; /* Ensure this is above the canvas */
+}
+
+.wheel-container {
+top: 4rem;
+display: flex;
+justify-content: center;
+align-items: center;
+height: calc(60vh - 4rem);
+z-index: 10; /* Ensure this is above the canvas */
+position: relative;
+}
+
+.wheel-wrapper {
+position: relative;
+width: 70vw;
+height: 70vw;
+max-width: 400px;
+max-height: 400px;
+border-radius: 50%;
+overflow: hidden;
+box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+z-index: 10; /* Ensure this is above the canvas */
+}
+
+.wheel {
+width: 100%;
+height: 100%;
+border-radius: 50%;
+border: 2px solid white;
+box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+transform-origin: center;
+position: absolute;
+z-index: 10; /* Ensure this is above the canvas */
+}
+
+.segment {
+position: absolute;
+width: 50%;
+height: 50%;
+top: 0;
+left: 50%;
+transform-origin: 0% 100%;
+clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 3vw; /* Adjust as necessary */
+color: #fff;
+font-weight: bold;
+padding: 15px; /* Increase padding */
+box-sizing: border-box;
+overflow: hidden; /* Hide any overflowed text */
+text-align: center; /* Center the text horizontally */
+white-space: normal; /* Allow wrapping if needed */
+z-index: 10; /* Ensure this is above the canvas */
+}
+
+.segment span {
+display: inline-block; /* Allows animation on inline text */
+animation: pulsate 1.5s infinite; /* Apply pulsating animation */
+}
+
+/* Keyframes for pulsating animation */
+@keyframes pulsate {
+0% {
+  transform: scale(0.4);
+  opacity: 1;
+}
+50% {
+  transform: scale(1);
+  opacity: 0.8;
+}
+100% {
+  transform: scale(0.3);
+  opacity: 1;
+}
+}
+
+.spin-button {
+width: 3rem;
+height: 3rem;
+border-radius: 50%;
+border: 2px solid #fff;
+background-color: #f56c6c;
+color: white;
+font-size: 1rem;
+font-weight: bold;
+box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+cursor: pointer;
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+z-index: 10; /* Ensure this is above the canvas */
+}
+
+.pointer {
+width: 0;
+height: 0;
+border-left: 0.5rem solid transparent;
+border-right: 0.5rem solid transparent;
+border-bottom: 1rem solid white;
+position: absolute;
+top: -1.2rem;
+left: 50%;
+transform: translateX(-50%);
+z-index: 10; /* Ensure this is above the canvas */
+}
+
+.auto-spin-controls {
+margin-top: 1rem;
+z-index: 10; /* Ensure this is above the canvas */
+position: relative;
+}
+
+.auto-spin-counter {
+display: block;
+margin-bottom: 0.5rem;
+}
+
+.returned-money {
+margin-top: 1rem;
+color: white;
+z-index: 10; /* Ensure this is above the canvas */
+position: relative;
+}
+
+.loading-spinner {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+border: 4px solid rgba(255, 255, 255, 0.3);
+border-radius: 50%;
+border-top: 4px solid white;
+width: 3rem;
+height: 3rem;
+animation: spin 1s linear infinite;
+z-index: 10; /* Ensure this is above the canvas */
+}
+
+.dropdown-menu {
+display: none;
+position: absolute;
+background: white;
+border: 1px solid #ddd;
+border-radius: 4px;
+box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+z-index: 1000; /* Ensure dropdown is above other elements */
+}
+.dropdown-menu.is-active {
+display: block;
+z-index: 1000;
+}
+
+.dropdown-item {
+padding: 8px 12px;
+color: #333;
+text-decoration: none;
+display: block;
+z-index: 1000; 
+}
+
+.dropdown-item:hover {
+background: #f5f5f5;
+}
+
+@keyframes spin {
+0% {
+  transform: rotate(0deg);
+}
+100% {
+  transform: rotate(360deg);
+}
+}
+
+.returned-money {
+position: absolute;
+top: 150px;
+left: 50%;
+transform: translateX(-50%);
+background: #f5f5f5;
+padding: 10px;
+border: 2px solid #ffd700; /* Gold border */
+border-radius: 8px;
+font-size: 16px; /* Smaller text */
+font-weight: bold;
+color: #ffd700; /* Gold text */
+z-index: 6; /* Ensure above modal and dropdown */
+}
+
+.modal.is-active {
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 1000; /* Ensure modal is on top */
+}
+
+.modal {
+z-index: 3000; /* Ensure modal is below dropdown but above particles */
+width: 90vw; /* Use percentage width to allow responsiveness */
+max-width: 600px; /* Cap the max width */
+padding: 20px; /* Add some padding to avoid content touching edges */
+}
+
+.modal .modal-content .box {
+background: #00d1b2;
+color: #fff;
+border: 2px solid gold;
+border-radius: 8px;
+padding: 20px;
+font-size: 4vw; /* Responsive font size */
+text-align: center;
+}
+
+.modal-background {
+background-color: rgba(0, 0, 0, 0.6);
+}
+
+.modal-close {
+position: absolute;
+top: 15px;
+right: 15px;
+background: none;
+border: none;
+font-size: 1.5rem;
+color: white;
+cursor: pointer;
+}
+
+/* Auto Spin Controls */
+.auto-spin-controls {
+top: 6rem;
+position: relative;
+bottom: 20px;
+left: 90%;
+transform: translateX(-50%);
+display: flex;
+flex-direction: column;
+gap: 10px;
+z-index: 5; /* Ensure above particles */
+}
+
+.auto-spin-controls .button {
+width: 150px;
+}
+
+.auto-spin-counter {
+margin-top: 10px;
+color: #fff;
+font-weight: bold;
+}
+.help-button {
+position: absolute;
+top: 5px;
+right: 10px;
+background-color: #ffcc00;
+border: none;
+color: black;
+font-size: 16px;
+padding: 5px 10px;
+border-radius: 2.5px;
+cursor: pointer;
+z-index: 1000; /* Ensure it's above the other elements */
+}
+
+.help-button:hover {
+background-color: #e6b800;
+}
+.instructions-overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+backdrop-filter: blur(5px);
+display: flex;
+justify-content: flex-start; /* Align children to the start (left) */
+align-items: center; /* Center items vertically */
+z-index: 100;
+padding: 20px; /* Add padding to ensure there's space from the edge */
+}
+
+.instruction-box {
+background-color: rgba(255, 255, 255, 0.8);
+padding: 20px;
+border-radius: 8px;
+box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+position: relative;
+}
+
+.finger-pointer {
+font-size: 0.75rem; 
+position: absolute;
+transform: translate(-50%, -50%); /* Center the pointer */
+line-height: 0.1;
+}
