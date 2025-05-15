@@ -1,18 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    appDir: true
-  },
-  webpack(config) {
+  webpack: (config) => {
     config.resolve.fallback = {
-      fs: false
+      fs: false,
     };
     return config;
   },
   images: {
-    domains: ['cdn-production-opera-website.operacdn.com']
-  }
+    domains: ['cdn-production-opera-website.operacdn.com'],
+  },
 };
 
 module.exports = nextConfig;
