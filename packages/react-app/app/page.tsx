@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 const Spin = dynamic(() => import("./../components/Spin"), { ssr: false });
 
 export default function Home() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useAccount(); 
   const { data: signer } = useSigner();
 
   if (!isConnected || !address || !signer) {

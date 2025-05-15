@@ -1,11 +1,10 @@
 "use client";
 
-import { WagmiConfig, createConfig } from "wagmi";
-import { http } from "wagmi";
+import { WagmiConfig, createConfig, http } from "wagmi";
 import { injected } from "wagmi/connectors";
 import type { ReactNode } from "react";
 
-// Define the Celo Alfajores chain
+// Celo Alfajores chain definition
 export const celoAlfajores = {
   id: 44787,
   name: "Celo Alfajores",
@@ -23,9 +22,9 @@ export const celoAlfajores = {
 const chains = [celoAlfajores];
 
 const config = createConfig({
-  chains,                                          
+  chains,
   transports: {
-    [celoAlfajores.id]: http(celoAlfajores.rpcUrls.default.http[0])  
+    [celoAlfajores.id]: http(celoAlfajores.rpcUrls.default.http[0])
   },
   connectors: [
     injected({ chains, options: { name: "MiniPay", shimDisconnect: true } })
