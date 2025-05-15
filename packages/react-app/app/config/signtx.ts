@@ -1,4 +1,5 @@
-import { ethers } from "ethers";
+import { defaultAbiCoder, keccak256, arrayify } from "ethers";
+import type { JsonRpcSigner } from "ethers";
 
 export interface SignResult {
   hash: string;
@@ -8,20 +9,27 @@ export interface SignResult {
 }
 
 /**
- * Encodes the amount and timestamp, hashes it, and asks the signer to sign.
+ * Encodes the spin value, user address, and timestamp,
+ * hashes the payload, and asks the signer to sign.
  */
 export async function SignTx(
   value: string,
-  signer: ethers.JsonRpcSigner
+  signer: JsonRpcSigner
 ): Promise<SignResult> {
   const userAddress = await signer.getAddress();
   const timestamp = Math.floor(Date.now() / 1000).toString();
-  // encode value + address + timestamp
-  const encoded = ethers.utils.defaultAbiCoder.encode(
+
+  // Abi-encode [value, address, timestamp]
+  const encoded = defaultAbiCoder.encode(
     ["string", "address", "string"],
     [value, userAddress, timestamp]
-  );
-  const hash = ethers.utils.keccak256(encoded);
-  const signature = await signer.signMessage(ethers.utils.arrayify(hash));
+  );                                                    
+
+  // Hash it
+  const hash = keccak256(encoded);                           
+
+  // Sign the binary hash
+  const signature = await signer.signMessage(arrayify(hash));
+
   return { hash, signature, value, userAddress };
 }

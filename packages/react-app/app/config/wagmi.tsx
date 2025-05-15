@@ -1,16 +1,19 @@
 "use client";
 
-import { WagmiConfig, createClient } from "wagmi";
+import { WagmiConfig, createConfig } from "wagmi";
+import { http } from "wagmi";
 import { injected } from "wagmi/connectors";
-import { ethers } from "ethers";
 import type { ReactNode } from "react";
 
+// Define the Celo Alfajores chain
 export const celoAlfajores = {
   id: 44787,
   name: "Celo Alfajores",
   network: "alfajores",
   nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
-  rpcUrls: { default: { http: ["https://alfajores-forno.celo-testnet.org"] } },
+  rpcUrls: {
+    default: { http: ["https://alfajores-forno.celo-testnet.org"] }
+  },
   blockExplorers: {
     default: { name: "CeloScan", url: "https://alfajores.celoscan.io" }
   },
@@ -19,23 +22,18 @@ export const celoAlfajores = {
 
 const chains = [celoAlfajores];
 
-const client = createClient({
-  autoConnect: true,
+const config = createConfig({
+  chains,                                          
+  transports: {
+    [celoAlfajores.id]: http(celoAlfajores.rpcUrls.default.http[0])  
+  },
   connectors: [
-    injected({
-      chains,
-      options: {
-        name: "MiniPay",
-        shimDisconnect: true
-      }
-    })
+    injected({ chains, options: { name: "MiniPay", shimDisconnect: true } })
   ],
-  provider: ({ chain }) => {
-    const url = chain.rpcUrls.default.http[0];
-    return new ethers.providers.JsonRpcProvider(url);
-  }
+  autoConnect: true,
+  syncConnectedChain: true
 });
 
 export function WagmiProvider({ children }: { children: ReactNode }) {
-  return <WagmiConfig client={client}>{children}</WagmiConfig>;
+  return <WagmiConfig config={config}>{children}</WagmiConfig>;
 }
