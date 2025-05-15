@@ -3,7 +3,7 @@
 import { useAccount, useSigner } from "wagmi";
 import dynamic from "next/dynamic";
 
-const Spin = dynamic(() => import("./components/Spin"), { ssr: false });
+const Spin = dynamic(() => import("./../components/Spin"), { ssr: false });
 
 export default function Home() {
   const { address, isConnected } = useAccount();
