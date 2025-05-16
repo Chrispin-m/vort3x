@@ -1,6 +1,5 @@
-import "./../styles/globals.css";
-import { WagmiProvider } from "./config/wagmi";
-import type { ReactNode } from "react";
+import { ReactNode } from "react";
+import ClientLayout from "./ClientLayout";
 
 export const metadata = {
   title: "Vort3x Spin DApp",
@@ -11,7 +10,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <WagmiProvider>{children}</WagmiProvider>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );
