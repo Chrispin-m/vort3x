@@ -1,48 +1,21 @@
 "use client";
 
-import { WagmiConfig, createConfig, http } from "wagmi";
+import { WagmiConfig, createConfig } from "wagmi";
+import { publicProvider } from "wagmi/providers/public";
 import { injected } from "wagmi/connectors";
-import { defineChain } from "viem";
+import { http } from "wagmi";
+import { celoAlfajores, mainnet } from "wagmi/chains";
 import type { ReactNode } from "react";
 
-// Define the custom Celo Alfajores chain using defineChain
-const celoAlfajores = defineChain({
-  id: 44787,
-  name: "Celo Alfajores",
-  nativeCurrency: {
-    name: "CELO",
-    symbol: "CELO",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: ["https://alfajores-forno.celo-testnet.org"],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "Celo Alfajores Explorer",
-      url: "https://celo-alfajores.blockscout.com",
-    },
-  },
-  testnet: true,
-});
-
-// Create the Wagmi configuration
-const config = createConfig({
-  chains: [celoAlfajores],
+const wagmiConfig = createConfig({
+  chains: [celoAlfajores, mainnet],
+  connectors: [injected()],
   transports: {
-    [celoAlfajores.id]: http(celoAlfajores.rpcUrls.default.http[0]),
+    [celoAlfajores.id]: http(),
+    [mainnet.id]: http(),
   },
-  connectors: [
-    injected({
-      shimDisconnect: true,
-    }),
-  ],
-  ssr: true,
 });
 
-// Define the WagmiProvider component
 export function WagmiProvider({ children }: { children: ReactNode }) {
-  return <WagmiConfig config={config}>{children}</WagmiConfig>;
+  return <WagmiConfig config={wagmiConfig}>{children}</WagmiConfig>;
 }

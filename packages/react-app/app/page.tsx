@@ -1,12 +1,11 @@
 "use client";
-export const dynamic = "force-dynamic";
 
 import { useState } from "react";
 import { useAccount, useConnect } from "wagmi";
-import dynamicImport from "next/dynamic";
+import dynamic from "next/dynamic";
 import { useEthersSigner } from "./config/signer";
 
-const Spin = dynamicImport(() => import("../components/Spin"), { ssr: false });
+const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
 export default function Home() {
   const { connectAsync, connectors } = useConnect();
@@ -33,7 +32,7 @@ export default function Home() {
 
   if (!isConnected || !address || !signer) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full space-x-4">
         {connectors.map((c) => (
           <button
             key={c.id}
