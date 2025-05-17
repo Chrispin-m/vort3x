@@ -12,7 +12,7 @@ if (!WC_PROJECT_ID) {
 }
 
 const { connectors } = getDefaultWallets({
-  appName: "Vort3x Spin",
+  appName: "mini",
   projectId: WC_PROJECT_ID,
 });
 
