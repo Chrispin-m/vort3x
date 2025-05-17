@@ -1,9 +1,7 @@
 "use client";
 
-import { WagmiConfig, createConfig } from "wagmi";
-import { publicProvider } from "wagmi/providers/public";
+import { WagmiConfig, createConfig, http } from "wagmi";
 import { injected } from "wagmi/connectors";
-import { http } from "wagmi";
 import { celoAlfajores, mainnet } from "wagmi/chains";
 import type { ReactNode } from "react";
 
