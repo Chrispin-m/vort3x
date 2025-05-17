@@ -1,17 +1,28 @@
 "use client";
+export const dynamic = "force-dynamic";
 
+import { useState } from "react";
 import { useAccount, useConnect } from "wagmi";
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 import { useEthersSigner } from "./config/signer";
 
-const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
+const Spin = dynamicImport(() => import("../components/Spin"), { ssr: false });
 
 export default function Home() {
-  const { connect, connectors, isLoading: isConnecting } = useConnect();
+  const { connectAsync, connectors } = useConnect();
   const { address, isConnected } = useAccount();
   const signer = useEthersSigner();
+  const [isConnecting, setIsConnecting] = useState(false);
 
-  // while Wagmi is initializing or wallet popup open
+  const handleConnect = async (connector: typeof connectors[number]) => {
+    setIsConnecting(true);
+    try {
+      await connectAsync({ connector });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
   if (isConnecting) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -20,24 +31,22 @@ export default function Home() {
     );
   }
 
-  // if not connected yet
   if (!isConnected || !address || !signer) {
     return (
       <div className="flex items-center justify-center h-full">
         {connectors.map((c) => (
           <button
             key={c.id}
-            onClick={() => connect({ connector: c })}
+            onClick={() => handleConnect(c)}
             className="px-6 py-3 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
           >
-            Connect Wallet
+            Connect with {c.name}
           </button>
         ))}
       </div>
     );
   }
 
-  // once connected, show the Spin wheel
   return (
     <div className="flex justify-center">
       <Spin signer={signer} userAddress={address} />
