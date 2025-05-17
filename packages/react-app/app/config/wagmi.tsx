@@ -6,9 +6,9 @@ import { celoAlfajores, mainnet } from "wagmi/chains";
 import { RainbowKitProvider, getDefaultWallets } from "@rainbow-me/rainbowkit";
 import type { ReactNode } from "react";
 
-const WC_PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
+const WC_PROJECT_ID = process.env.WC_PROJECT_ID;
 if (!WC_PROJECT_ID) {
-  throw new Error("NEXT_PUBLIC_WC_PROJECT_ID is missing");
+  throw new Error("WC_PROJECT_ID is missing");
 }
 
 const { connectors } = getDefaultWallets({
