@@ -171,7 +171,7 @@ const Spin = ({ userAddress,signer }: SpinProps) => {
       <div className="dropdown">
         <button
           className="button"
-          onClick={() => setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))}
+          onClick={() => setSelectedBetAmount((prev) => (prev === 0.0003 ? 0.0006 : 0.0003))}
         >
           Select Bet Amount: {selectedBetAmount}
         </button>
