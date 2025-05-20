@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
 import "./../styles/Spin.css";
+import axios from "axios";
 import { SpinEndPoinSigner,SpinEndPoint,SpinEndSignature } from "@/app/url/vortex";
 import { SignTx, SignResult } from "@/app/config/signtx";
 import type { JsonRpcSigner } from "ethers";
@@ -21,24 +22,25 @@ interface Prize {
 
 const Spin = ({ signer }: SpinProps) => {
   // ---- State ----
-  const [selectedBetAmount, setSelectedBetAmount] = useState<number>(3);
-  const [prizes] = useState<Prize[]>([
+  const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0.000000000000003);
+  const [prizes, setPrizes] = useState([
     { id: 1, name: "X1", value: "1.00", probability: 0.0 },
-    { id: 2, name: "X0.5", value: "0.50", probability: 0.0 },
-    { id: 3, name: "X1000", value: "1000.00", probability: 100.0 },
-    { id: 4, name: "X0.2", value: "0.20", probability: 0.0 },
-    { id: 5, name: "X0.8", value: "0.80", probability: 0.0 },
-    { id: 6, name: "X150", value: "150.00", probability: 0.0 },
-    { id: 7, name: "X9", value: "9.00", probability: 0.0 },
+    { id: 3, name: "X0.5", value: "0.50", probability: 0.0 },
+    { id: 4, name: "X1000", value: "1000.00", probability: 100.0 },
+    { id: 5, name: "X0.2", value: "0.20", probability: 0.0 },
+    { id: 8, name: "X0.8", value: "0.80", probability: 0.0 },
+    { id: 9, name: "X150", value: "150.00", probability: 0.0 },
+    { id: 10, name: "X9", value: "9.00", probability: 0.0 },
   ]);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [spinAngle, setSpinAngle] = useState(0);
   const [showPrizeModal, setShowPrizeModal] = useState(false);
   const [prizeName, setPrizeName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // ---- Refs ----
   const wheelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
   useEffect(() => {
     // const fetchPrizes = async () => {
     //   try {
