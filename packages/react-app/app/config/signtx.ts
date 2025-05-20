@@ -68,8 +68,10 @@ export async function SignTx(
 
   // 6) Await confirmation
   const receipt = await txResponse.wait();
-  if (receipt.status !== 1) {
-    throw new Error(`Transaction reverted in block ${receipt.blockNumber}`);
+  // Handle null receipt safety
+  if (!receipt || receipt.status !== 1) {
+    const block = receipt?.blockNumber ?? "unknown";
+    throw new Error(`Transaction reverted in block ${block}`);
   }
 
   // 7) Return results
