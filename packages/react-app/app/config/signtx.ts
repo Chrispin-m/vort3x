@@ -1,49 +1,82 @@
-import { Contract, ethers } from "ethers";
-import { parseEther } from "ethers";
-import erc20Abi from "../abi/ERC20.json"; // Ensure ABI is correct
-import { cusdContractAddress, VortexAddress } from "./signer";
+import { Contract, parseEther, formatEther, type JsonRpcSigner, type BigNumberish } from "ethers";
+import erc20Abi from "../abi/ERC20.json";
+import { cusdContractAddress, VortexAddress } from "./addresses";
 
-const SignTx = async (amount: string, signer: ethers.JsonRpcSigner) => {
-  try {
-    // Create a contract instance for the CUSD ERC20 token contract
-    const contract = new Contract(cusdContractAddress, erc20Abi, signer);
+export interface SignResult {
+  hash: string;         // Transaction hash
+  signature: string;    // Ethers signature string (rsv)
+  value: string;        // The input amount as string
+  userAddress: string;  // The signer’s address
+}
 
-    // Populate transaction data
-    const txData = await contract.transfer.populateTransaction(
-      VortexAddress,
-      parseEther(amount)
+/**
+ * Builds, signs, and broadcasts a CUSD → Vortex transfer of `amount` using ethers v6.
+ */
+export async function SignTx(
+  amount: string,
+  signer: JsonRpcSigner
+): Promise<SignResult> {
+  // 1) Instantiate CUSD contract
+  const contract = new Contract(cusdContractAddress, erc20Abi, signer);
+
+  // 2) Normalize transfer amount and verify balance
+  const value: BigNumberish = parseEther(amount);
+  const from = await signer.getAddress();
+  const balanceRaw = await contract.balanceOf(from);
+  const balance = typeof balanceRaw === 'bigint' ? balanceRaw : BigInt(balanceRaw.toString());
+  if (balance < (value as bigint)) {
+    throw new Error(
+      `Insufficient CUSD: have ${formatEther(balance)}, need ${amount}`
     );
-
-    // Add necessary fields for signing
-    const fromAddress = await signer.getAddress();
-    const provider = signer.provider;
-
-    if (!provider) {
-      throw new Error("Signer provider is not available");
-    }
-
-    const unsignedTx = {
-      ...txData,
-      from: fromAddress,
-      nonce: await provider.getTransactionCount(fromAddress),
-      gasLimit: await provider.estimateGas({
-        ...txData,
-        from: fromAddress,
-      }),
-     // gasPrice: await provider.getGasPrice(),
-      chainId: (await provider.getNetwork()).chainId,
-    };
-
-    // Sign the transaction
-    const signedTx = await signer.sendTransaction(unsignedTx);
-
-    console.log("Signed Transaction:", signedTx);
-
-    return {hash:signedTx.hash, signature:signedTx.signature,value:signedTx.value,amount:amount,userAddress:fromAddress};
-  } catch (err) {
-    console.error("Error signing transaction:", err);
-    throw new Error(`Error signing transaction: ${err}`);
   }
-};
 
-export { SignTx };
+  // 3) Prepare transaction payload
+  const txData = await contract.transfer.populateTransaction(
+    VortexAddress,
+    value
+  );
+
+  // 4) Add metadata
+  const provider = signer.provider;
+  if (!provider) throw new Error("Signer provider unavailable");
+  const fromAddress = from;
+  const nonce = await provider.getTransactionCount(fromAddress);
+  const network = await provider.getNetwork();
+
+  const gasEstimate = await provider.estimateGas({
+    ...txData,
+    from: fromAddress
+  });
+  const gasLimit = gasEstimate * 11n / 10n; // +10%
+
+  const unsignedTx = {
+    ...txData,
+    from: fromAddress,
+    nonce,
+    gasLimit,
+    chainId: network.chainId
+  };
+
+  // 5) Sign & send
+  let txResponse;
+  try {
+    txResponse = await signer.sendTransaction(unsignedTx);
+  } catch (err: any) {
+    const reason = err?.reason ?? err?.message;
+    throw new Error(`Transfer failed: ${reason}`);
+  }
+
+  // 6) Await confirmation
+  const receipt = await txResponse.wait();
+  if (receipt.status !== 1) {
+    throw new Error(`Transaction reverted in block ${receipt.blockNumber}`);
+  }
+
+  // 7) Return results
+  return {
+    hash: txResponse.hash,
+    signature: txResponse.signature ?? "",
+    value: amount,
+    userAddress: fromAddress
+  };
+}
