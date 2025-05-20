@@ -1,247 +1,209 @@
-"use client"
+"use client";
+
 import React, { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
-import axios from "axios";
-import "./../styles/Spin.css"; // Import global stylesheet
-import { SpinEndPoinSigner,SpinEndPoint,SpinEndSignature } from "@/app/url/vortex";
-//import { ethers } from "ethers";
-import { SignTx } from "@/app/config/signtx";
+import "./../styles/Spin.css";
+import { SignTx, SignResult } from "@/app/config/signtx";
+import type { JsonRpcSigner } from "ethers";
 
 interface SpinProps {
-  signer: ethers.JsonRpcSigner;
-  userAddress:string;
+  signer: JsonRpcSigner;
+  userAddress: string;
 }
-import { useWriteContract } from "wagmi";
-import { ethers } from "ethers";
-interface SpinProb {
-  value: number;
+
+interface Prize {
+  id: number;
+  name: string;
+  value: string;
   probability: number;
 }
 
-
-const Spin = ({ userAddress,signer }: SpinProps) => {
-  const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0.000000000000003);
-  const [prizes, setPrizes] = useState([
+const Spin = ({ signer }: SpinProps) => {
+  // ---- State ----
+  const [selectedBetAmount, setSelectedBetAmount] = useState<number>(3);
+  const [prizes] = useState<Prize[]>([
     { id: 1, name: "X1", value: "1.00", probability: 0.0 },
-    { id: 3, name: "X0.5", value: "0.50", probability: 0.0 },
-    { id: 4, name: "X1000", value: "1000.00", probability: 100.0 },
-    { id: 5, name: "X0.2", value: "0.20", probability: 0.0 },
-    { id: 8, name: "X0.8", value: "0.80", probability: 0.0 },
-    { id: 9, name: "X150", value: "150.00", probability: 0.0 },
-    { id: 10, name: "X9", value: "9.00", probability: 0.0 },
+    { id: 2, name: "X0.5", value: "0.50", probability: 0.0 },
+    { id: 3, name: "X1000", value: "1000.00", probability: 100.0 },
+    { id: 4, name: "X0.2", value: "0.20", probability: 0.0 },
+    { id: 5, name: "X0.8", value: "0.80", probability: 0.0 },
+    { id: 6, name: "X150", value: "150.00", probability: 0.0 },
+    { id: 7, name: "X9", value: "9.00", probability: 0.0 },
   ]);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [spinAngle, setSpinAngle] = useState(0);
   const [showPrizeModal, setShowPrizeModal] = useState(false);
   const [prizeName, setPrizeName] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
+  // ---- Refs ----
   const wheelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const mockPrizes = [
-    { id: 1, name: "X2", value: "2.00", probability: 0.0 },
-    { id: 2, name: "X5", value: "5.00", probability: 0.0 },
-    { id: 3, name: "X10", value: "10.00", probability: 0.0 },
-    { id: 4, name: "X0.1", value: "0.10", probability: 0.0 },
-    { id: 5, name: "X50", value: "50.00", probability: 100.0 },
-    { id: 6, name: "X0.12", value: "0.12", probability: 0.0 },
-    { id: 4, name: "X1000", value: "1000.00", probability: 0.0 },
-
-  ];
-
+  // ---- Three.js Background ----
   useEffect(() => {
-    // const fetchPrizes = async () => {
-    //   try {
-    //     const response = await axios.get("/api/prizes/");
-    //     setPrizes(response.data);
-    //   } catch (error) {
-    //     console.error("Error fetching prizes, using mock data:", error);
-    //     setPrizes(mockPrizes);
-    //   }
-    // };
-
-    //fetchPrizes();
-    initThreeJS();
-  }, []);
-
-  const initThreeJS = () => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    if (!canvas) {
-      console.warn("Canvas element not found");
-      return;
-    }
-
-    const renderer = new THREE.WebGLRenderer({ canvas });
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.9), 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / (window.innerHeight * 0.9),
+      0.1,
+      1000
+    );
     camera.position.z = 5;
 
-    const particles = new THREE.BufferGeometry();
-    const particleCount = 10000;
+    const particleCount = 5000;
     const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
-
     for (let i = 0; i < particleCount; i++) {
-      positions[i * 3] = Math.random() * 20 - 10;
-      positions[i * 3 + 1] = Math.random() * 20 - 10;
-      positions[i * 3 + 2] = Math.random() * 20 - 10;
-
-      colors[i * 3] = Math.random();
-      colors[i * 3 + 1] = Math.random();
-      colors[i * 3 + 2] = Math.random();
+      positions.set(
+        [
+          (Math.random() - 0.5) * 20,
+          (Math.random() - 0.5) * 20,
+          (Math.random() - 0.5) * 20,
+        ],
+        i * 3
+      );
     }
-
-    particles.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    particles.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-
-    const particleMaterial = new THREE.PointsMaterial({
-      size: 0.1,
-      vertexColors: true,
-      blending: THREE.AdditiveBlending,
-      transparent: true,
-    });
-
-    const particleSystem = new THREE.Points(particles, particleMaterial);
-    scene.add(particleSystem);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const material = new THREE.PointsMaterial({ size: 0.05, color: 0xffffff });
+    const points = new THREE.Points(geometry, material);
+    scene.add(points);
 
     const animate = () => {
-      requestAnimationFrame(animate);
-      particleSystem.rotation.y += 0.001;
+      points.rotation.y += 0.001;
       renderer.render(scene, camera);
+      requestAnimationFrame(animate);
     };
-
     animate();
-  };
+  }, []);
 
-  const generateSegmentColors = (index: number): string => {
+  // ---- Helpers ----
+  const generateSegmentColors = (index: number) => {
     const colors = ["#FF5733", "#33B5FF", "#FF33EC", "#33FF57", "#FFBD33"];
     return colors[index % colors.length];
   };
 
-  const calculateSpinAngle = (winningPrize: any): number => {
-    const prizeIndex = prizes.findIndex((prize) => prize.name === winningPrize);
-    const anglePerSegment = 360 / prizes.length;
-    const winningSegmentAngle = prizeIndex * (anglePerSegment+10) + 360;
-    const randomTurns = Math.floor(Math.random() * 15) + 20;
-    return randomTurns * 360 + (360 - winningSegmentAngle);
+  const calculateSpinAngle = (winningIndex: number) => {
+    const baseAngle = (360 / prizes.length) * winningIndex;
+    const randomRounds = 5 + Math.floor(Math.random() * 5);
+    return randomRounds * 360 + (360 - baseAngle - 360 / (prizes.length * 2));
   };
 
+  // ---- Spin Logic ----
   const spinWheel = async () => {
     if (isSpinning) return;
-
+    setError(null);
     setIsSpinning(true);
-    const {hash,signature,value,userAddress}= await SignTx("1",signer)
-    const response = await SpinEndSignature({value: "0.00000000001",hash:hash,userAddress:userAddress})
-    console.log("respinses", response.data)
 
-    const winningPrize = prizes.find((prize) => prize.probability === 100);
+    try {
+      // 1) Create a tokenUri tying in the local bet amount
+      const tokenUri = `kes-${selectedBetAmount}-${Date.now()}`;
 
-    if (!response.data) {
-      console.error("No prize with 100% probability found");
+      // 2) Mint the NFT via SignTx
+      const result: SignResult = await SignTx(tokenUri, signer);
+
+      // 3) Determine winning prize (we use your 100% probability slot)
+      const winIndex = prizes.findIndex((p) => p.probability === 100);
+      const angle = calculateSpinAngle(winIndex);
+
+      // 4) Spin the wheel
+      if (wheelRef.current) {
+        wheelRef.current.style.transition = "transform 3s ease-out";
+        wheelRef.current.style.transform = `rotate(${angle}deg)`;
+      }
+
+      // 5) Show prize modal when done
+      setTimeout(() => {
+        setPrizeName(prizes[winIndex].name);
+        setShowPrizeModal(true);
+        setIsSpinning(false);
+      }, 3000);
+    } catch (err: any) {
+      setError(err?.message || "Transaction failed.");
       setIsSpinning(false);
-      return;
     }
-
-    const spinAngle = calculateSpinAngle(`X${response.data.value}`);
-    setSpinAngle(spinAngle);
-
-    if (wheelRef.current) {
-      wheelRef.current.style.transition = "transform 5s ease-out";
-      wheelRef.current.style.transform = `rotate(${spinAngle}deg)`;
-    }
-
-    setTimeout(() => {
-      setPrizeName(`X${response.data.value}`);
-      setShowPrizeModal(true);
-      setIsSpinning(false);      
-    },10000 )
-  }
+  };
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
-      <div className="canvas-container">
-        <canvas ref={canvasRef} className="three-canvas" style={{ marginTop: "50px" }}></canvas>
-      </div>
+      {/* Three.js particles */}
+      <canvas ref={canvasRef} className="three-canvas absolute inset-0" />
 
       <h1 className="title">Spin to Win</h1>
 
+      {/* Bet selector */}
       <div className="dropdown">
         <button
           className="button"
-          onClick={() => setSelectedBetAmount((prev) => (prev === 0.0003 ? 0.0006 : 0.0003))}
+          onClick={() =>
+            setSelectedBetAmount((prev) => (prev === 3 ? 5 : 3))
+          }
         >
-          Select Bet Amount: {selectedBetAmount}
+          Select Bet Amount: {selectedBetAmount} KES
         </button>
       </div>
 
+      {/* Wheel */}
       <div className="wheel-container">
         <div className="wheel-wrapper">
           <div className="wheel" ref={wheelRef}>
-            {prizes.map((prize, index) => (
+            {prizes.map((prize, idx) => (
               <div
-                key={index}
+                key={prize.id}
                 className="segment"
                 style={{
-                  transform: `rotate(${(360 / prizes.length) * index}deg) skewY(-30deg)`,
-                  backgroundColor: generateSegmentColors(index),
+                  transform: `rotate(${(360 / prizes.length) * idx}deg) skewY(-30deg)`,
+                  backgroundColor: generateSegmentColors(idx),
                 }}
               >
                 <span>{prize.name}</span>
               </div>
             ))}
           </div>
-          <button className="spin-button" onClick={spinWheel} disabled={isSpinning}>
+
+          <button
+            className="spin-button"
+            onClick={spinWheel}
+            disabled={isSpinning}
+          >
             <div className="pointer"></div>
-            SPIN
+            {isSpinning ? "Spinning…" : "SPIN"}
           </button>
         </div>
       </div>
 
+      {/* Prize Modal */}
       {showPrizeModal && (
-        <div
-          className="modal is-active"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            zIndex: 9999,
-            backgroundColor: "rgba(0, 0, 0, 0.8)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <div
-            className="modal-content"
-            style={{
-              width: "clamp(50%, 70%, 80%)",
-              maxWidth: "800px",
-            }}
-          >
-            <div
-              className="box"
-              style={{
-                textAlign: "center",
-                padding: "2rem",
-                borderRadius: "10px",
-              }}
+        <div className="modal is-active">
+          <div className="modal-content box">
+            <h1 className="prize-title">{prizeName}</h1>
+            <button
+              className="button mt-4"
+              onClick={() => setShowPrizeModal(false)}
             >
-              <h1
-                className="prize-title"
-                style={{
-                  color: "gold",
-                  fontSize: "clamp(2rem, 5vw, 4rem)",
-                  fontWeight: "bold",
-                }}
-              >
-                {prizeName}
-              </h1>
-            </div>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {error && (
+        <div className="modal is-active">
+          <div className="modal-content box">
+            <h2 className="text-red-600 font-bold">Error</h2>
+            <p className="mt-2">{error}</p>
+            <button
+              className="button mt-4"
+              onClick={() => setError(null)}
+            >
+              Dismiss
+            </button>
           </div>
         </div>
       )}

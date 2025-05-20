@@ -1,2 +1,2 @@
-export const cusdContractAddress = "0x874069fa1eb16d44d622f2e0ca25eea172369bc1";
-export const VortexAddress     = "0xC36d344f77c296a0D35889FfaB47D2F3a45aaA0f";
+export const cusdContractAddress = "0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B";
+export const VortexAddress     = "0x628F1A36E2E4fa1ed9CD91586c44e6829b369497";
