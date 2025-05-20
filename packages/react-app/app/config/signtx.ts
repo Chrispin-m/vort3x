@@ -1,10 +1,10 @@
-import { Contract, parseEther, formatEther, type JsonRpcSigner, type BigNumberish } from "ethers";
+import { Contract, parseEther, formatEther, type JsonRpcSigner, type BigNumberish, type Signature } from "ethers";
 import erc20Abi from "../abi/ERC20.json";
 import { cusdContractAddress, VortexAddress } from "./addresses";
 
 export interface SignResult {
   hash: string;         // Transaction hash
-  signature: string;    // Ethers signature string (rsv)
+  signature: Signature; // Ethers Signature object (r, s, v)
   value: string;        // The input amount as string
   userAddress: string;  // The signer’s address
 }
@@ -68,7 +68,6 @@ export async function SignTx(
 
   // 6) Await confirmation
   const receipt = await txResponse.wait();
-  // Handle null receipt safety
   if (!receipt || receipt.status !== 1) {
     const block = receipt?.blockNumber ?? "unknown";
     throw new Error(`Transaction reverted in block ${block}`);
@@ -77,7 +76,7 @@ export async function SignTx(
   // 7) Return results
   return {
     hash: txResponse.hash,
-    signature: txResponse.signature ?? "",
+    signature: txResponse.signature as Signature,
     value: amount,
     userAddress: fromAddress
   };
