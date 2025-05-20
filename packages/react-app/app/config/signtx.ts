@@ -1,81 +1,145 @@
-import { Contract, parseEther, type JsonRpcSigner } from "ethers";
-import erc20Abi from "../abi/ERC20.json";
-import { cusdContractAddress, VortexAddress } from "./addresses";
+import { 
+  createPublicClient,
+  createWalletClient,
+  custom,
+  http,
+  formatEther,
+  parseUnits,
+  hexToBigInt,
+} from "viem";
+import { celoAlfajores, celo } from "viem/chains";
+import { stableTokenABI } from "@celo/abis";
+import type { PublicClient, WalletClient } from "viem";
 
-export interface SignResult {
-  hash: string;
-  signature: string;
-  value: string;
-  userAddress: string;
+// Addresses
+const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a";       // Mainnet cUSD
+const CUSD_ALFAJORES = "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1"; // Alfajores cUSD
+
+/**
+ * Detect injected wallet and return single address (supports MiniPay). 
+ */
+export async function getConnectedAddress(): Promise<string | null> {
+  if (typeof window === "undefined" || !window.ethereum) return null;
+  // Request accounts
+  const accounts: string[] = await window.ethereum.request({
+    method: "eth_requestAccounts",
+    params: [],
+  });
+  return accounts[0] || null;
 }
 
 /**
- * Builds, signs, and broadcasts a CUSD → Vortex transfer of `amount` using ethers v6.
- * Logs on-chain data for troubleshooting balance mismatches.
+ * Create a public client for Celo network.
+ * @param testnet - whether to use Alfajores testnet
  */
-export async function SignTx(
+function getPublicClient(testnet = false): PublicClient {
+  return createPublicClient({
+    chain: testnet ? celoAlfajores : celo,
+    transport: http(),
+  });
+}
+
+/**
+ * Create a wallet client bound to injected provider.
+ */
+function getWalletClient(testnet = false): WalletClient {
+  return createWalletClient({
+    chain: testnet ? celoAlfajores : celo,
+    transport: custom(window.ethereum!),
+  });
+}
+
+/**
+ * Check cUSD balance for a given address.
+ */
+export async function checkCusdBalance(
+  address: string,
+  testnet = false
+): Promise<string> {
+  const publicClient = getPublicClient(testnet);
+  // Instantiate cUSD contract
+  const contract = {
+    abi: stableTokenABI,
+    address: testnet ? CUSD_ALFAJORES : CUSD_ADDRESS,
+  };
+  // Read balance
+  const balanceWei = await publicClient.readContract({
+    ...contract,
+    functionName: "balanceOf",
+    args: [address],
+  });
+  return formatEther(balanceWei.toString());
+}
+
+/**
+ * Estimate gas for an ERC-20 transfer in cUSD or native CELO.
+ */
+export async function estimateGas(
+  from: string,
+  to: string,
+  valueWei: bigint,
+  feeCurrencyAddress = "",
+  testnet = false
+): Promise<bigint> {
+  const publicClient = getPublicClient(testnet);
+  return publicClient.estimateGas({
+    account: from,
+    to,
+    value: 0n,
+    data: publicClient.encodeFunctionData({
+      abi: stableTokenABI,
+      functionName: "transfer",
+      args: [to, valueWei],
+    }),
+    feeCurrency: feeCurrencyAddress,
+  });
+}
+
+/**
+ * Send a cUSD transfer to target via injected wallet.
+ */
+export async function sendCusdTransfer(
+  receiver: string,
   amount: string,
-  signer: JsonRpcSigner
-): Promise<SignResult> {
-  // Instantiate CUSD contract
-  const contract = new Contract(cusdContractAddress, erc20Abi, signer);
+  testnet = false
+): Promise<{ hash: string; success: boolean }> {
+  const address = await getConnectedAddress();
+  if (!address) throw new Error("No injected wallet found");
 
-  // Compute desired transfer value (as bigint)
-  const desired: bigint = parseEther(amount);
+  const walletClient = getWalletClient(testnet);
+  const publicClient = getPublicClient(testnet);
+  const cusdAddr = testnet ? CUSD_ALFAJORES : CUSD_ADDRESS;
 
-  // Fetch sender address and network
-  const from = await signer.getAddress();
-  const provider = signer.provider;
-  if (!provider) throw new Error("Signer provider unavailable");
-  const network = await provider.getNetwork();
+  // Compute wei value
+  const decimals = 18;
+  const valueWei = parseUnits(amount, decimals);
 
-  // DEBUG: log network and contract address
-  console.debug(`Network: ${network.name} (${network.chainId}), CUSD addr: ${cusdContractAddress}`);
+  // Estimate gas and gasPrice
+  const feeCurrency = cusdAddr;
+  const gasLimit = await estimateGas(address, receiver, valueWei, feeCurrency, testnet);
+  const gasPriceHex = await publicClient.request({
+    method: "eth_gasPrice",
+    params: feeCurrency ? [feeCurrency] : [],
+  });
+  const gasPrice = hexToBigInt(gasPriceHex as `0x${string}`);
 
-  // Fetch and log raw on-chain balance
-  const balanceRaw = await contract.balanceOf(from);
-  console.debug(`Raw balance: ${balanceRaw.toString()}`);
-
-  // Compare as bigints
-  const balance: bigint = typeof balanceRaw === 'bigint'
-    ? balanceRaw
-    : BigInt(balanceRaw.toString());
-  if (balance < desired) {
-    throw new Error(
-      `Insufficient CUSD: have ${balance} wei, need ${desired} wei` +
-      ` (i.e. have ${balance / 10n**18n} CUSD, need ${desired / 10n**18n} CUSD)`
-    );
-  }
-
-  // Prepare transaction payload
-  const txData = await contract.transfer.populateTransaction(VortexAddress, desired);
-
-  // Metadata: nonce & gas
-  const nonce = await provider.getTransactionCount(from);
-  const gasEstimate = await provider.estimateGas({ ...txData, from });
-  const gasLimit = gasEstimate * 11n / 10n;
-
-  const unsignedTx = { ...txData, from, nonce, gasLimit, chainId: network.chainId };
+  // Build transaction
+  const data = publicClient.encodeFunctionData({
+    abi: stableTokenABI,
+    functionName: "transfer",
+    args: [receiver, valueWei],
+  });
 
   // Send transaction
-  let txResponse;
-  try {
-    txResponse = await signer.sendTransaction(unsignedTx);
-  } catch (err: any) {
-    throw new Error(`Transfer failed: ${err.reason ?? err.message}`);
-  }
+  const hash = await walletClient.sendTransaction({
+    to: cusdAddr,
+    data,
+    feeCurrency,
+    gas: gasLimit,
+    maxFeePerGas: gasPrice,
+  });
 
-  // Wait for confirmation
-  const receipt = await txResponse.wait();
-  if (!receipt || receipt.status !== 1) {
-    throw new Error(`Transaction reverted in block ${receipt?.blockNumber ?? 'unknown'}`);
-  }
-
-  // Return results
-  return {
-    hash: txResponse.hash,
-    signature: String(txResponse.signature),
-    value: amount,
-    userAddress: from
-  };
+  // Await receipt
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  return { hash, success: receipt.status === "success" };
 }
