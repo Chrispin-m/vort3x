@@ -21,7 +21,8 @@ export async function SignTx(
   const contract = new Contract(cusdContractAddress, erc20Abi, signer);
 
   // Compute desired transfer value
-  const value: BigNumberish = parseEther(amount);
+  // Compute desired transfer value (always bigint)
+  const desired: bigint = parseEther(amount);
 
   // Fetch sender address and network
   const from = await signer.getAddress();
@@ -37,8 +38,9 @@ export async function SignTx(
   console.debug(`Raw balance: ${balanceRaw.toString()}`);
 
   // Compare as bigints
-  const balance = typeof balanceRaw === 'bigint' ? balanceRaw : BigInt(balanceRaw.toString());
-  const desired = typeof value === 'bigint' ? value : BigInt(value.toString());
+  const balance: bigint = typeof balanceRaw === 'bigint' ? balanceRaw : BigInt(balanceRaw.toString());
+
+  if (balance < desired) { === 'bigint' ? value : BigInt(value.toString());
 
   if (balance < desired) {
     throw new Error(
