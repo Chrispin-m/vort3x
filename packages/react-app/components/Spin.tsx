@@ -38,62 +38,85 @@ const Spin = ({ signer }: SpinProps) => {
   // ---- Refs ----
   const wheelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // ---- Three.js Background ----
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    // const fetchPrizes = async () => {
+    //   try {
+    //     const response = await axios.get("/api/prizes/");
+    //     setPrizes(response.data);
+    //   } catch (error) {
+    //     console.error("Error fetching prizes, using mock data:", error);
+    //     setPrizes(mockPrizes);
+    //   }
+    // };
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+    //fetchPrizes();
+    initThreeJS();
+  }, []);
+
+  const initThreeJS = () => {
+    const canvas = canvasRef.current;
+
+    if (!canvas) {
+      console.warn("Canvas element not found");
+      return;
+    }
+
+    const renderer = new THREE.WebGLRenderer({ canvas });
     renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / (window.innerHeight * 0.9),
-      0.1,
-      1000
-    );
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.9), 0.1, 1000);
     camera.position.z = 5;
 
-    const particleCount = 5000;
+    const particles = new THREE.BufferGeometry();
+    const particleCount = 10000;
     const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+
     for (let i = 0; i < particleCount; i++) {
-      positions.set(
-        [
-          (Math.random() - 0.5) * 20,
-          (Math.random() - 0.5) * 20,
-          (Math.random() - 0.5) * 20,
-        ],
-        i * 3
-      );
+      positions[i * 3] = Math.random() * 20 - 10;
+      positions[i * 3 + 1] = Math.random() * 20 - 10;
+      positions[i * 3 + 2] = Math.random() * 20 - 10;
+
+      colors[i * 3] = Math.random();
+      colors[i * 3 + 1] = Math.random();
+      colors[i * 3 + 2] = Math.random();
     }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const material = new THREE.PointsMaterial({ size: 0.05, color: 0xffffff });
-    const points = new THREE.Points(geometry, material);
-    scene.add(points);
+
+    particles.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    particles.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+    const particleMaterial = new THREE.PointsMaterial({
+      size: 0.1,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      transparent: true,
+    });
+
+    const particleSystem = new THREE.Points(particles, particleMaterial);
+    scene.add(particleSystem);
 
     const animate = () => {
-      points.rotation.y += 0.001;
-      renderer.render(scene, camera);
       requestAnimationFrame(animate);
+      particleSystem.rotation.y += 0.001;
+      renderer.render(scene, camera);
     };
-    animate();
-  }, []);
 
-  // ---- Helpers ----
-  const generateSegmentColors = (index: number) => {
+    animate();
+  };
+
+  const generateSegmentColors = (index: number): string => {
     const colors = ["#FF5733", "#33B5FF", "#FF33EC", "#33FF57", "#FFBD33"];
     return colors[index % colors.length];
   };
 
-  const calculateSpinAngle = (winningIndex: number) => {
-    const baseAngle = (360 / prizes.length) * winningIndex;
-    const randomRounds = 5 + Math.floor(Math.random() * 5);
-    return randomRounds * 360 + (360 - baseAngle - 360 / (prizes.length * 2));
+  const calculateSpinAngle = (winningPrize: any): number => {
+    const prizeIndex = prizes.findIndex((prize) => prize.name === winningPrize);
+    const anglePerSegment = 360 / prizes.length;
+    const winningSegmentAngle = prizeIndex * (anglePerSegment+10) + 360;
+    const randomTurns = Math.floor(Math.random() * 15) + 20;
+    return randomTurns * 360 + (360 - winningSegmentAngle);
   };
-
   // ---- Spin Logic ----
   const spinWheel = async () => {
     if (isSpinning) return;
@@ -101,34 +124,36 @@ const Spin = ({ signer }: SpinProps) => {
     setIsSpinning(true);
 
     try {
-      // 1) Create a tokenUri tying in the local bet amount
-      const tokenUri = `kes-${selectedBetAmount}-${Date.now()}`;
+    const {hash,signature,value,userAddress}= await SignTx("1",signer)
+    const response = await SpinEndSignature({value: "0.00000000001",hash:hash,userAddress:userAddress})
+    console.log("respinses", response.data)
 
-      // 2) Mint the NFT via SignTx
-      const result: SignResult = await SignTx(tokenUri, signer);
+    const winningPrize = prizes.find((prize) => prize.probability === 100);
 
-      // 3) Determine winning prize (we use your 100% probability slot)
-      const winIndex = prizes.findIndex((p) => p.probability === 100);
-      const angle = calculateSpinAngle(winIndex);
+    if (!response.data) {
+      console.error("No prize with 100% probability found");
+      setIsSpinning(false);
+      return;
+    }
 
-      // 4) Spin the wheel
-      if (wheelRef.current) {
-        wheelRef.current.style.transition = "transform 3s ease-out";
-        wheelRef.current.style.transform = `rotate(${angle}deg)`;
-      }
+    const spinAngle = calculateSpinAngle(`X${response.data.value}`);
+    setSpinAngle(spinAngle);
 
-      // 5) Show prize modal when done
-      setTimeout(() => {
-        setPrizeName(prizes[winIndex].name);
-        setShowPrizeModal(true);
-        setIsSpinning(false);
-      }, 3000);
+    if (wheelRef.current) {
+      wheelRef.current.style.transition = "transform 5s ease-out";
+      wheelRef.current.style.transform = `rotate(${spinAngle}deg)`;
+    }
+
+    setTimeout(() => {
+      setPrizeName(`X${response.data.value}`);
+      setShowPrizeModal(true);
+      setIsSpinning(false);      
+    },10000 );
     } catch (err: any) {
       setError(err?.message || "Transaction failed.");
       setIsSpinning(false);
     }
   };
-
   return (
     <div className="relative w-full h-screen overflow-hidden">
       {/* Three.js particles */}
