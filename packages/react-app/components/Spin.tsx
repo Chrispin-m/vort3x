@@ -128,7 +128,7 @@ const Spin = ({ signer }: SpinProps) => {
 
     try {
     const {hash,signature,value,userAddress}= await SignTx("1",signer)
-    const response = await SpinEndSignature({value: "0.00000000001",hash:hash,userAddress:userAddress})
+    const response = await SpinEndSignature({value: "1",hash:hash,userAddress:userAddress})
     console.log("respinses", response.data)
 
     const winningPrize = prizes.find((prize) => prize.probability === 100);
