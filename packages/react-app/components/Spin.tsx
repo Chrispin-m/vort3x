@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
 import "./../styles/Spin.css";
+import { SpinEndPoinSigner,SpinEndPoint,SpinEndSignature } from "@/app/url/vortex";
 import { SignTx, SignResult } from "@/app/config/signtx";
 import type { JsonRpcSigner } from "ethers";
 
