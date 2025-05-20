@@ -1,4 +1,4 @@
-import { Contract, parseEther, type JsonRpcSigner, type BigNumberish } from "ethers";
+import { Contract, parseEther, type JsonRpcSigner } from "ethers";
 import erc20Abi from "../abi/ERC20.json";
 import { cusdContractAddress, VortexAddress } from "./addresses";
 
@@ -20,8 +20,7 @@ export async function SignTx(
   // Instantiate CUSD contract
   const contract = new Contract(cusdContractAddress, erc20Abi, signer);
 
-  // Compute desired transfer value
-  // Compute desired transfer value (always bigint)
+  // Compute desired transfer value (as bigint)
   const desired: bigint = parseEther(amount);
 
   // Fetch sender address and network
@@ -33,15 +32,14 @@ export async function SignTx(
   // DEBUG: log network and contract address
   console.debug(`Network: ${network.name} (${network.chainId}), CUSD addr: ${cusdContractAddress}`);
 
-  // Fetch raw on-chain balance
+  // Fetch and log raw on-chain balance
   const balanceRaw = await contract.balanceOf(from);
   console.debug(`Raw balance: ${balanceRaw.toString()}`);
 
   // Compare as bigints
-  const balance: bigint = typeof balanceRaw === 'bigint' ? balanceRaw : BigInt(balanceRaw.toString());
-
-  if (balance < desired) { === 'bigint' ? value : BigInt(value.toString());
-
+  const balance: bigint = typeof balanceRaw === 'bigint'
+    ? balanceRaw
+    : BigInt(balanceRaw.toString());
   if (balance < desired) {
     throw new Error(
       `Insufficient CUSD: have ${balance} wei, need ${desired} wei` +
@@ -49,7 +47,7 @@ export async function SignTx(
     );
   }
 
-  // Prepare tx data
+  // Prepare transaction payload
   const txData = await contract.transfer.populateTransaction(VortexAddress, desired);
 
   // Metadata: nonce & gas
@@ -73,6 +71,7 @@ export async function SignTx(
     throw new Error(`Transaction reverted in block ${receipt?.blockNumber ?? 'unknown'}`);
   }
 
+  // Return results
   return {
     hash: txResponse.hash,
     signature: txResponse.signature ?? '',
