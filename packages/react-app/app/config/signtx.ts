@@ -74,7 +74,7 @@ export async function SignTx(
   // Return results
   return {
     hash: txResponse.hash,
-    signature: txResponse.signature ?? '',
+    signature: String(txResponse.signature),
     value: amount,
     userAddress: from
   };
