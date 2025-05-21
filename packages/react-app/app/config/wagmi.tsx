@@ -1,55 +1,45 @@
 "use client";
 
-import { WagmiConfig, createConfig, http } from "wagmi";
-import { celoAlfajores } from "wagmi/chains";
-import { RainbowKitProvider, getDefaultWallets } from "@rainbow-me/rainbowkit";
+import { WagmiConfig, createConfig, http, fallback } from "wagmi";
 import { injected } from "wagmi/connectors";
+import { celoAlfajores, mainnet } from "wagmi/chains";
+import { RainbowKitProvider, getDefaultWallets } from "@rainbow-me/rainbowkit";
 import type { ReactNode } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const { wallets } = getDefaultWallets({
+const WC_PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
+if (!WC_PROJECT_ID) {
+  throw new Error("WC_PROJECT_ID is missing");
+}
+
+const { connectors } = getDefaultWallets({
   appName: "mini",
-  projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID!,
-  chains: [celoAlfajores],
+  projectId: WC_PROJECT_ID,
 });
 
-const config = createConfig({
-  autoConnect: true,
+const wagmiConfig = createConfig({
+  chains: [celoAlfajores, mainnet],
   connectors: [
-    ...wallets.map(({ connectors }) => connectors).flat(),
-    injected({
-      target: "minipay",
-      chains: [celoAlfajores],
-    }),
+    ...connectors,
+    injected()
   ],
-  chains: [celoAlfajores],
   transports: {
-    [celoAlfajores.id]: http("https://alfajores-forno.celo-testnet.org"),
-  },
-});
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
+    [celoAlfajores.id]: fallback([
+      http("https://alfajores-forno.celo-testnet.org"),
+      http()
+    ]),
+    [mainnet.id]: fallback([
+      http("https://eth.llamarpc.com"),
+      http()
+    ]),
   },
 });
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <WagmiConfig config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          chains={[celoAlfajores]}
-          coolMode
-          modalSize="compact"
-          showRecentTransactions={true}
-        >
-          {children}
-        </RainbowKitProvider>
-      </QueryClientProvider>
+    <WagmiConfig config={wagmiConfig}>
+      <RainbowKitProvider>  {/* */}
+        {children}
+      </RainbowKitProvider>
     </WagmiConfig>
   );
 }
