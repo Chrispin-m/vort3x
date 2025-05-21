@@ -2,7 +2,7 @@
 import { BigNumber, ethers } from "ethers";
 import type { JsonRpcSigner } from "ethers";
 import { cusdContractAddress } from "./addresses";
-import StableTokenABI from "@celo/abis/build/StableToken.abi.json";
+import StableTokenABI from "../abi/StableToken.abi.json";
 
 // Sign and send a cUSD transfer of `amount` (string decimal) from the connected signer to the spin contract
 export async function SignTx(
