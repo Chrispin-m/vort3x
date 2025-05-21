@@ -24,7 +24,7 @@ export async function SignTx(
 
     // Encode the ERC20 transfer function data
     const data = encodeFunctionData({
-      abi: StableTokenABI,
+      abi: StableTokenABI.abi,
       functionName: "transfer",
       args: [receiver, valueUnits],
     });
