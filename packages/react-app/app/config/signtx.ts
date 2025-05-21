@@ -1,5 +1,5 @@
 // Rewritten to use ethers.js JsonRpcSigner for signing spin requests
-import { BigNumber, ethers } from "ethers";
+import { BigNumberish, ethers } from "ethers";
 import type { JsonRpcSigner } from "ethers";
 import { cusdContractAddress } from "./addresses";
 import StableTokenABI from "../abi/StableToken.abi.json";
@@ -23,7 +23,7 @@ export async function SignTx(
   );
 
   // Approve the spin contract to spend on user's behalf if needed
-  const allowance: BigNumber = await tokenContract.allowance(userAddress, spinContractAddress);
+  const allowance: BigNumberish = await tokenContract.allowance(userAddress, spinContractAddress);
   if (allowance.lt(value)) {
     const approveTx = await tokenContract.approve(spinContractAddress, value);
     await approveTx.wait();
