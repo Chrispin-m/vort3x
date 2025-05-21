@@ -2,30 +2,60 @@ import axios from "axios";
 
 const BASE = "https://vortex-bd.vercel.app/api/stake";
 
-export interface SpinRequest {
-  amount: string;
+export interface SpinInterface {
+  amount: number;
+  signedTx: string;
   userAddress: string;
-  txHash: string;
 }
 
-// 1) Initiate a spin to get the spin contract address or challenge message
-export async function initiateSpin(amount: string) {
+export interface SpinWithSigner {
+  amount: number;
+  signer: unknown; // not used client-side
+}
+
+export interface SpinEndSignatureWithHash {
+  hash: string;
+  value: string;
+  userAddress: string;
+}
+
+export async function SpinEndPoint({
+  signedTx,
+  amount,
+  userAddress
+}: SpinInterface) {
+  const resp = await axios.post(
+    `${BASE}/Spinsign`,
+    { amount, signedTx, userAddress },
+    { headers: { "Content-Type": "application/json" } }
+  );
+  return resp.data;
+}
+
+export async function SpinEndPoinSigner({
+  amount
+}: { amount: number }) {
   const resp = await axios.post(
     `${BASE}/spin`,
     { amount },
     { headers: { "Content-Type": "application/json" } }
   );
-  // expects { spinContractAddress: string }
-  return resp.data as { spinContractAddress: string };
+  return resp.data;
 }
 
-// 2) Finalize spin by sending txHash and userAddress
-export async function finalizeSpin({ txHash, userAddress, amount }: SpinRequest) {
+export async function SpinEndSignature({
+  hash,
+  value,
+  userAddress
+}: SpinEndSignatureWithHash) {
   const resp = await axios.post(
-    `${BASE}/spin/complete`,
-    { txHash, userAddress, amount },
+    `${BASE}/Spinsignwithhash`,
+    {
+      txHash: hash,
+      address: userAddress,
+      amount: value
+    },
     { headers: { "Content-Type": "application/json" } }
   );
-  // expects { prize: string; value: string }
   return resp.data;
 }
