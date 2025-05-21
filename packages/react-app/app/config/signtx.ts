@@ -1,7 +1,7 @@
 // app/config/signtx.ts
 import { JsonRpcSigner } from "ethers";
 import { encodeFunctionData, parseUnits } from "viem";
-import { StableTokenABI } from "../abi/StableToken.abi.json";
+import { StableTokenABI } from "../abi/StableToken.json";
 import { VortexAddress } from "./addresses";
 
 // cUSD contract address on Alfajores
