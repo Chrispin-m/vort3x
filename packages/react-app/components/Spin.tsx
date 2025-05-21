@@ -7,12 +7,17 @@ import axios from "axios";
 import { SpinEndPoinSigner,SpinEndPoint,SpinEndSignature } from "@/app/url/vortex";
 import type { JsonRpcSigner } from "ethers";
 import { useWeb3 } from "../contexts/useWeb3";
+import { VortexAddress } from "@/app/config/addresses";
+import { parseEther, encodeFunctionData } from "viem";
+import StableTokenABI from "@/contexts/cusd-abi.json";
+import { celoAlfajores } from "viem/chains";
+
 
 
 interface SpinProps {
-  signer: JsonRpcSigner;
-  userAddress: string;
+    userAddress: string;
 }
+
 
 interface Prize {
   id: number;
@@ -21,9 +26,8 @@ interface Prize {
   probability: number;
 }
 
-const Spin = () => {
-  // ---- State ----
-  const { address, sendCUSD } = useWeb3();
+const Spin = ({ userAddress }: SpinProps) => {
+  const { getCUSDBalance, estimateGas, estimateGasPrice, sendCUSD } = useWeb3();
   const [selectedBetAmount, setSelectedBetAmount] = useState<number>(1);
   const [prizes, setPrizes] = useState([
     { id: 1, name: "X1", value: "1.00", probability: 0.0 },
@@ -129,13 +133,36 @@ const Spin = () => {
     setIsSpinning(true);
 
     try {
-      const receipt = await sendCUSD(selectedBetAmount.toString());
-      const response = await SpinEndSignature({
-        hash: receipt.transactionHash,
-        value: selectedBetAmount.toString(),
-        userAddress: address || "",
-      });
-      console.log("respinses", response.data)
+       // Check balance
+            const balance = await getCUSDBalance(userAddress);
+            const amountInWei = parseEther(selectedBetAmount.toString());
+            const txRequest = {
+                account: userAddress,
+                to: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1", // cUSD address
+                data: encodeFunctionData({
+                    abi: StableTokenABI.abi,
+                    functionName: "transfer",
+                    args: [VortexAddress, amountInWei],
+                }),
+                value: 0n,
+            };
+            const gasLimit = await estimateGas(txRequest);
+            const gasPrice = await estimateGasPrice();
+            const feeCost = gasLimit * gasPrice;
+            const totalCost = amountInWei + feeCost;
+
+            if (balance < totalCost) {
+                throw new Error(`Insufficient cUSD balance. Required: ${(Number(totalCost) / 1e18).toFixed(4)} cUSD. Balance:${balance}`);
+            }
+
+            // Send transaction
+            const hash = await sendCUSD(VortexAddress, selectedBetAmount.toString());
+            const response = await SpinEndSignature({
+                hash,
+                value: selectedBetAmount.toString(),
+                userAddress,
+            });
+            console.log("respinses", response.data)
 
       const winningPrize = prizes.find((prize) => prize.probability === 100);
 
