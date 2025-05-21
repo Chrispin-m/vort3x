@@ -5,7 +5,6 @@ import * as THREE from "three";
 import "./../styles/Spin.css";
 import axios from "axios";
 import { SpinEndPoinSigner,SpinEndPoint,SpinEndSignature } from "@/app/url/vortex";
-import { SignTx, SignResult } from "@/app/config/signtx";
 import type { JsonRpcSigner } from "ethers";
 import { useWeb3 } from "../contexts/useWeb3";
 
@@ -134,7 +133,7 @@ const Spin = () => {
       const response = await SpinEndSignature({
         hash: receipt.transactionHash,
         value: selectedBetAmount.toString(),
-        userAddress: address,
+        userAddress: address || "",
       });
       console.log("respinses", response.data)
 
