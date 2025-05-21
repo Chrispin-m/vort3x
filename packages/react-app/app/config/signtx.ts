@@ -1,63 +1,44 @@
-import { createPublicClient, createWalletClient, custom, parseEther } from "viem";
-import { celoAlfajores } from "viem/chains";
-import stableTokenABI from "@celo/abis/lib/StableToken.json";
+// Rewritten to use ethers.js JsonRpcSigner for signing spin requests
+import { BigNumber, ethers } from "ethers";
 import type { JsonRpcSigner } from "ethers";
+import { cusdContractAddress } from "./addresses";
+import StableTokenABI from "@celo/abis/build/StableToken.abi.json";
 
-export interface SignResult {
-  hash: string;
-  signature: string;
-  value: string;
-  userAddress: string;
-}
-
-/**
- * Builds, signs, and broadcasts a cUSD → Vortex transfer of `amount` using MiniPay.
- * Compatible with ethers JsonRpcSigner from Spin component.
- */
+// Sign and send a cUSD transfer of `amount` (string decimal) from the connected signer to the spin contract
 export async function SignTx(
   amount: string,
-  signer: JsonRpcSigner
-): Promise<SignResult> {
-  // Ensure we have the injected provider
-  const ethereum = (signer.provider as any)?._provider || (window as any).ethereum;
-  if (!ethereum) {
-    throw new Error("No injected MiniPay wallet found");
+  signer: JsonRpcSigner,
+  spinContractAddress: string
+): Promise<{ hash: string; userAddress: string }> {
+  // Get user's address
+  const userAddress = await signer.getAddress();
+  // Parse amount to 18-decimals
+  const value = ethers.utils.parseUnits(amount, 18);
+
+  // Create contract instance
+  const tokenContract = new ethers.Contract(
+    cusdContractAddress,
+    StableTokenABI,
+    signer
+  );
+
+  // Approve the spin contract to spend on user's behalf if needed
+  const allowance: BigNumber = await tokenContract.allowance(userAddress, spinContractAddress);
+  if (allowance.lt(value)) {
+    const approveTx = await tokenContract.approve(spinContractAddress, value);
+    await approveTx.wait();
   }
 
-  // Initialize viem clients
-  const walletClient = createWalletClient({
-    chain: celoAlfajores,
-    transport: custom(ethereum),
-  });
-  const publicClient = createPublicClient({
-    chain: celoAlfajores,
-    transport: http(),
-  });
+  // Send the spin request via the spin contract's entrypoint
+  const spinContract = new ethers.Contract(
+    spinContractAddress,
+    [
+      "function spin(uint256 amount) returns (bytes32)"
+    ],
+    signer
+  );
+  const tx = await spinContract.spin(value);
+  const receipt = await tx.wait();
 
-  // Request account if needed
-  const [userAddress] = await walletClient.getAddresses();
-
-  // Prepare transfer
-  const amountInWei = parseEther(amount);
-  const hash = await walletClient.writeContract({
-    address: cusdContractAddress,
-    abi: stableTokenABI,
-    functionName: "transfer",
-    account: userAddress,
-    args: [VortexAddress, amountInWei],
-  });
-
-  // Wait for confirmation
-  const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  if (receipt.status !== "success") {
-    throw new Error(`Transaction failed: ${receipt.status}`);
-  }
-
-  // MiniPay does not return signature; sign a message instead for proof
-  const signature = await walletClient.signMessage({
-    account: userAddress,
-    message: `Transfer ${amount} cUSD to Vortex: ${hash}`,
-  });
-
-  return { hash, signature, value: amount, userAddress };
+  return { hash: receipt.transactionHash, userAddress };
 }
