@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const { wallets } = getDefaultWallets({
-  appName: "Vort3x Spin",
+  appName: "mini",
   projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID!,
   chains: [celoAlfajores],
 });
