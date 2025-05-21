@@ -1,62 +1,55 @@
-// app/config/signtx.ts
-import { JsonRpcSigner } from "ethers";
-import { encodeFunctionData, parseUnits } from "viem";
-import StableTokenABI from "../abi/tableToken.json";
-import { VortexAddress } from "./addresses";
+import { Contract, parseEther, Signature } from "ethers";
+import type { JsonRpcSigner } from "ethers";
+import erc20Abi from "../abi/ERC20.json";
+import { cusdContractAddress, VortexAddress } from "./addresses";
 
-// cUSD contract address on Alfajores
-const CUSD_ALFAJORES = "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1";
+export interface SignResult {
+  hash: string;         // Transaction hash returned after broadcast
+  signature: Signature; // Ethers Signature object (r, s, v)
+  value: string;        // The input amount as string
+  userAddress: string;  // The signer’s address
+}
 
 /**
- * Signs and sends a cUSD ERC20 transfer to the VortexAddress using the provided signer.
- * @param amount - The amount of cUSD to transfer (in human-readable format, e.g., "1").
- * @param signer - The Ethers.js JsonRpcSigner from the connected wallet.
- * @returns An object containing the transaction hash, value, and user address.
+ * Builds, signs, and broadcasts a CUSD → Vortex transfer of `amount`.
  */
 export async function SignTx(
   amount: string,
   signer: JsonRpcSigner
-): Promise<{ hash: string; value: string; userAddress: string }> {
-  try {
-    const receiver = VortexAddress;
-    const decimals = 18;
-    const valueUnits = parseUnits(amount, decimals);
+): Promise<SignResult> {
+  // 1) Prepare the ERC-20 transfer calldata
+  const token = new Contract(cusdContractAddress, erc20Abi, signer);
+  const txData = await token.transfer.populateTransaction(
+    VortexAddress,
+    parseEther(amount)
+  );
 
-    // Encode the ERC20 transfer function data
-    const data = encodeFunctionData({
-      abi: StableTokenABI.abi,
-      functionName: "transfer",
-      args: [receiver, valueUnits],
-    });
+  // 2) Gather on-chain data via provider
+  const provider = signer.provider!;
+  const from = await signer.getAddress();
+  const nonce = await provider.getTransactionCount(from);
+  const { chainId } = await provider.getNetwork();
+  const gasLimit = await provider.estimateGas({ ...txData, from });
 
-    // Prepare the transaction
-    const tx = {
-      to: CUSD_ALFAJORES,
-      data,
-    };
+  const unsignedTx = {
+    ...txData,
+    from,
+    nonce,
+    gasLimit,
+    chainId
+  };
 
-    // Estimate gas (optional, improves reliability)
-    const gasLimit = await signer.estimateGas(tx);
+  // 3) Sign & broadcast
+  const txResponse = await signer.sendTransaction(unsignedTx);
+  await txResponse.wait();
 
-    // Send the transaction using the signer
-    const signedTx = await signer.sendTransaction({
-      ...tx,
-      gasLimit,
-    });
+  // 4) txResponse.signature is a Signature object, not a string
+  const sig: Signature = txResponse.signature as Signature;
 
-    // Wait for the transaction to be mined
-    const receipt = await signedTx.wait();
-
-    // Get the user's address from the signer
-    const userAddress = await signer.getAddress();
-
-    return {
-      hash: receipt.hash,
-      value: amount,
-      userAddress,
-    };
-  } catch (error) {
-    console.error("Transaction failed:", error);
-    throw new Error("Failed to sign and send transaction");
-  }
+  return {
+    hash: txResponse.hash,
+    signature: sig,
+    value: amount,
+    userAddress: from
+  };
 }
