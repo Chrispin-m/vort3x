@@ -1,44 +1,66 @@
-// Rewritten to use ethers.js JsonRpcSigner for signing spin requests
-import { BigNumberish, ethers } from "ethers";
-import type { JsonRpcSigner } from "ethers";
-import { cusdContractAddress } from "./addresses";
-import StableTokenABI from "../abi/StableToken.abi.json";
+import { 
+  createPublicClient, 
+  createWalletClient, 
+  custom, 
+  http, 
+  getContract, 
+  encodeFunctionData, 
+  parseUnits, 
+  formatUnits,
+  type Address
+} from 'viem';
+import { celoAlfajores } from 'viem/chains';
+import { stableTokenABI } from '@celo/abis';
 
-// Sign and send a cUSD transfer of `amount` (string decimal) from the connected signer to the spin contract
+const CUSD_ALFAJORES = '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1';
+
+const publicClient = createPublicClient({
+  chain: celoAlfajores,
+  transport: http(),
+});
+
 export async function SignTx(
   amount: string,
-  signer: JsonRpcSigner,
-  spinContractAddress: string
-): Promise<{ hash: string; userAddress: string }> {
-  // Get user's address
-  const userAddress = await signer.getAddress();
-  // Parse amount to 18-decimals
-  const value = ethers.utils.parseUnits(amount, 18);
-
-  // Create contract instance
-  const tokenContract = new ethers.Contract(
-    cusdContractAddress,
-    StableTokenABI,
-    signer
-  );
-
-  // Approve the spin contract to spend on user's behalf if needed
-  const allowance: BigNumberish = await tokenContract.allowance(userAddress, spinContractAddress);
-  if (allowance.lt(value)) {
-    const approveTx = await tokenContract.approve(spinContractAddress, value);
-    await approveTx.wait();
+  receiver: Address
+): Promise<{ hash: `0x${string}`; value: string; userAddress: Address }> {
+  if (typeof window === 'undefined' || !window.ethereum) {
+    throw new Error('No injected wallet found');
   }
 
-  // Send the spin request via the spin contract's entrypoint
-  const spinContract = new ethers.Contract(
-    spinContractAddress,
-    [
-      "function spin(uint256 amount) returns (bytes32)"
-    ],
-    signer
-  );
-  const tx = await spinContract.spin(value);
-  const receipt = await tx.wait();
+  const walletClient = createWalletClient({
+    chain: celoAlfajores,
+    transport: custom(window.ethereum),
+  });
 
-  return { hash: receipt.transactionHash, userAddress };
+  const [from] = await walletClient.getAddresses();
+  if (!from) throw new Error('No connected account');
+
+  const valueUnits = parseUnits(amount, 18);
+
+  const { request } = await publicClient.simulateContract({
+    address: CUSD_ALFAJORES,
+    abi: stableTokenABI,
+    functionName: 'transfer',
+    args: [receiver, valueUnits],
+    account: from,
+  });
+
+  const hash = await walletClient.writeContract(request);
+  
+  return { 
+    hash, 
+    value: amount,
+    userAddress: from 
+  };
+}
+
+export async function getCusdBalance(address: Address): Promise<string> {
+  const token = getContract({
+    abi: stableTokenABI,
+    address: CUSD_ALFAJORES,
+    client: publicClient,
+  });
+  
+  const balance = await token.read.balanceOf([address]);
+  return formatUnits(balance, 18);
 }

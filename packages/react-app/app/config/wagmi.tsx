@@ -1,45 +1,43 @@
 "use client";
 
-import { WagmiConfig, createConfig, http, fallback } from "wagmi";
-import { injected } from "wagmi/connectors";
-import { celoAlfajores, mainnet } from "wagmi/chains";
-import { RainbowKitProvider, getDefaultWallets } from "@rainbow-me/rainbowkit";
+import { WagmiConfig, createConfig, http } from "wagmi";
+import { celoAlfajores } from "wagmi/chains";
+import { RainbowKitProvider, getDefaultWallets, injected } from "@rainbow-me/rainbowkit";
 import type { ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const WC_PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID;
-if (!WC_PROJECT_ID) {
-  throw new Error("WC_PROJECT_ID is missing");
-}
-
-const { connectors } = getDefaultWallets({
-  appName: "mini",
-  projectId: WC_PROJECT_ID,
+const { wallets } = getDefaultWallets({
+  appName: "Vort3x Spin",
+  projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID!,
+  chains: [celoAlfajores],
 });
 
-const wagmiConfig = createConfig({
-  chains: [celoAlfajores, mainnet],
+const config = createConfig({
+  autoConnect: true,
   connectors: [
-    ...connectors,
-    injected()
+    ...wallets,
+    injected({ target: 'minipay' })
   ],
+  chains: [celoAlfajores],
   transports: {
-    [celoAlfajores.id]: fallback([
-      http("https://alfajores-forno.celo-testnet.org"),
-      http()
-    ]),
-    [mainnet.id]: fallback([
-      http("https://eth.llamarpc.com"),
-      http()
-    ]),
+    [celoAlfajores.id]: http("https://alfajores-forno.celo-testnet.org"),
   },
 });
 
+const queryClient = new QueryClient();
+
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <WagmiConfig config={wagmiConfig}>
-      <RainbowKitProvider>  {/* */}
-        {children}
-      </RainbowKitProvider>
+    <WagmiConfig config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider
+          chain={celoAlfajores}
+          coolMode
+          modalSize="compact"
+        >
+          {children}
+        </RainbowKitProvider>
+      </QueryClientProvider>
     </WagmiConfig>
   );
 }
