@@ -2,7 +2,7 @@
 import { JsonRpcSigner } from "ethers";
 import { encodeFunctionData, parseUnits } from "viem";
 import { StableTokenABI } from "../abi/StableToken.abi.json";
-import { VortexAddress } from ".addresses";
+import { VortexAddress } from "./addresses";
 
 // cUSD contract address on Alfajores
 const CUSD_ALFAJORES = "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1";
