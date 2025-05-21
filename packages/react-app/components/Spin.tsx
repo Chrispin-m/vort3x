@@ -22,7 +22,7 @@ interface Prize {
   probability: number;
 }
 
-const Spin = () {
+const Spin = () => {
   // ---- State ----
   const { address, sendCUSD } = useWeb3();
   const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0.000000000000003);
