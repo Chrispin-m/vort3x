@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { useWeb3 } from "@/app/contexts/useWeb3";
+import { useWeb3 } from "../contexts/useWeb3";
 
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 

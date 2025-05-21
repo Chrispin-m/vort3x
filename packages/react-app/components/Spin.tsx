@@ -7,7 +7,7 @@ import axios from "axios";
 import { SpinEndPoinSigner,SpinEndPoint,SpinEndSignature } from "@/app/url/vortex";
 import { SignTx, SignResult } from "@/app/config/signtx";
 import type { JsonRpcSigner } from "ethers";
-import { useWeb3 } from "@/app/contexts/useWeb3";
+import { useWeb3 } from "../contexts/useWeb3";
 
 
 interface SpinProps {
