@@ -49,7 +49,7 @@ export const useWeb3 = () => {
             address: cUSDTokenAddress,
             abi: StableTokenABI.abi,
             functionName: "transfer",
-            account: address,
+            account: address as `0x${string}`,
             args: [VortexAddress, parseEther(amount)],
         });
         const receipt = await publicClient.waitForTransactionReceipt({
