@@ -1,119 +1,63 @@
-// app/config/signtx.ts
-// Rewritten to use Viem (v1) and window.ethereum for browser environment
+import { createPublicClient, createWalletClient, custom, parseEther } from "viem";
+import { celoAlfajores } from "viem/chains";
+import stableTokenABI from "@celo/abis/lib/StableToken.json";
+import type { JsonRpcSigner } from "ethers";
 
-import { createPublicClient, createWalletClient, http, custom, getContract, encodeFunctionData, parseUnits, toHex, formatUnits } from 'viem';
-import { celoAlfajores } from 'viem/chains';
-import { stableTokenABI } from '@celo/abis';
-import type { Address } from 'viem';
-
-// cUSD contract address on Alfajores
-const CUSD_ALFAJORES = '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1';
-
-// Public client for read operations
-const publicClient = createPublicClient({
-  chain: celoAlfajores,
-  transport: http(),
-});
-
-/**
- * Detect injected wallet and return the first user address.
- * Supports MiniPay and generic injected wallets.
- */
-export async function getConnectedAddress(): Promise<Address> {
-  if (typeof window === 'undefined' || !window.ethereum) {
-    throw new Error('No injected wallet found');
-  }
-  const eth = window.ethereum as any;
-  const accounts: string[] = await eth.request({ method: 'eth_requestAccounts' });
-  return accounts[0] as Address;
+export interface SignResult {
+  hash: string;
+  signature: string;
+  value: string;
+  userAddress: string;
 }
 
 /**
- * Check cUSD balance of an address (returns human-readable string)
- */
-export async function getCusdBalance(address: Address): Promise<string> {
-  const token = getContract({
-    abi: stableTokenABI,
-    address: CUSD_ALFAJORES,
-    publicClient,
-  });
-  const bal = await token.read.balanceOf([address]);
-  return formatUnits(bal, 18);
-}
-
-/**
- * Check if a transaction succeeded
- */
-export async function checkTxSucceeded(hash: `0x${string}`): Promise<boolean> {
-  const receipt = await publicClient.getTransactionReceipt({ hash });
-  return receipt.status === 'success';
-}
-
-/**
- * Estimate gas limit for a transaction, optionally specifying feeCurrency
- */
-export async function estimateGasLimit(
-  tx: Parameters<typeof publicClient.estimateGas>[0],
-  feeCurrency?: Address
-): Promise<bigint> {
-  return publicClient.estimateGas({ ...tx, feeCurrency });
-}
-
-/**
- * Estimate gas price for a transaction, optionally specifying feeCurrency
- */
-export async function estimateGasPrice(feeCurrency?: Address): Promise<bigint> {
-  return publicClient.request({
-    method: 'eth_gasPrice',
-    params: feeCurrency ? [feeCurrency] : [],
-  }) as Promise<bigint>;
-}
-
-/**
- * Sign and send a cUSD ERC20 transfer to a receiver
+ * Builds, signs, and broadcasts a cUSD → Vortex transfer of `amount` using MiniPay.
+ * Compatible with ethers JsonRpcSigner from Spin component.
  */
 export async function SignTx(
   amount: string,
-  receiver: Address
-): Promise<{ hash: `0x${string}`; value: string }> {
-  if (typeof window === 'undefined' || !window.ethereum) {
-    throw new Error('No injected wallet found');
+  signer: JsonRpcSigner
+): Promise<SignResult> {
+  // Ensure we have the injected provider
+  const ethereum = (signer.provider as any)?._provider || (window as any).ethereum;
+  if (!ethereum) {
+    throw new Error("No injected MiniPay wallet found");
   }
+
+  // Initialize viem clients
   const walletClient = createWalletClient({
     chain: celoAlfajores,
-    transport: custom(window.ethereum),
+    transport: custom(ethereum),
+  });
+  const publicClient = createPublicClient({
+    chain: celoAlfajores,
+    transport: http(),
   });
 
-  const from = await getConnectedAddress();
-  const decimals = 18;
-  const valueUnits = parseUnits(amount, decimals);
+  // Request account if needed
+  const [userAddress] = await walletClient.getAddresses();
 
-  // encode ERC20 transfer data
-  const data = encodeFunctionData({
+  // Prepare transfer
+  const amountInWei = parseEther(amount);
+  const hash = await walletClient.writeContract({
+    address: cusdContractAddress,
     abi: stableTokenABI,
-    functionName: 'transfer',
-    args: [receiver, valueUnits],
+    functionName: "transfer",
+    account: userAddress,
+    args: [VortexAddress, amountInWei],
   });
 
-  // build transaction
-  const txRequest = {
-    account: from,
-    to: CUSD_ALFAJORES as Address,
-    data,
-    value: 0n,
-  };
+  // Wait for confirmation
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  if (receipt.status !== "success") {
+    throw new Error(`Transaction failed: ${receipt.status}`);
+  }
 
-  // estimate gas and price
-  const gasLimit = await estimateGasLimit(txRequest, CUSD_ALFAJORES as Address);
-  const gasPrice = await estimateGasPrice(CUSD_ALFAJORES as Address);
-
-  // send transaction
-  const hash = await walletClient.sendTransaction({
-    ...txRequest,
-    gas: gasLimit,
-    maxFeePerGas: gasPrice,
-    maxPriorityFeePerGas: gasPrice,
+  // MiniPay does not return signature; sign a message instead for proof
+  const signature = await walletClient.signMessage({
+    account: userAddress,
+    message: `Transfer ${amount} cUSD to Vortex: ${hash}`,
   });
 
-  return { hash, value: amount };
+  return { hash, signature, value: amount, userAddress };
 }
