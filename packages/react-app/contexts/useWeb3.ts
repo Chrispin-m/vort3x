@@ -1,151 +1,139 @@
 import { useState } from "react";
-import StableTokenABI from "./cusd-abi.json";
 import {
-    createPublicClient,
-    createWalletClient,
-    custom,
-    getContract,
-    http,
-    parseEther,
-    encodeFunctionData,
-    formatEther,
-    hexToBigInt,
+  createPublicClient,
+  createWalletClient,
+  custom,
+  getContract,
+  http,
+  parseEther,
+  formatEther,
+  encodeFunctionData,
+  hexToBigInt,
 } from "viem";
 import { celoAlfajores } from "viem/chains";
+import StableTokenABI from "./cusd-abi.json"; // Local ABI JSON file
+
+const cUSDTokenAddress = "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1"; // Alfajores testnet
 
 const publicClient = createPublicClient({
-    chain: celoAlfajores,
-    transport: http(),
+  chain: celoAlfajores,
+  transport: http(),
 });
 
-const cUSDTokenAddress = "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1"; // Alfajores testnet cUSD
-
 export const useWeb3 = () => {
-    const [address, setAddress] = useState<string | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
 
-    // Get the connected user's address
-    const getUserAddress = async () => {
-        if (typeof window !== "undefined" && window.ethereum) {
-            const walletClient = createWalletClient({
-                transport: custom(window.ethereum),
-                chain: celoAlfajores,
-            });
-            const [userAddress] = await walletClient.getAddresses();
-            setAddress(userAddress);
-            return userAddress;
-        }
-        throw new Error("No injected wallet found");
-    };
-
-    // Get cUSD balance in wei (bigint)
-    const getCUSDBalance = async (userAddress: string) => {
-        const token = getContract({
-            abi: StableTokenABI.abi,
-            address: cUSDTokenAddress,
-            publicClient,
+  const getUserAddress = async (): Promise<string> => {
+    if (typeof window !== "undefined" && window.ethereum) {
+      // Support both MiniPay and regular wallets
+      let accounts: string[] = [];
+      if (window.ethereum.isMiniPay) {
+        accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+          params: [],
         });
-        const balance = await token.read.balanceOf([userAddress]);
-        return balance;
-    };
-
-    // Estimate gas limit for a transaction, paid in cUSD
-    const estimateGas = async (tx: any) => {
-        return await publicClient.estimateGas({
-            ...tx,
-            feeCurrency: cUSDTokenAddress,
-        });
-    };
-
-    // Estimate gas price for a transaction, paid in cUSD
-    const estimateGasPrice = async () => {
-        return await publicClient.request({
-            method: "eth_gasPrice",
-            params: [cUSDTokenAddress],
-        });
-    };
-
-    // Calculate transaction fees in cUSD
-    const calculateTxFees = async (tx: any) => {
-        const gasLimit = await estimateGas(tx);
-        const gasPriceHex = await estimateGasPrice();
-        const gasPrice = hexToBigInt(gasPriceHex);
-        const txFees = gasLimit * gasPrice;
-        return txFees;
-    };
-
-    // Send cUSD and return the transaction hash
-    const sendCUSD = async (to: string, amount: string) => {
-        if (!window.ethereum) throw new Error("No injected wallet found");
-        
+      } else {
         const walletClient = createWalletClient({
-            transport: custom(window.ethereum),
-            chain: celoAlfajores,
+          transport: custom(window.ethereum),
+          chain: celoAlfajores,
         });
-        const [userAddress] = await walletClient.getAddresses();
-        const amountInWei = parseEther(amount);
+        accounts = await walletClient.getAddresses();
+      }
+      setAddress(accounts[0]);
+      return accounts[0];
+    }
+    throw new Error("No injected wallet found");
+  };
 
-        const data = encodeFunctionData({
-            abi: StableTokenABI.abi,
-            functionName: "transfer",
-            args: [to, amountInWei],
-        });
+  const getCUSDBalance = async (userAddress: string): Promise<string> => {
+    const cUSDContract = getContract({
+      abi: StableTokenABI.abi,
+      address: cUSDTokenAddress,
+      publicClient,
+    });
+    const balanceBigInt = await cUSDContract.read.balanceOf([userAddress]);
+    return formatEther(balanceBigInt);
+  };
 
-        const txRequest = {
-            account: userAddress,
-            to: cUSDTokenAddress,
-            data,
-            value: 0n,
-            feeCurrency: cUSDTokenAddress,
-        };
+  const estimateGas = async (tx: any): Promise<bigint> => {
+    return await publicClient.estimateGas({
+      ...tx,
+      feeCurrency: cUSDTokenAddress,
+    });
+  };
 
-        const gasLimit = await estimateGas(txRequest);
-        const gasPriceHex = await estimateGasPrice();
-        const gasPrice = hexToBigInt(gasPriceHex);
+  const estimateGasPrice = async (): Promise<bigint> => {
+    const gasPriceHex = await publicClient.request({
+      method: "eth_gasPrice",
+      params: [cUSDTokenAddress],
+    });
+    return hexToBigInt(gasPriceHex);
+  };
 
-        const hash = await walletClient.sendTransaction({
-            ...txRequest,
-            gas: gasLimit,
-            maxFeePerGas: gasPrice,
-            maxPriorityFeePerGas: gasPrice,
-        });
+  const calculateTxFees = async (tx: any): Promise<bigint> => {
+    const gasLimit = await estimateGas(tx);
+    const gasPrice = await estimateGasPrice();
+    return gasLimit * gasPrice;
+  };
 
-        return hash;
+  const sendCUSD = async (to: string, amount: string): Promise<string> => {
+    if (!window.ethereum) throw new Error("No wallet found");
+
+    const walletClient = createWalletClient({
+      transport: custom(window.ethereum),
+      chain: celoAlfajores,
+    });
+
+    const [userAddress] = await walletClient.getAddresses();
+    const amountInWei = parseEther(amount);
+
+    const data = encodeFunctionData({
+      abi: StableTokenABI.abi,
+      functionName: "transfer",
+      args: [to, amountInWei],
+    });
+
+    const txRequest = {
+      account: userAddress,
+      to: cUSDTokenAddress,
+      data,
+      value: 0n,
+      feeCurrency: cUSDTokenAddress,
     };
 
-    // Check if the user has sufficient balance for the transaction
-    const checkBalanceForTx = async (userAddress: string, amount: string) => {
-        const balance = await getCUSDBalance(userAddress);
-        const amountInWei = parseEther(amount);
+    const gas = await estimateGas(txRequest);
+    const gasPrice = await estimateGasPrice();
 
-        const txRequest = {
-            account: userAddress,
-            to: cUSDTokenAddress,
-            data: encodeFunctionData({
-                abi: StableTokenABI.abi,
-                functionName: "transfer",
-                args: [userAddress, amountInWei], // Dummy transfer to self for estimation
-            }),
-            value: 0n,
-        };
+    const hash = await walletClient.sendTransaction({
+      ...txRequest,
+      gas,
+      maxFeePerGas: gasPrice,
+      maxPriorityFeePerGas: gasPrice,
+    });
 
-        const txFees = await calculateTxFees(txRequest);
-        const totalCost = amountInWei + txFees;
+    return hash;
+  };
 
-        if (balance < totalCost) {
-            throw new Error(
-                `Insufficient cUSD balance. Required: ${formatEther(totalCost)} cUSD, Available: ${formatEther(balance)} cUSD`
-            );
-        }
-    };
+  const checkBalanceForTx = async (userAddress: string, amount: string) => {
+    const balanceStr = await getCUSDBalance(userAddress);
+    const balance = parseFloat(balanceStr);
+    const amountNeeded = parseFloat(amount);
 
-    return {
-        address,
-        getUserAddress,
-        getCUSDBalance,
-        estimateGas,
-        estimateGasPrice,
-        calculateTxFees,
-        sendCUSD,
-        checkBalanceForTx,
-    };
+    if (balance < amountNeeded) {
+      throw new Error(
+        `Insufficient balance: Required ${amountNeeded} cUSD, but only ${balance} cUSD available.`
+      );
+    }
+  };
+
+  return {
+    address,
+    getUserAddress,
+    getCUSDBalance,
+    estimateGas,
+    estimateGasPrice,
+    calculateTxFees,
+    sendCUSD,
+    checkBalanceForTx,
+  };
 };
