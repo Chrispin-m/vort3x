@@ -11,7 +11,7 @@ import {
   hexToBigInt,
 } from "viem";
 import { celoAlfajores } from "viem/chains";
-import StableTokenABI from "./cusd-abi.json"; // Local ABI JSON file
+import { stableTokenABI } from "@celo/abis";
 
 const cUSDTokenAddress = "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1"; // Alfajores testnet
 
@@ -23,9 +23,9 @@ const publicClient = createPublicClient({
 export const useWeb3 = () => {
   const [address, setAddress] = useState<string | null>(null);
 
+  // Get user address (MiniPay or regular wallet)
   const getUserAddress = async (): Promise<string> => {
     if (typeof window !== "undefined" && window.ethereum) {
-      // Support both MiniPay and regular wallets
       let accounts: string[] = [];
       if (window.ethereum.isMiniPay) {
         accounts = await window.ethereum.request({
@@ -45,16 +45,19 @@ export const useWeb3 = () => {
     throw new Error("No injected wallet found");
   };
 
+  // Get cUSD balance for an address
   const getCUSDBalance = async (userAddress: string): Promise<string> => {
     const cUSDContract = getContract({
-      abi: StableTokenABI.abi,
+      abi: stableTokenABI,
       address: cUSDTokenAddress,
       publicClient,
     });
-    const balanceBigInt = await cUSDContract.read.balanceOf([userAddress]);
-    return formatEther(balanceBigInt);
+    const balanceInBigNumber = await cUSDContract.read.balanceOf([userAddress]);
+    const balanceInWei = balanceInBigNumber.toString();
+    return formatEther(balanceInWei);
   };
 
+  // Estimate gas for a transaction (in cUSD)
   const estimateGas = async (tx: any): Promise<bigint> => {
     return await publicClient.estimateGas({
       ...tx,
@@ -62,6 +65,7 @@ export const useWeb3 = () => {
     });
   };
 
+  // Estimate gas price for a transaction (in cUSD)
   const estimateGasPrice = async (): Promise<bigint> => {
     const gasPriceHex = await publicClient.request({
       method: "eth_gasPrice",
@@ -70,12 +74,14 @@ export const useWeb3 = () => {
     return hexToBigInt(gasPriceHex);
   };
 
+  // Calculate transaction fees in cUSD
   const calculateTxFees = async (tx: any): Promise<bigint> => {
     const gasLimit = await estimateGas(tx);
     const gasPrice = await estimateGasPrice();
     return gasLimit * gasPrice;
   };
 
+  // Send cUSD to another address
   const sendCUSD = async (to: string, amount: string): Promise<string> => {
     if (!window.ethereum) throw new Error("No wallet found");
 
@@ -88,7 +94,7 @@ export const useWeb3 = () => {
     const amountInWei = parseEther(amount);
 
     const data = encodeFunctionData({
-      abi: StableTokenABI.abi,
+      abi: stableTokenABI,
       functionName: "transfer",
       args: [to, amountInWei],
     });
@@ -114,6 +120,7 @@ export const useWeb3 = () => {
     return hash;
   };
 
+  // Check if user has enough cUSD for a transaction
   const checkBalanceForTx = async (userAddress: string, amount: string) => {
     const balanceStr = await getCUSDBalance(userAddress);
     const balance = parseFloat(balanceStr);
