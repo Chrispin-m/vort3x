@@ -4,6 +4,7 @@ import {
   createWalletClient,
   custom,
   http,
+  parseUnits,
   parseEther,
   formatUnits,
   encodeFunctionData,
@@ -150,99 +151,106 @@ export const useWeb3 = () => {
   };
 
   // Find the first token with enough balance for the transfer + fees
-const findTokenWithBalance = async (
-  userAddress: `0x${string}`,
-  amount: string,
-  to: `0x${string}`  // recipient address
-): Promise<{ token: MiniPayToken; fees: bigint }> => {
-  // details for error reporting
-  const tokenDetails = [];
+  const findTokenWithBalance = async (
+    userAddress: `0x${string}`,
+    amount: string,
+    to: `0x${string}`  // recipient address
+  ): Promise<{ token: MiniPayToken; fees: bigint }> => {
+    //  token details for error reporting
+    const tokenDetails = [];
 
-  for (const token of TOKENS) {
-    const decimals = token.decimals;
-    const amountInWei = token.symbol === "CELO" 
-      ? parseEther(amount)
-      : BigInt(Math.floor(Number(amount) * 10 ** decimals);
-
-    const balance = await getTokenBalance(userAddress, token);
-
-    let feeCurrency: `0x${string}` | undefined = token.address;
-    if (token.symbol === "CELO") feeCurrency = undefined;
-
-    let dummyTx: {
-      account: `0x${string}`;
-      to: `0x${string}`;
-      data?: `0x${string}`;
-      value: bigint;
-      feeCurrency?: `0x${string}`;
-    };
-    
-    if (token.symbol === "CELO") {
-      dummyTx = {
-        account: userAddress,
-        to: to,
-        value: amountInWei,
-        feeCurrency: undefined,
-      };
-    } else {
-      dummyTx = {
-        account: userAddress,
-        to: token.address!,
-        data: encodeFunctionData({
-          abi: token.abi!,
-          functionName: "transfer",
-          args: [to, amountInWei],
-        }),
-        value: 0n,
-        feeCurrency: token.address!,
-      };
-    }
-
-    try {
-      const fees = await calculateTxFees(dummyTx, feeCurrency);
+    for (const token of TOKENS) {
+      let amountInWei: bigint;
       
-      if (token.symbol === "CELO") {
-        if (balance >= amountInWei + fees) {
-          return { token, fees };
+      try {
+        // parseUnits for consistent decimal handling
+        if (token.symbol === "CELO") {
+          amountInWei = parseEther(amount);
         } else {
-          // details for error reporting
-          tokenDetails.push({
-            symbol: token.symbol,
-            balance: balance.toString(),
-            needed: (amountInWei + fees).toString(),
-            fees: fees.toString()
-          });
+          amountInWei = parseUnits(amount, token.decimals);
         }
-      } else {
-        if (balance >= amountInWei) {
-          return { token, fees };
+
+        const balance = await getTokenBalance(userAddress, token);
+
+        let feeCurrency: `0x${string}` | undefined = token.address;
+        if (token.symbol === "CELO") feeCurrency = undefined;
+
+        let dummyTx: {
+          account: `0x${string}`;
+          to: `0x${string}`;
+          data?: `0x${string}`;
+          value: bigint;
+          feeCurrency?: `0x${string}`;
+        };
+        
+        if (token.symbol === "CELO") {
+          dummyTx = {
+            account: userAddress,
+            to: to,
+            value: amountInWei,
+            feeCurrency: undefined,
+          };
         } else {
-          // Store details for error reporting
-          tokenDetails.push({
-            symbol: token.symbol,
-            balance: balance.toString(),
-            needed: amountInWei.toString(),
-            fees: fees.toString()
-          });
+          dummyTx = {
+            account: userAddress,
+            to: token.address!,
+            data: encodeFunctionData({
+              abi: token.abi!,
+              functionName: "transfer",
+              args: [to, amountInWei],
+            }),
+            value: 0n,
+            feeCurrency: token.address!,
+          };
         }
+
+        const fees = await calculateTxFees(dummyTx, feeCurrency);
+        
+        if (token.symbol === "CELO") {
+          if (balance >= amountInWei + fees) {
+            return { token, fees };
+          } else {
+            //  details for error reporting
+            tokenDetails.push({
+              symbol: token.symbol,
+              balance: formatUnits(balance, token.decimals),
+              needed: formatUnits(amountInWei + fees, token.decimals),
+              fees: formatUnits(fees, token.decimals)
+            });
+          }
+        } else {
+          if (balance >= amountInWei) {
+            return { token, fees };
+          } else {
+            // details for error reporting
+            tokenDetails.push({
+              symbol: token.symbol,
+              balance: formatUnits(balance, token.decimals),
+              needed: formatUnits(amountInWei, token.decimals),
+              fees: formatUnits(fees, token.decimals)
+            });
+          }
+        }
+      } catch (error) {
+        console.warn(`Gas estimation failed for ${token.symbol}:`, error);
+        tokenDetails.push({
+          symbol: token.symbol,
+          error: "Gas estimation failed"
+        });
       }
-    } catch (error) {
-      console.warn(`Gas estimation failed for ${token.symbol}:`, error);
-      tokenDetails.push({
-        symbol: token.symbol,
-        error: "Gas estimation failed"
-      });
     }
-  }
+    
     const details = tokenDetails.map(t => 
-    `- ${t.symbol}: ${t.error ? t.error : `Balance: ${t.balance}, Needed: ${t.needed}, Fees: ${t.fees}`}`
-  ).join('\n');
-  
-  throw new Error(`Insufficient balance in all supported tokens.\nDetails:\n${details}`);
-};
+      t.error 
+        ? `- ${t.symbol}: ${t.error}`
+        : `- ${t.symbol}: Balance: ${t.balance}, Needed: ${t.needed}, Fees: ${t.fees}`
+    ).join('\n');
+    
+    throw new Error(`Insufficient balance in all supported tokens.\nDetails:\n${details}`);
+  };
 
   // Send token to another address (auto-selects token)
-  const sendToken = async (
+const sendToken = async (
     to: `0x${string}`,
     amount: string
   ): Promise<`0x${string}`> => {
@@ -259,12 +267,13 @@ const findTokenWithBalance = async (
 
     // Find which token to use (with actual recipient)
     const { token } = await findTokenWithBalance(userAddress, amount, to);
-    const decimals = token.decimals;
     
-    // FIX 4: Consistent amount parsing
-    const amountInWei = token.symbol === "CELO" 
-      ? parseEther(amount)
-      : BigInt(Math.floor(Number(amount) * 10 ** decimals));
+    let amountInWei: bigint;
+    if (token.symbol === "CELO") {
+      amountInWei = parseEther(amount);
+    } else {
+      amountInWei = parseUnits(amount, token.decimals);
+    }
 
     let txRequest: {
       account: `0x${string}`;
