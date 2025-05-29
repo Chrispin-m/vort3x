@@ -152,11 +152,16 @@ export const useWeb3 = () => {
   // Find the first token with enough balance for the transfer + fees
   const findTokenWithBalance = async (
     userAddress: `0x${string}`,
-    amount: string
+    amount: string,
+    to: `0x${string}`  // recipient address
   ): Promise<{ token: MiniPayToken; fees: bigint }> => {
     for (const token of TOKENS) {
       const decimals = token.decimals;
-      const amountInWei = BigInt(Math.floor(Number(amount) * 10 ** decimals));
+      //  parseEther for exact decimal handling
+      const amountInWei = token.symbol === "CELO" 
+        ? parseEther(amount)
+        : BigInt(Math.floor(Number(amount) * 10 ** decimals));
+
       const balance = await getTokenBalance(userAddress, token);
 
       let feeCurrency: `0x${string}` | undefined = token.address;
@@ -169,10 +174,12 @@ export const useWeb3 = () => {
         value: bigint;
         feeCurrency?: `0x${string}`;
       };
+      
+      // Fse actual recipient in dummy transaction
       if (token.symbol === "CELO") {
         dummyTx = {
           account: userAddress,
-          to: userAddress,
+          to: to,  // Actual recipient
           value: amountInWei,
           feeCurrency: undefined,
         };
@@ -180,19 +187,35 @@ export const useWeb3 = () => {
         dummyTx = {
           account: userAddress,
           to: token.address!,
+          // actual recipient in transfer call
           data: encodeFunctionData({
             abi: token.abi!,
             functionName: "transfer",
-            args: [userAddress, amountInWei],
+            args: [to, amountInWei],  // Actual recipient
           }),
           value: 0n,
           feeCurrency: token.address!,
         };
       }
-      const fees = await calculateTxFees(dummyTx, feeCurrency);
 
-      if (balance >= amountInWei + fees) {
-        return { token, fees };
+      try {
+        const fees = await calculateTxFees(dummyTx, feeCurrency);
+        
+        // FIX don't subtract fees from transfer amount
+        if (token.symbol === "CELO") {
+          // For CELO: balance must cover amount + fees
+          if (balance >= amountInWei + fees) {
+            return { token, fees };
+          }
+        } else {
+          // For ERC20: balance must cover amount (fees are separate)
+          if (balance >= amountInWei) {
+            return { token, fees };
+          }
+        }
+      } catch (error) {
+        console.warn(`Gas estimation failed for ${token.symbol}:`, error);
+        // Continue to next token if estimation fails
       }
     }
     throw new Error("Insufficient balance in all supported tokens.");
@@ -214,10 +237,14 @@ export const useWeb3 = () => {
       `0x${string}`
     ];
 
-    // Find which token to use
-    const { token } = await findTokenWithBalance(userAddress, amount);
+    // Find which token to use (with actual recipient)
+    const { token } = await findTokenWithBalance(userAddress, amount, to);
     const decimals = token.decimals;
-    const amountInWei = BigInt(Math.floor(Number(amount) * 10 ** decimals));
+    
+    // FIX 4: Consistent amount parsing
+    const amountInWei = token.symbol === "CELO" 
+      ? parseEther(amount)
+      : BigInt(Math.floor(Number(amount) * 10 ** decimals));
 
     let txRequest: {
       account: `0x${string}`;
@@ -263,10 +290,11 @@ export const useWeb3 = () => {
   // Check if user has enough balance for a transaction (auto-selects token)
   const checkBalanceForTx = async (
     userAddress: `0x${string}`,
-    amount: string
+    amount: string,
+    to: `0x${string}`  // Added recipient
   ): Promise<void> => {
     try {
-      await findTokenWithBalance(userAddress, amount);
+      await findTokenWithBalance(userAddress, amount, to);
     } catch (e: any) {
       throw new Error(e.message);
     }
