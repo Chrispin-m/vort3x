@@ -5,7 +5,7 @@ import {
   custom,
   http,
   parseEther,
-  formatEther,
+  formatUnits,
   encodeFunctionData,
   hexToBigInt,
 } from "viem";
@@ -14,7 +14,7 @@ import { stableTokenABI } from "@celo/abis";
 
 // Supported tokens for MiniPay (Alfajores addresses)
 type MiniPayToken = {
-  symbol: "cUSD" | "cEUR" | "cREAL" | "CELO";
+  symbol: "cUSD" | "cEUR" | "cREAL" | "CELO" | "USDC" | "USDT";
   address?: `0x${string}`; // for CELO
   decimals: number;
   abi?: typeof stableTokenABI; 
@@ -28,7 +28,7 @@ const TOKENS: MiniPayToken[] = [
   },
   {
     symbol: "cEUR",
-    address: "0x10c5b2b6d674c9e1e8a2a8c2e6b2f7c9e6c2e6c2",
+    address: "0x10c5b2b6d674c9e1e8a2a8c2e6b2f7c9e6c2e6c2", // Replace with actual cEUR address if needed
     decimals: 18,
     abi: stableTokenABI,
   },
@@ -39,6 +39,18 @@ const TOKENS: MiniPayToken[] = [
     abi: stableTokenABI,
   },
   {
+    symbol: "USDC",
+    address: "0x6cC083Aed9e7E6E5eB6bA0b7bA8eB5eE5b7eB5eE", // Replace with actual USDC address on Alfajores
+    decimals: 6,
+    abi: stableTokenABI,
+  },
+  {
+    symbol: "USDT",
+    address: "0x617f3112bf5397D0467D315cC709EF968D9ba546", // Replace with actual USDT address on Alfajores
+    decimals: 6,
+    abi: stableTokenABI,
+  },
+  {
     symbol: "CELO",
     address: undefined, // Native token
     decimals: 18,
@@ -46,7 +58,6 @@ const TOKENS: MiniPayToken[] = [
   },
 ];
 
-// Removed explicit PublicClient type annotation
 const publicClient = createPublicClient({
   chain: celoAlfajores,
   transport: http(),
@@ -75,17 +86,6 @@ export const useWeb3 = () => {
       return accounts[0];
     }
     throw new Error("No injected wallet found");
-  };
-
-  // Get cUSD balance for an address (for backward compatibility)
-  const getCUSDBalance = async (userAddress: `0x${string}`): Promise<string> => {
-    const balanceInWei: bigint = await publicClient.readContract({
-      abi: stableTokenABI,
-      address: TOKENS[0].address!,
-      functionName: "balanceOf",
-      args: [userAddress],
-    });
-    return formatEther(balanceInWei);
   };
 
   // Get token balance (internal)
@@ -154,8 +154,9 @@ export const useWeb3 = () => {
     userAddress: `0x${string}`,
     amount: string
   ): Promise<{ token: MiniPayToken; fees: bigint }> => {
-    const amountInWei = parseEther(amount);
     for (const token of TOKENS) {
+      const decimals = token.decimals;
+      const amountInWei = BigInt(Math.floor(Number(amount) * 10 ** decimals));
       const balance = await getTokenBalance(userAddress, token);
 
       let feeCurrency: `0x${string}` | undefined = token.address;
@@ -197,8 +198,8 @@ export const useWeb3 = () => {
     throw new Error("Insufficient balance in all supported tokens.");
   };
 
-  // Send cUSD to another address (now auto-selects token)
-  const sendCUSD = async (
+  // Send token to another address (auto-selects token)
+  const sendToken = async (
     to: `0x${string}`,
     amount: string
   ): Promise<`0x${string}`> => {
@@ -215,7 +216,8 @@ export const useWeb3 = () => {
 
     // Find which token to use
     const { token } = await findTokenWithBalance(userAddress, amount);
-    const amountInWei = parseEther(amount);
+    const decimals = token.decimals;
+    const amountInWei = BigInt(Math.floor(Number(amount) * 10 ** decimals));
 
     let txRequest: {
       account: `0x${string}`;
@@ -273,11 +275,10 @@ export const useWeb3 = () => {
   return {
     address,
     getUserAddress,
-    getCUSDBalance,
     estimateGas,
     estimateGasPrice,
     calculateTxFees,
-    sendCUSD,
+    sendToken,
     checkBalanceForTx,
   };
 };
