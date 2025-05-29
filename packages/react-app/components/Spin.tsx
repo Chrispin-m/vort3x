@@ -138,10 +138,10 @@ const Spin = () => {
       setUserAddress(address);
 
             // Check if the user has enough cUSD
-      await checkBalanceForTx(address, betAmount);
+      await checkBalanceForTx(address, betAmount, VortexAddress);
 
             // Send the cUSD transaction
-      const txHash = await sendToken(address, betAmount, VortexAddress);
+      const txHash = await sendToken(VortexAddress, betAmount);
       console.log(`Transaction successful: ${txHash}`);
       const response = await SpinEndSignature({
         hash:txHash,
