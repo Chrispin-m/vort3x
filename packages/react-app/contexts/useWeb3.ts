@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import {
   createPublicClient,
   createWalletClient,
@@ -66,14 +67,6 @@ const estimateGas = async (tx: any): Promise<bigint> => {
   });
 };
 
-  // Estimate gas price for a transaction (in cUSD)
-const estimateGasPrice = async (): Promise<bigint> => {
-    const gasPriceHex = await publicClient.request({
-      method: "eth_gasPrice",
-      params: [cUSDTokenAddress as `0x${string}`],
-  });
-    return hexToBigInt(gasPriceHex);
-};
 
   // Calculate transaction fees in cUSD
 const calculateTxFees = async (tx: any): Promise<bigint> => {
@@ -82,43 +75,60 @@ const calculateTxFees = async (tx: any): Promise<bigint> => {
     return gasLimit * gasPrice;
 };
 
-  // Send cUSD to another address
-const sendCUSD = async (to: string, amount: string): Promise<string> => {
-    if (!window.ethereum) throw new Error("No wallet found");
+// Estimate gas price for cUSD transactions
+const estimateGasPrice = async (): Promise<bigint> => {
+  // Viem’s built-in method to get the current gas price
+  return await publicClient.getGasPrice();
+};
 
-    const walletClient = createWalletClient({
-      transport: custom(window.ethereum),
-      chain: celoAlfajores,
+// Send cUSD
+const sendCUSD = async (
+  to: `0x${string}`,
+  amount: string
+): Promise<`0x${string}`> => {
+  if (!window.ethereum) throw new Error("No wallet found");
+
+  const walletClient = createWalletClient({
+    transport: custom(window.ethereum),
+    chain: celoAlfajores,
   });
 
-    const [userAddress] = await walletClient.getAddresses();
-    const amountInWei = parseEther(amount);
+  // getAddresses() returns Address[], so we cast to the template literal type
+  const [userAddress] = (await walletClient.getAddresses()) as [`0x${string}`];
 
-    const data = encodeFunctionData({
-      abi: stableTokenABI,
-      functionName: "transfer",
-      args: [to, amountInWei],
+  // parse the human-readable amount into wei (bigint)
+  const amountInWei: bigint = parseEther(amount);
+
+  // prepare the ERC-20 transfer data
+  const data = encodeFunctionData({
+    abi: stableTokenABI,
+    functionName: "transfer",
+    args: [to, amountInWei],
   });
 
-    const txRequest = {
-      account: userAddress,
-      to: cUSDTokenAddress,
-      data,
-      value: 0n,
-      feeCurrency: cUSDTokenAddress,
+  // build the transaction request, specifying feeCurrency for cUSD fees
+  const txRequest = {
+    account: userAddress,
+    to: cUSDTokenAddress as `0x${string}`,
+    data,
+    value: 0n,
+    feeCurrency: cUSDTokenAddress as `0x${string}`,
   };
 
-  const gas = await estimateGas(txRequest);
-  const gasPrice = await estimateGasPrice();
+  // estimate gas and gas price
+  const gas: bigint = await walletClient.estimateGas(txRequest);
+  const gasPrice: bigint = await estimateGasPrice();
 
+  // send the transaction
   const hash = await walletClient.sendTransaction({
-      ...txRequest,
-      gas,
-      maxFeePerGas: gasPrice,
-      maxPriorityFeePerGas: gasPrice,
+    ...txRequest,
+    gas,
+    maxFeePerGas: gasPrice,
+    maxPriorityFeePerGas: gasPrice,
   });
 
-  return hash;
+  // ensure the return type matches Viem’s `0x${string}` AddressHash
+  return hash as `0x${string}`;
 };
 
   // Check if user has enough cUSD for a transaction
