@@ -8,27 +8,35 @@ import {
   formatEther,
   encodeFunctionData,
   hexToBigInt,
+  PublicClient,
+  WalletClient,
 } from "viem";
 import { celoAlfajores } from "viem/chains";
 import { stableTokenABI } from "@celo/abis";
 
 // Supported tokens for MiniPay (Alfajores addresses)
-const TOKENS = [
+type MiniPayToken = {
+  symbol: "cUSD" | "cEUR" | "cREAL" | "CELO";
+  address?: `0x${string}`; // undefined for CELO
+  decimals: number;
+  abi?: typeof stableTokenABI; // undefined for CELO
+};
+const TOKENS: MiniPayToken[] = [
   {
     symbol: "cUSD",
-    address: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1" as `0x${string}`,
+    address: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1",
     decimals: 18,
     abi: stableTokenABI,
   },
   {
     symbol: "cEUR",
-    address: "0x10c5b2b6d674c9e1e8a2a8c2e6b2f7c9e6c2e6c2" as `0x${string}`,
+    address: "0x10c5b2b6d674c9e1e8a2a8c2e6b2f7c9e6c2e6c2", // Replace with actual cEUR address
     decimals: 18,
     abi: stableTokenABI,
   },
   {
     symbol: "cREAL",
-    address: "0xE4D517785D091D3c54818832dB6094bcc2744545" as `0x${string}`,
+    address: "0xE4D517785D091D3c54818832dB6094bcc2744545",
     decimals: 18,
     abi: stableTokenABI,
   },
@@ -40,7 +48,7 @@ const TOKENS = [
   },
 ];
 
-const publicClient = createPublicClient({
+const publicClient: PublicClient = createPublicClient({
   chain: celoAlfajores,
   transport: http(),
 });
@@ -58,7 +66,7 @@ export const useWeb3 = () => {
           params: [],
         });
       } else {
-        const walletClient = createWalletClient({
+        const walletClient: WalletClient = createWalletClient({
           transport: custom(window.ethereum),
           chain: celoAlfajores,
         });
@@ -74,7 +82,7 @@ export const useWeb3 = () => {
   const getCUSDBalance = async (userAddress: `0x${string}`): Promise<string> => {
     const balanceInWei: bigint = await publicClient.readContract({
       abi: stableTokenABI,
-      address: TOKENS[0].address, // cUSD
+      address: TOKENS[0].address!,
       functionName: "balanceOf",
       args: [userAddress],
     });
@@ -84,14 +92,14 @@ export const useWeb3 = () => {
   // Get token balance (internal)
   const getTokenBalance = async (
     userAddress: `0x${string}`,
-    token: typeof TOKENS[number]
+    token: MiniPayToken
   ): Promise<bigint> => {
     if (token.symbol === "CELO") {
       return await publicClient.getBalance({ address: userAddress });
     } else {
       return await publicClient.readContract({
         abi: token.abi!,
-        address: token.address,
+        address: token.address!,
         functionName: "balanceOf",
         args: [userAddress],
       });
@@ -103,7 +111,7 @@ export const useWeb3 = () => {
     tx: {
       account: `0x${string}`;
       to: `0x${string}`;
-      data: `0x${string}`;
+      data?: `0x${string}`;
       value: bigint;
       feeCurrency?: `0x${string}`;
     },
@@ -111,7 +119,7 @@ export const useWeb3 = () => {
   ): Promise<bigint> => {
     return await publicClient.estimateGas({
       ...tx,
-      feeCurrency: feeCurrency || undefined,
+      feeCurrency: feeCurrency,
     });
   };
 
@@ -119,6 +127,7 @@ export const useWeb3 = () => {
   const estimateGasPrice = async (
     feeCurrency?: `0x${string}`
   ): Promise<bigint> => {
+    // viem's publicClient.request is not public, so use transport.request
     const gasPriceHex = await (publicClient as any).transport.request({
       method: "eth_gasPrice",
       params: feeCurrency ? [feeCurrency] : [],
@@ -131,7 +140,7 @@ export const useWeb3 = () => {
     tx: {
       account: `0x${string}`;
       to: `0x${string}`;
-      data: `0x${string}`;
+      data?: `0x${string}`;
       value: bigint;
       feeCurrency?: `0x${string}`;
     },
@@ -146,24 +155,41 @@ export const useWeb3 = () => {
   const findTokenWithBalance = async (
     userAddress: `0x${string}`,
     amount: string
-  ) => {
+  ): Promise<{ token: MiniPayToken; fees: bigint }> => {
+    const amountInWei = parseEther(amount);
     for (const token of TOKENS) {
-      const amountInWei = parseEther(amount);
       const balance = await getTokenBalance(userAddress, token);
 
-      let feeCurrency = token.address;
+      let feeCurrency: `0x${string}` | undefined = token.address;
       if (token.symbol === "CELO") feeCurrency = undefined;
-      const dummyTx = {
-        account: userAddress,
-        to: token.symbol === "CELO" ? userAddress : token.address ?? userAddress,
-        data: token.symbol === "CELO" ? "0x" : encodeFunctionData({
-          abi: token.abi!,
-          functionName: "transfer",
-          args: [userAddress, amountInWei],
-        }),
-        value: token.symbol === "CELO" ? amountInWei : 0n,
-        feeCurrency,
+
+      let dummyTx: {
+        account: `0x${string}`;
+        to: `0x${string}`;
+        data?: `0x${string}`;
+        value: bigint;
+        feeCurrency?: `0x${string}`;
       };
+      if (token.symbol === "CELO") {
+        dummyTx = {
+          account: userAddress,
+          to: userAddress,
+          value: amountInWei,
+          feeCurrency: undefined,
+        };
+      } else {
+        dummyTx = {
+          account: userAddress,
+          to: token.address!,
+          data: encodeFunctionData({
+            abi: token.abi!,
+            functionName: "transfer",
+            args: [userAddress, amountInWei],
+          }),
+          value: 0n,
+          feeCurrency: token.address!,
+        };
+      }
       const fees = await calculateTxFees(dummyTx, feeCurrency);
 
       if (balance >= amountInWei + fees) {
@@ -180,7 +206,7 @@ export const useWeb3 = () => {
   ): Promise<`0x${string}`> => {
     if (!window.ethereum) throw new Error("No wallet found");
 
-    const walletClient = createWalletClient({
+    const walletClient: WalletClient = createWalletClient({
       transport: custom(window.ethereum),
       chain: celoAlfajores,
     });
@@ -193,7 +219,13 @@ export const useWeb3 = () => {
     const { token } = await findTokenWithBalance(userAddress, amount);
     const amountInWei = parseEther(amount);
 
-    let txRequest: any;
+    let txRequest: {
+      account: `0x${string}`;
+      to: `0x${string}`;
+      data?: `0x${string}`;
+      value: bigint;
+      feeCurrency?: `0x${string}`;
+    };
     if (token.symbol === "CELO") {
       txRequest = {
         account: userAddress,
@@ -202,17 +234,16 @@ export const useWeb3 = () => {
         feeCurrency: undefined,
       };
     } else {
-      const data = encodeFunctionData({
-        abi: token.abi!,
-        functionName: "transfer",
-        args: [to, amountInWei],
-      });
       txRequest = {
         account: userAddress,
-        to: token.address,
-        data,
+        to: token.address!,
+        data: encodeFunctionData({
+          abi: token.abi!,
+          functionName: "transfer",
+          args: [to, amountInWei],
+        }),
         value: 0n,
-        feeCurrency: token.address,
+        feeCurrency: token.address!,
       };
     }
 
@@ -233,7 +264,7 @@ export const useWeb3 = () => {
   const checkBalanceForTx = async (
     userAddress: `0x${string}`,
     amount: string
-  ) => {
+  ): Promise<void> => {
     try {
       await findTokenWithBalance(userAddress, amount);
     } catch (e: any) {
