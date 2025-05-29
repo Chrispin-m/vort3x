@@ -4,45 +4,39 @@ import {
   createWalletClient,
   custom,
   http,
-  parseUnits,
-  formatUnits,
+  parseEther,
+  formatEther,
   encodeFunctionData,
   hexToBigInt,
 } from "viem";
 import { celoAlfajores } from "viem/chains";
 import { stableTokenABI } from "@celo/abis";
 
-// Supported MiniPay tokens on Alfajores
+// Supported tokens for MiniPay (Alfajores addresses)
 const TOKENS = [
   {
     symbol: "cUSD",
-    address: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1",
+    address: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1" as `0x${string}`,
     decimals: 18,
     abi: stableTokenABI,
   },
   {
     symbol: "cEUR",
-    address: "0x10c5b2a4c1e5c8b2e0d0b2d2c2e0b2c2e0d0b2d2",
+    address: "0x10c5b2b6d674c9e1e8a2a8c2e6b2f7c9e6c2e6c2" as `0x${string}`,
     decimals: 18,
     abi: stableTokenABI,
   },
   {
     symbol: "cREAL",
-    address: "0xe4D517785D091D3c54818832dB6094bcc2744545",
+    address: "0xE4D517785D091D3c54818832dB6094bcc2744545" as `0x${string}`,
     decimals: 18,
     abi: stableTokenABI,
   },
   {
-    symbol: "USDC",
-    address: "0x6cC083Aed9eA5eE3b0b4cB5fC5a5e5e3b0b4cB5f",
-    decimals: 6,
-    abi: stableTokenABI,
-  },
-  {
-    symbol: "USDT",
-    address: "0x1cFb1e0f3e0b2c2e0d0b2d2c2e0b2c2e0d0b2d2c",
-    decimals: 6,
-    abi: stableTokenABI,
+    symbol: "CELO",
+    address: undefined, // Native token
+    decimals: 18,
+    abi: undefined,
   },
 ];
 
@@ -76,61 +70,114 @@ export const useWeb3 = () => {
     throw new Error("No injected wallet found");
   };
 
-  // Get token balance for an address
-  const getTokenBalance = async (
-    token: typeof TOKENS[number],
-    userAddress: `0x${string}`
-  ): Promise<string> => {
+  // Get cUSD balance for an address (for backward compatibility)
+  const getCUSDBalance = async (userAddress: `0x${string}`): Promise<string> => {
     const balanceInWei: bigint = await publicClient.readContract({
-      abi: token.abi,
-      address: token.address,
+      abi: stableTokenABI,
+      address: TOKENS[0].address, // cUSD
       functionName: "balanceOf",
       args: [userAddress],
     });
-    return formatUnits(balanceInWei, token.decimals);
+    return formatEther(balanceInWei);
+  };
+
+  // Get token balance (internal)
+  const getTokenBalance = async (
+    userAddress: `0x${string}`,
+    token: typeof TOKENS[number]
+  ): Promise<bigint> => {
+    if (token.symbol === "CELO") {
+      return await publicClient.getBalance({ address: userAddress });
+    } else {
+      return await publicClient.readContract({
+        abi: token.abi!,
+        address: token.address,
+        functionName: "balanceOf",
+        args: [userAddress],
+      });
+    }
   };
 
   // Estimate gas for a transaction (in a given token)
-  const estimateGas = async (tx: {
-    account: `0x${string}`;
-    to: `0x${string}`;
-    data: `0x${string}`;
-    value: bigint;
-    feeCurrency: `0x${string}`;
-  }): Promise<bigint> => {
+  const estimateGas = async (
+    tx: {
+      account: `0x${string}`;
+      to: `0x${string}`;
+      data: `0x${string}`;
+      value: bigint;
+      feeCurrency?: `0x${string}`;
+    },
+    feeCurrency?: `0x${string}`
+  ): Promise<bigint> => {
     return await publicClient.estimateGas({
       ...tx,
-      feeCurrency: tx.feeCurrency,
+      feeCurrency: feeCurrency || undefined,
     });
   };
 
   // Estimate gas price for a transaction (in a given token)
-  const estimateGasPrice = async (feeCurrency: `0x${string}`): Promise<bigint> => {
-    const gasPriceHex = await (publicClient as any).request({
+  const estimateGasPrice = async (
+    feeCurrency?: `0x${string}`
+  ): Promise<bigint> => {
+    const gasPriceHex = await (publicClient as any).transport.request({
       method: "eth_gasPrice",
-      params: [feeCurrency],
+      params: feeCurrency ? [feeCurrency] : [],
     });
     return hexToBigInt(gasPriceHex as `0x${string}`);
   };
 
-  // transaction fees in a given token
-  const calculateTxFees = async (tx: {
-    account: `0x${string}`;
-    to: `0x${string}`;
-    data: `0x${string}`;
-    value: bigint;
-    feeCurrency: `0x${string}`;
-  }): Promise<bigint> => {
-    const gasLimit = await estimateGas(tx);
-    const gasPrice = await estimateGasPrice(tx.feeCurrency);
+  // Calculate transaction fees in a given token
+  const calculateTxFees = async (
+    tx: {
+      account: `0x${string}`;
+      to: `0x${string}`;
+      data: `0x${string}`;
+      value: bigint;
+      feeCurrency?: `0x${string}`;
+    },
+    feeCurrency?: `0x${string}`
+  ): Promise<bigint> => {
+    const gasLimit = await estimateGas(tx, feeCurrency);
+    const gasPrice = await estimateGasPrice(feeCurrency);
     return gasLimit * gasPrice;
   };
 
-  // Send tokens to another address, choosing the first token with enough balance
-  const sendToken = async (
+  // Find the first token with enough balance for the transfer + fees
+  const findTokenWithBalance = async (
+    userAddress: `0x${string}`,
+    amount: string
+  ) => {
+    for (const token of TOKENS) {
+      const amountInWei = parseEther(amount);
+      const balance = await getTokenBalance(userAddress, token);
+
+      let feeCurrency = token.address;
+      if (token.symbol === "CELO") feeCurrency = undefined;
+      const dummyTx = {
+        account: userAddress,
+        to: token.symbol === "CELO" ? userAddress : token.address ?? userAddress,
+        data: token.symbol === "CELO" ? "0x" : encodeFunctionData({
+          abi: token.abi!,
+          functionName: "transfer",
+          args: [userAddress, amountInWei],
+        }),
+        value: token.symbol === "CELO" ? amountInWei : 0n,
+        feeCurrency,
+      };
+      const fees = await calculateTxFees(dummyTx, feeCurrency);
+
+      if (balance >= amountInWei + fees) {
+        return { token, fees };
+      }
+    }
+    throw new Error("Insufficient balance in all supported tokens.");
+  };
+
+  // Send cUSD to another address (now auto-selects token)
+  const sendCUSD = async (
     to: `0x${string}`,
     amount: string
-  ): Promise<{ hash: `0x${string}`; token: string }> => {
+  ): Promise<`0x${string}`> => {
     if (!window.ethereum) throw new Error("No wallet found");
 
     const walletClient = createWalletClient({
@@ -138,67 +185,70 @@ export const useWeb3 = () => {
       chain: celoAlfajores,
     });
 
-    const [userAddress] = (await walletClient.getAddresses()) as [`0x${string}`];
+    const [userAddress] = (await walletClient.getAddresses()) as [
+      `0x${string}`
+    ];
 
-    // Find the first token with enough balance
-    for (const token of TOKENS) {
-      const balanceInWei: bigint = await publicClient.readContract({
-        abi: token.abi,
-        address: token.address,
-        functionName: "balanceOf",
-        args: [userAddress],
+    // Find which token to use
+    const { token } = await findTokenWithBalance(userAddress, amount);
+    const amountInWei = parseEther(amount);
+
+    let txRequest: any;
+    if (token.symbol === "CELO") {
+      txRequest = {
+        account: userAddress,
+        to,
+        value: amountInWei,
+        feeCurrency: undefined,
+      };
+    } else {
+      const data = encodeFunctionData({
+        abi: token.abi!,
+        functionName: "transfer",
+        args: [to, amountInWei],
       });
-      const amountInWei = parseUnits(amount, token.decimals);
-
-      if (balanceInWei >= amountInWei) {
-        const data = encodeFunctionData({
-          abi: token.abi,
-          functionName: "transfer",
-          args: [to, amountInWei],
-        });
-
-        const txRequest = {
-          account: userAddress,
-          to: token.address,
-          data,
-          value: 0n,
-          feeCurrency: token.address as `0x${string}`,
-        };
-
-        const gas = await estimateGas(txRequest);
-        const gasPrice = await estimateGasPrice(token.address as `0x${string}`);
-
-        const hash = await walletClient.sendTransaction({
-          ...txRequest,
-          gas,
-          maxFeePerGas: gasPrice,
-          maxPriorityFeePerGas: gasPrice,
-        });
-
-        return { hash: hash as `0x${string}`, token: token.symbol };
-      }
+      txRequest = {
+        account: userAddress,
+        to: token.address,
+        data,
+        value: 0n,
+        feeCurrency: token.address,
+      };
     }
 
-    throw new Error("Insufficient balance in all supported tokens.");
+    const gas = await estimateGas(txRequest, txRequest.feeCurrency);
+    const gasPrice = await estimateGasPrice(txRequest.feeCurrency);
+
+    const hash = await walletClient.sendTransaction({
+      ...txRequest,
+      gas,
+      maxFeePerGas: gasPrice,
+      maxPriorityFeePerGas: gasPrice,
+    });
+
+    return hash as `0x${string}`;
   };
 
-  // Check balances for all tokens
-  const getAllBalances = async (userAddress: `0x${string}`) => {
-    const balances: Record<string, string> = {};
-    for (const token of TOKENS) {
-      balances[token.symbol] = await getTokenBalance(token, userAddress);
+  // Check if user has enough balance for a transaction (auto-selects token)
+  const checkBalanceForTx = async (
+    userAddress: `0x${string}`,
+    amount: string
+  ) => {
+    try {
+      await findTokenWithBalance(userAddress, amount);
+    } catch (e: any) {
+      throw new Error(e.message);
     }
-    return balances;
   };
 
   return {
     address,
     getUserAddress,
-    getTokenBalance,
-    getAllBalances,
+    getCUSDBalance,
     estimateGas,
     estimateGasPrice,
     calculateTxFees,
-    sendToken,
+    sendCUSD, // supports all tokens
+    checkBalanceForTx,
   };
 };
