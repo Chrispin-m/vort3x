@@ -68,15 +68,15 @@ export const useWeb3 = () => {
       feeCurrency: cUSDTokenAddress,
     });
   };
+const estimateGasPrice = async (): Promise<bigint> => {
+  // @ts-expect-error: Celo-specific extension to eth_gasPrice
+  const gasPriceHex = await publicClient.transport.request({
+    method: "eth_gasPrice",
+    params: [cUSDTokenAddress],
+  });
+  return hexToBigInt(gasPriceHex as `0x${string}`);
+};
 
-  // Estimate gas price for a transaction (in cUSD)
-  const estimateGasPrice = async (): Promise<bigint> => {
-    const gasPriceHex = await publicClient.request({
-      method: "eth_gasPrice",
-      params: [cUSDTokenAddress] as [`0x${string}`],
-    });
-    return hexToBigInt(gasPriceHex as `0x${string}`);
-  };
 
   // Calculate transaction fees in cUSD
   const calculateTxFees = async (tx: {
