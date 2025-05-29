@@ -123,16 +123,27 @@ const sendCUSD = async (to: string, amount: string): Promise<string> => {
 
   // Check if user has enough cUSD for a transaction
 const checkBalanceForTx = async (userAddress: string, amount: string) => {
-    const balanceStr = await getCUSDBalance(userAddress);
-    const balance = parseFloat(balanceStr);
-    const amountNeeded = parseFloat(amount);
+  // fetch raw cUSD balance in wei (bigint)
+  const balanceInWei: bigint = await publicClient.readContract({
+    abi: stableTokenABI,
+    address: cUSDTokenAddress,
+    functionName: "balanceOf",
+    args: [userAddress as `0x${string}`],
+  });
 
-    if (balance < amountNeeded) {
-      throw new Error(
-  `Insufficient balance: Required ${amountNeeded} cUSD, but only ${balance} cUSD available.`
-  );
+  // parse the requested cUSD amount into wei
+  const amountInWei: bigint = parseEther(amount);
+
+  // compare bigints directly
+  if (balanceInWei < amountInWei) {
+    const balanceReadable = formatEther(balanceInWei);
+    const requiredReadable = formatEther(amountInWei);
+    throw new Error(
+      `Insufficient balance: Required ${requiredReadable} cUSD, but only ${balanceReadable} cUSD available.`
+    );
   }
 };
+
 
 return {
     address,
