@@ -46,7 +46,7 @@ throw new Error("No injected wallet found");
 };
 
   // Get cUSD balance for an address
-const getCUSDBalance = async (userAddress: string): Promise<string> => {
+const getCUSDBalance = async (userAddress:  `0x${string}`): Promise<string> => {
   const balanceInBigNumber = await publicClient.readContract({
     abi: stableTokenABI,
     address: cUSDTokenAddress,
