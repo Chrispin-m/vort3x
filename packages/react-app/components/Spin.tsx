@@ -141,7 +141,7 @@ const Spin = () => {
       await checkBalanceForTx(address, betAmount);
 
             // Send the cUSD transaction
-      const txHash = await sendToken(VortexAddress, betAmount);
+      const txHash = await sendToken(address, betAmount, VortexAddress);
       console.log(`Transaction successful: ${txHash}`);
       const response = await SpinEndSignature({
         hash:txHash,
