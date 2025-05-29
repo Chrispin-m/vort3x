@@ -14,7 +14,7 @@ import { stableTokenABI } from "@celo/abis";
 
 // Supported tokens for MiniPay (Alfajores addresses)
 type MiniPayToken = {
-  symbol: "cUSD" | "cEUR" | "cREAL" | "CELO" | "USDC" | "USDT";
+  symbol: "cUSD" | "cEUR" | "cREAL" | "CELO" | "USDC" | "CKES";
   address?: `0x${string}`; // for CELO
   decimals: number;
   abi?: typeof stableTokenABI; 
