@@ -14,9 +14,9 @@ export interface SpinWithSigner {
 }
 
 export interface SpinEndSignatureWithHash {
-  hash: string;
+  txhash: string;
   value: string;
-  userAddress: string;
+  address: string;
 }
 
 export async function SpinEndPoint({
