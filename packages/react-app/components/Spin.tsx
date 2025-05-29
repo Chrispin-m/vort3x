@@ -145,7 +145,7 @@ const Spin = () => {
       console.log(`Transaction successful: ${txHash}`);
       const response = await SpinEndSignature({
         hash:txHash,
-        value: selectedBetAmount.toString(),
+        value: selectedBetAmount,
         userAddress: address,
       });
       console.log("responses", response.data);
@@ -215,7 +215,7 @@ const Spin = () => {
 
   <button
   className="spin-button"
-  onClick={() => spinWheel(selectedBetAmount, recipientAddress)}
+  onClick={() => spinWheel(selectedBetAmount.toString(), recipientAddress)}
   disabled={isSpinning}
   >
   <div className="pointer"></div>
