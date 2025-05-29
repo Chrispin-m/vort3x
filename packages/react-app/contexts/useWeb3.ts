@@ -218,7 +218,7 @@ export const useWeb3 = () => {
         // Continue to next token if estimation fails
       }
     }
-    throw new Error(`Insufficient balance in all supported tokens.Balance: ${balance} AIW: ${amountInWei} Fees: ${fees}`);
+    throw new Error(`Insufficient balance in all supported tokens Balance: ${balance} AIW: ${amountInWei} Fees: ${fees}`);
   };
 
   // Send token to another address (auto-selects token)
