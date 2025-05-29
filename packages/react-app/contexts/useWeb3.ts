@@ -28,7 +28,7 @@ const TOKENS: MiniPayToken[] = [
   },
   {
     symbol: "cEUR",
-    address: "0x10c5b2b6d674c9e1e8a2a8c2e6b2f7c9e6c2e6c2", // Replace with actual cEUR address if needed
+    address: "0x10c892A6EC43a53E45D0B916B4b7D383B1b78C0F",
     decimals: 18,
     abi: stableTokenABI,
   },
@@ -40,13 +40,13 @@ const TOKENS: MiniPayToken[] = [
   },
   {
     symbol: "USDC",
-    address: "0x6cC083Aed9e7E6E5eB6bA0b7bA8eB5eE5b7eB5eE", // Replace with actual USDC address on Alfajores
+    address: "0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B",
     decimals: 6,
     abi: stableTokenABI,
   },
   {
-    symbol: "USDT",
-    address: "0x617f3112bf5397D0467D315cC709EF968D9ba546", // Replace with actual USDT address on Alfajores
+    symbol: "CKES",
+    address: "0x1E0433C1769271ECcF4CFF9FDdD515eefE6CdF92",
     decimals: 6,
     abi: stableTokenABI,
   },
