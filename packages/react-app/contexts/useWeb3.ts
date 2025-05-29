@@ -70,7 +70,7 @@ const estimateGas = async (tx: any): Promise<bigint> => {
 const estimateGasPrice = async (): Promise<bigint> => {
     const gasPriceHex = await publicClient.request({
       method: "eth_gasPrice",
-      params: [cUSDTokenAddress],
+      params: [cUSDTokenAddress as `0x${string}`],
   });
     return hexToBigInt(gasPriceHex);
 };
