@@ -14,9 +14,9 @@ export interface SpinWithSigner {
 }
 
 export interface SpinEndSignatureWithHash {
-  txhash: string;
+  hash: string;
   value: string;
-  address: string;
+  userAddress: string;
 }
 
 export async function SpinEndPoint({
@@ -44,9 +44,9 @@ export async function SpinEndPoinSigner({
 }
 
 export async function SpinEndSignature({
-  hash,
+  txhash,
   value,
-  userAddress
+  address
 }: SpinEndSignatureWithHash) {
   const resp = await axios.post(
     `${BASE}/Spinsignwithhash`,
