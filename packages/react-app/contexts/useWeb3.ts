@@ -150,76 +150,96 @@ export const useWeb3 = () => {
   };
 
   // Find the first token with enough balance for the transfer + fees
-  const findTokenWithBalance = async (
-    userAddress: `0x${string}`,
-    amount: string,
-    to: `0x${string}`  // recipient address
-  ): Promise<{ token: MiniPayToken; fees: bigint }> => {
-    for (const token of TOKENS) {
-      const decimals = token.decimals;
-      //  parseEther for exact decimal handling
-      const amountInWei = token.symbol === "CELO" 
-        ? parseEther(amount)
-        : BigInt(Math.floor(Number(amount) * 10 ** decimals));
+const findTokenWithBalance = async (
+  userAddress: `0x${string}`,
+  amount: string,
+  to: `0x${string}`  // recipient address
+): Promise<{ token: MiniPayToken; fees: bigint }> => {
+  // details for error reporting
+  const tokenDetails = [];
 
-      const balance = await getTokenBalance(userAddress, token);
+  for (const token of TOKENS) {
+    const decimals = token.decimals;
+    const amountInWei = token.symbol === "CELO" 
+      ? parseEther(amount)
+      : BigInt(Math.floor(Number(amount) * 10 ** decimals);
 
-      let feeCurrency: `0x${string}` | undefined = token.address;
-      if (token.symbol === "CELO") feeCurrency = undefined;
+    const balance = await getTokenBalance(userAddress, token);
 
-      let dummyTx: {
-        account: `0x${string}`;
-        to: `0x${string}`;
-        data?: `0x${string}`;
-        value: bigint;
-        feeCurrency?: `0x${string}`;
+    let feeCurrency: `0x${string}` | undefined = token.address;
+    if (token.symbol === "CELO") feeCurrency = undefined;
+
+    let dummyTx: {
+      account: `0x${string}`;
+      to: `0x${string}`;
+      data?: `0x${string}`;
+      value: bigint;
+      feeCurrency?: `0x${string}`;
+    };
+    
+    if (token.symbol === "CELO") {
+      dummyTx = {
+        account: userAddress,
+        to: to,
+        value: amountInWei,
+        feeCurrency: undefined,
       };
-      
-      // Fse actual recipient in dummy transaction
-      if (token.symbol === "CELO") {
-        dummyTx = {
-          account: userAddress,
-          to: to,  // Actual recipient
-          value: amountInWei,
-          feeCurrency: undefined,
-        };
-      } else {
-        dummyTx = {
-          account: userAddress,
-          to: token.address!,
-          // actual recipient in transfer call
-          data: encodeFunctionData({
-            abi: token.abi!,
-            functionName: "transfer",
-            args: [to, amountInWei],  // Actual recipient
-          }),
-          value: 0n,
-          feeCurrency: token.address!,
-        };
-      }
-
-      try {
-        const fees = await calculateTxFees(dummyTx, feeCurrency);
-        
-        // FIX don't subtract fees from transfer amount
-        if (token.symbol === "CELO") {
-          // For CELO: balance must cover amount + fees
-          if (balance >= amountInWei + fees) {
-            return { token, fees };
-          }
-        } else {
-          // For ERC20: balance must cover amount (fees are separate)
-          if (balance >= amountInWei) {
-            return { token, fees };
-          }
-        }
-      } catch (error) {
-        console.warn(`Gas estimation failed for ${token.symbol}:`, error);
-        // Continue to next token if estimation fails
-      }
+    } else {
+      dummyTx = {
+        account: userAddress,
+        to: token.address!,
+        data: encodeFunctionData({
+          abi: token.abi!,
+          functionName: "transfer",
+          args: [to, amountInWei],
+        }),
+        value: 0n,
+        feeCurrency: token.address!,
+      };
     }
-    throw new Error(`Insufficient balance in all supported tokens Balance: ${balance} AIW: ${amountInWei} Fees: ${fees}`);
-  };
+
+    try {
+      const fees = await calculateTxFees(dummyTx, feeCurrency);
+      
+      if (token.symbol === "CELO") {
+        if (balance >= amountInWei + fees) {
+          return { token, fees };
+        } else {
+          // details for error reporting
+          tokenDetails.push({
+            symbol: token.symbol,
+            balance: balance.toString(),
+            needed: (amountInWei + fees).toString(),
+            fees: fees.toString()
+          });
+        }
+      } else {
+        if (balance >= amountInWei) {
+          return { token, fees };
+        } else {
+          // Store details for error reporting
+          tokenDetails.push({
+            symbol: token.symbol,
+            balance: balance.toString(),
+            needed: amountInWei.toString(),
+            fees: fees.toString()
+          });
+        }
+      }
+    } catch (error) {
+      console.warn(`Gas estimation failed for ${token.symbol}:`, error);
+      tokenDetails.push({
+        symbol: token.symbol,
+        error: "Gas estimation failed"
+      });
+    }
+  }
+    const details = tokenDetails.map(t => 
+    `- ${t.symbol}: ${t.error ? t.error : `Balance: ${t.balance}, Needed: ${t.needed}, Fees: ${t.fees}`}`
+  ).join('\n');
+  
+  throw new Error(`Insufficient balance in all supported tokens.\nDetails:\n${details}`);
+};
 
   // Send token to another address (auto-selects token)
   const sendToken = async (
