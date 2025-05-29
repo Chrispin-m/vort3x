@@ -27,7 +27,7 @@ interface Prize {
 }
 
 const Spin = () => {
-  const { getUserAddress, sendToken, checkBalanceForTx } = useWeb3();
+  const { getUserAddress, sendCUSD, checkBalanceForTx } = useWeb3();
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [selectedBetAmount, setSelectedBetAmount] = useState<number>(1);
   const [prizes, setPrizes] = useState([
@@ -142,6 +142,7 @@ const Spin = () => {
 
             // Send the cUSD transaction
       const txHash = await sendCUSD(VortexAddress, betAmount);
+      console.log(`Transaction successful: ${txHash}`);
       const response = await SpinEndSignature({
         hash:txHash,
         value: betAmount,
