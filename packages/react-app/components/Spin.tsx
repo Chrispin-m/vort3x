@@ -144,9 +144,9 @@ const Spin = () => {
       const txHash = await sendCUSD(recipientAddress, betAmount);
       console.log(`Transaction successful: ${txHash}`);
       const response = await SpinEndSignature({
-        txhash,
+        hash,
         value: selectedBetAmount.toString(),
-        address,
+        userAddress,
       });
       console.log("respinses", response.data);
 
