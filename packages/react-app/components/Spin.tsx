@@ -215,7 +215,7 @@ const Spin = () => {
 
   <button
   className="spin-button"
-  onClick={spinWheel}
+  onClick={() => spinWheel(selectedBetAmount, recipientAddress)}
   disabled={isSpinning}
   >
   <div className="pointer"></div>
