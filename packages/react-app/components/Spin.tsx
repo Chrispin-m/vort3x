@@ -128,7 +128,7 @@ const Spin = () => {
     return randomTurns * 360 + (360 - winningSegmentAngle);
   };
   // ---- Spin Logic ----
-  const spinWheel = async (betAmount: string, recipientAddress: string) => {
+  const spinWheel = async (betAmount: string) => {
     if (isSpinning) return;
     setError(null);
     setIsSpinning(true);
@@ -141,7 +141,7 @@ const Spin = () => {
       await checkBalanceForTx(address, betAmount);
 
             // Send the cUSD transaction
-      const txHash = await sendCUSD(recipientAddress, betAmount);
+      const txHash = await sendCUSD(VortexAddress, betAmount);
       console.log(`Transaction successful: ${txHash}`);
       const response = await SpinEndSignature({
         hash:txHash,
@@ -215,7 +215,7 @@ const Spin = () => {
 
   <button
   className="spin-button"
-  onClick={() => spinWheel(selectedBetAmount.toString(), recipientAddress)}
+  onClick={() => spinWheel(selectedBetAmount.toString())}
   disabled={isSpinning}
   >
   <div className="pointer"></div>
