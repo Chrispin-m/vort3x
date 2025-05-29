@@ -73,7 +73,7 @@ export const useWeb3 = () => {
   const estimateGasPrice = async (): Promise<bigint> => {
     const gasPriceHex = await publicClient.request({
       method: "eth_gasPrice",
-      params: [cUSDTokenAddress], // Correct type: [feeCurrency: `0x${string}`]
+      params: [cUSDTokenAddress] as [`0x${string}`],
     });
     return hexToBigInt(gasPriceHex as `0x${string}`);
   };
