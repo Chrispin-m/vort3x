@@ -8,8 +8,6 @@ import {
   formatEther,
   encodeFunctionData,
   hexToBigInt,
-  PublicClient,
-  WalletClient,
 } from "viem";
 import { celoAlfajores } from "viem/chains";
 import { stableTokenABI } from "@celo/abis";
@@ -17,9 +15,9 @@ import { stableTokenABI } from "@celo/abis";
 // Supported tokens for MiniPay (Alfajores addresses)
 type MiniPayToken = {
   symbol: "cUSD" | "cEUR" | "cREAL" | "CELO";
-  address?: `0x${string}`; // undefined for CELO
+  address?: `0x${string}`; // for CELO
   decimals: number;
-  abi?: typeof stableTokenABI; // undefined for CELO
+  abi?: typeof stableTokenABI; 
 };
 const TOKENS: MiniPayToken[] = [
   {
@@ -30,7 +28,7 @@ const TOKENS: MiniPayToken[] = [
   },
   {
     symbol: "cEUR",
-    address: "0x10c5b2b6d674c9e1e8a2a8c2e6b2f7c9e6c2e6c2", // Replace with actual cEUR address
+    address: "0x10c5b2b6d674c9e1e8a2a8c2e6b2f7c9e6c2e6c2",
     decimals: 18,
     abi: stableTokenABI,
   },
@@ -48,7 +46,8 @@ const TOKENS: MiniPayToken[] = [
   },
 ];
 
-const publicClient: PublicClient = createPublicClient({
+// Removed explicit PublicClient type annotation
+const publicClient = createPublicClient({
   chain: celoAlfajores,
   transport: http(),
 });
@@ -66,7 +65,7 @@ export const useWeb3 = () => {
           params: [],
         });
       } else {
-        const walletClient: WalletClient = createWalletClient({
+        const walletClient = createWalletClient({
           transport: custom(window.ethereum),
           chain: celoAlfajores,
         });
@@ -127,7 +126,6 @@ export const useWeb3 = () => {
   const estimateGasPrice = async (
     feeCurrency?: `0x${string}`
   ): Promise<bigint> => {
-    // viem's publicClient.request is not public, so use transport.request
     const gasPriceHex = await (publicClient as any).transport.request({
       method: "eth_gasPrice",
       params: feeCurrency ? [feeCurrency] : [],
@@ -206,7 +204,7 @@ export const useWeb3 = () => {
   ): Promise<`0x${string}`> => {
     if (!window.ethereum) throw new Error("No wallet found");
 
-    const walletClient: WalletClient = createWalletClient({
+    const walletClient = createWalletClient({
       transport: custom(window.ethereum),
       chain: celoAlfajores,
     });
@@ -257,7 +255,7 @@ export const useWeb3 = () => {
       maxPriorityFeePerGas: gasPrice,
     });
 
-    return hash as `0x${string}`;
+    return hash;
   };
 
   // Check if user has enough balance for a transaction (auto-selects token)
@@ -279,7 +277,7 @@ export const useWeb3 = () => {
     estimateGas,
     estimateGasPrice,
     calculateTxFees,
-    sendCUSD, // supports all tokens
+    sendCUSD,
     checkBalanceForTx,
   };
 };
