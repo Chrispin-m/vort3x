@@ -30,75 +30,72 @@ export const useWeb3 = () => {
         accounts = await window.ethereum.request({
           method: "eth_requestAccounts",
           params: [],
-        });
-      } else {
+      });
+    } else {
         const walletClient = createWalletClient({
           transport: custom(window.ethereum),
           chain: celoAlfajores,
-        });
+      });
         accounts = (await walletClient.getAddresses()) as `0x${string}`[];
-      }
-      setAddress(accounts[0]);
-      return accounts[0];
     }
-    throw new Error("No injected wallet found");
-  };
+    setAddress(accounts[0]);
+    return accounts[0];
+}
+throw new Error("No injected wallet found");
+};
 
   // Get cUSD balance for an address
-  const getCUSDBalance = async (userAddress: `0x${string}`): Promise<string> => {
+const getCUSDBalance = async (userAddress: `0x${string}`): Promise<string> => {
     const balanceInWei: bigint = await publicClient.readContract({
       abi: stableTokenABI,
       address: cUSDTokenAddress,
       functionName: "balanceOf",
       args: [userAddress],
-    });
+  });
     return formatEther(balanceInWei);
-  };
+};
 
   // Estimate gas for a transaction (in cUSD)
-  const estimateGas = async (tx: {
+const estimateGas = async (tx: {
     account: `0x${string}`;
     to: `0x${string}`;
     data: `0x${string}`;
     value: bigint;
     feeCurrency: `0x${string}`;
-  }): Promise<bigint> => {
+}): Promise<bigint> => {
     return await publicClient.estimateGas({
       ...tx,
       feeCurrency: cUSDTokenAddress,
-    });
-  };
+  });
+};
 const estimateGasPrice = async (): Promise<bigint> => {
-  // @ts-expect-error: Celo-specific extension to eth_gasPrice
-  const gasPriceHex = await publicClient.transport.request({
-    method: "eth_gasPrice",
-    params: [cUSDTokenAddress],
+  const gasPriceHex = await (publicClient as any).request({
+      method: "eth_gasPrice",
+      params: [cUSDTokenAddress],
   });
   return hexToBigInt(gasPriceHex as `0x${string}`);
 };
-
-
   // Calculate transaction fees in cUSD
-  const calculateTxFees = async (tx: {
+const calculateTxFees = async (tx: {
     account: `0x${string}`;
     to: `0x${string}`;
     data: `0x${string}`;
     value: bigint;
     feeCurrency: `0x${string}`;
-  }): Promise<bigint> => {
+}): Promise<bigint> => {
     const gasLimit = await estimateGas(tx);
     const gasPrice = await estimateGasPrice();
     return gasLimit * gasPrice;
-  };
+};
 
   // Send cUSD to another address
-  const sendCUSD = async (to: `0x${string}`, amount: string): Promise<`0x${string}`> => {
+const sendCUSD = async (to: `0x${string}`, amount: string): Promise<`0x${string}`> => {
     if (!window.ethereum) throw new Error("No wallet found");
 
     const walletClient = createWalletClient({
       transport: custom(window.ethereum),
       chain: celoAlfajores,
-    });
+  });
 
     const [userAddress] = (await walletClient.getAddresses()) as [`0x${string}`];
     const amountInWei = parseEther(amount);
@@ -107,7 +104,7 @@ const estimateGasPrice = async (): Promise<bigint> => {
       abi: stableTokenABI,
       functionName: "transfer",
       args: [to, amountInWei],
-    });
+  });
 
     const txRequest = {
       account: userAddress,
@@ -115,29 +112,29 @@ const estimateGasPrice = async (): Promise<bigint> => {
       data,
       value: 0n,
       feeCurrency: cUSDTokenAddress,
-    };
+  };
 
-    const gas = await estimateGas(txRequest);
-    const gasPrice = await estimateGasPrice();
+  const gas = await estimateGas(txRequest);
+  const gasPrice = await estimateGasPrice();
 
-    const hash = await walletClient.sendTransaction({
+  const hash = await walletClient.sendTransaction({
       ...txRequest,
       gas,
       maxFeePerGas: gasPrice,
       maxPriorityFeePerGas: gasPrice,
-    });
+  });
 
-    return hash as `0x${string}`;
-  };
+  return hash as `0x${string}`;
+};
 
   // Check if user has enough cUSD for a transaction
-  const checkBalanceForTx = async (userAddress: `0x${string}`, amount: string) => {
+const checkBalanceForTx = async (userAddress: `0x${string}`, amount: string) => {
     const balanceInWei: bigint = await publicClient.readContract({
       abi: stableTokenABI,
       address: cUSDTokenAddress,
       functionName: "balanceOf",
       args: [userAddress],
-    });
+  });
 
     const amountInWei: bigint = parseEther(amount);
 
@@ -145,12 +142,12 @@ const estimateGasPrice = async (): Promise<bigint> => {
       const balanceReadable = formatEther(balanceInWei);
       const requiredReadable = formatEther(amountInWei);
       throw new Error(
-        `Insufficient balance: Required ${requiredReadable} cUSD, but only ${balanceReadable} cUSD available.`
-      );
-    }
-  };
+  `Insufficient balance: Required ${requiredReadable} cUSD, but only ${balanceReadable} cUSD available.`
+  );
+  }
+};
 
-  return {
+return {
     address,
     getUserAddress,
     getCUSDBalance,
@@ -159,5 +156,5 @@ const estimateGasPrice = async (): Promise<bigint> => {
     calculateTxFees,
     sendCUSD,
     checkBalanceForTx,
-  };
+};
 };
