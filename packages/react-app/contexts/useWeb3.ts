@@ -31,64 +31,65 @@ export const useWeb3 = () => {
         accounts = await window.ethereum.request({
           method: "eth_requestAccounts",
           params: [],
-        });
-      } else {
+      });
+    } else {
         const walletClient = createWalletClient({
           transport: custom(window.ethereum),
           chain: celoAlfajores,
-        });
+      });
         accounts = await walletClient.getAddresses();
-      }
-      setAddress(accounts[0]);
-      return accounts[0];
     }
-    throw new Error("No injected wallet found");
-  };
+    setAddress(accounts[0]);
+    return accounts[0];
+}
+throw new Error("No injected wallet found");
+};
 
   // Get cUSD balance for an address
-  const getCUSDBalance = async (userAddress: string): Promise<string> => {
-    const cUSDContract = getContract({
-      abi: stableTokenABI,
-      address: cUSDTokenAddress,
-      publicClient,
-    });
-    const balanceInBigNumber = await cUSDContract.read.balanceOf([userAddress]);
-    const balanceInWei = balanceInBigNumber.toString();
-    return formatEther(balanceInWei);
-  };
+const getCUSDBalance = async (userAddress: string): Promise<string> => {
+  const balanceInBigNumber = await publicClient.readContract({
+    abi: stableTokenABI,
+    address: cUSDTokenAddress,
+    functionName: "balanceOf",
+    args: [userAddress],
+});
+  const balanceInWei = balanceInBigNumber.toString();
+  return formatEther(balanceInWei);
+};
+
 
   // Estimate gas for a transaction (in cUSD)
-  const estimateGas = async (tx: any): Promise<bigint> => {
+const estimateGas = async (tx: any): Promise<bigint> => {
     return await publicClient.estimateGas({
       ...tx,
       feeCurrency: cUSDTokenAddress,
-    });
-  };
+  });
+};
 
   // Estimate gas price for a transaction (in cUSD)
-  const estimateGasPrice = async (): Promise<bigint> => {
+const estimateGasPrice = async (): Promise<bigint> => {
     const gasPriceHex = await publicClient.request({
       method: "eth_gasPrice",
       params: [cUSDTokenAddress],
-    });
+  });
     return hexToBigInt(gasPriceHex);
-  };
+};
 
   // Calculate transaction fees in cUSD
-  const calculateTxFees = async (tx: any): Promise<bigint> => {
+const calculateTxFees = async (tx: any): Promise<bigint> => {
     const gasLimit = await estimateGas(tx);
     const gasPrice = await estimateGasPrice();
     return gasLimit * gasPrice;
-  };
+};
 
   // Send cUSD to another address
-  const sendCUSD = async (to: string, amount: string): Promise<string> => {
+const sendCUSD = async (to: string, amount: string): Promise<string> => {
     if (!window.ethereum) throw new Error("No wallet found");
 
     const walletClient = createWalletClient({
       transport: custom(window.ethereum),
       chain: celoAlfajores,
-    });
+  });
 
     const [userAddress] = await walletClient.getAddresses();
     const amountInWei = parseEther(amount);
@@ -97,7 +98,7 @@ export const useWeb3 = () => {
       abi: stableTokenABI,
       functionName: "transfer",
       args: [to, amountInWei],
-    });
+  });
 
     const txRequest = {
       account: userAddress,
@@ -105,35 +106,35 @@ export const useWeb3 = () => {
       data,
       value: 0n,
       feeCurrency: cUSDTokenAddress,
-    };
+  };
 
-    const gas = await estimateGas(txRequest);
-    const gasPrice = await estimateGasPrice();
+  const gas = await estimateGas(txRequest);
+  const gasPrice = await estimateGasPrice();
 
-    const hash = await walletClient.sendTransaction({
+  const hash = await walletClient.sendTransaction({
       ...txRequest,
       gas,
       maxFeePerGas: gasPrice,
       maxPriorityFeePerGas: gasPrice,
-    });
+  });
 
-    return hash;
-  };
+  return hash;
+};
 
   // Check if user has enough cUSD for a transaction
-  const checkBalanceForTx = async (userAddress: string, amount: string) => {
+const checkBalanceForTx = async (userAddress: string, amount: string) => {
     const balanceStr = await getCUSDBalance(userAddress);
     const balance = parseFloat(balanceStr);
     const amountNeeded = parseFloat(amount);
 
     if (balance < amountNeeded) {
       throw new Error(
-        `Insufficient balance: Required ${amountNeeded} cUSD, but only ${balance} cUSD available.`
-      );
-    }
-  };
+  `Insufficient balance: Required ${amountNeeded} cUSD, but only ${balance} cUSD available.`
+  );
+  }
+};
 
-  return {
+return {
     address,
     getUserAddress,
     getCUSDBalance,
@@ -142,5 +143,5 @@ export const useWeb3 = () => {
     calculateTxFees,
     sendCUSD,
     checkBalanceForTx,
-  };
+};
 };
