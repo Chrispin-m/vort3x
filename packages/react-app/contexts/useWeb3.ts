@@ -53,7 +53,7 @@ const getCUSDBalance = async (userAddress:  `0x${string}`): Promise<string> => {
     functionName: "balanceOf",
     args: [userAddress],
 });
-  const balanceInWei = balanceInBigNumber.toString();
+  const balanceInWei = balanceInBigNumber;
   return formatEther(balanceInWei);
 };
 
