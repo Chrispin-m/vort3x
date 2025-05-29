@@ -144,11 +144,11 @@ const Spin = () => {
       const txHash = await sendCUSD(recipientAddress, betAmount);
       console.log(`Transaction successful: ${txHash}`);
       const response = await SpinEndSignature({
-        hash,
+        hash:txHash,
         value: selectedBetAmount.toString(),
-        userAddress,
+        userAddress: address,
       });
-      console.log("respinses", response.data);
+      console.log("responses", response.data);
 
       const winningPrize = prizes.find((prize) => prize.probability === 100);
 
