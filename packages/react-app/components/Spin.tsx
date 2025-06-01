@@ -216,7 +216,7 @@ const Spin = () => {
     ))}
   </div>
 
-          {/*pass selectedBetAmount as a string */}
+          {/* pass selectedBetAmount as a string */}
   <button
   className="spin-button"
   onClick={() => spinWheel(selectedBetAmount.toString())}
@@ -291,5 +291,6 @@ const Spin = () => {
     )}
   </div>
   );
+};
 
-  export default Spin;
+export default Spin;
