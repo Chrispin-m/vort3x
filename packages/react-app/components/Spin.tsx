@@ -177,90 +177,103 @@ const Spin = () => {
     }
   };
   return (
-     <div className="relative w-full h-screen overflow-hidden">
-      <div className="canvas-container">
-        <canvas ref={canvasRef} className="three-canvas" style={{ marginTop: "50px" }}></canvas>
-      </div>
+    <div className="relative w-full h-screen overflow-hidden">
+    <div className="canvas-container">
+    <canvas
+    ref={canvasRef}
+    className="three-canvas"
+    style={{ marginTop: "50px" }}
+    ></canvas>
+    </div>
 
-      <h1 className="title">Spin to Win</h1>
+    <h1 className="title">Spin to Win</h1>
 
-      <div className="dropdown">
-        <button
-          className="button"
-          onClick={() => setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))}
-        >
-          Select Bet Amount: {selectedBetAmount}
-        </button>
-      </div>
+    <div className="dropdown">
+    <button
+    className="button"
+    onClick={() =>
+    setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))
+  }
+  >
+  Select Bet Amount: {selectedBetAmount}
+  </button>
+  </div>
 
-      <div className="wheel-container">
-        <div className="wheel-wrapper">
-          <div className="wheel" ref={wheelRef}>
-            {prizes.map((prize, index) => (
-              <div
-                key={index}
-                className="segment"
-                style={{
-                  transform: `rotate(${(360 / prizes.length) * index}deg) skewY(-30deg)`,
-                  backgroundColor: generateSegmentColors(index),
-                }}
-              >
-                <span>{prize.name}</span>
-              </div>
-            ))}
-          </div>
-          <button className="spin-button" onClick={spinWheel} disabled={isSpinning}>
-            <div className="pointer"></div>
-            SPIN
-          </button>
-        </div>
-      </div>
+  <div className="wheel-container">
+  <div className="wheel-wrapper">
+  <div className="wheel" ref={wheelRef}>
+  {prizes.map((prize, index) => (
+    <div
+    key={prize.id}
+    className="segment"
+    style={{
+      transform: `rotate(${(360 / prizes.length) * index}deg) skewY(-30deg)`,
+      backgroundColor: generateSegmentColors(index),
+    }}
+    >
+    <span>{prize.name}</span>
+    </div>
+    ))}
+  </div>
 
-      {showPrizeModal && (
-        <div
-          className="modal is-active"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            zIndex: 9999,
-            backgroundColor: "rgba(0, 0, 0, 0.8)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <div
-            className="modal-content"
-            style={{
-              width: "clamp(50%, 70%, 80%)",
-              maxWidth: "800px",
-            }}
-          >
-            <div
-              className="box"
-              style={{
-                textAlign: "center",
-                padding: "2rem",
-                borderRadius: "10px",
-              }}
-            >
-              <h1
-                className="prize-title"
-                style={{
-                  color: "gold",
-                  fontSize: "clamp(2rem, 5vw, 4rem)",
-                  fontWeight: "bold",
-                }}
-              >
-                {prizeName}
-              </h1>
-            </div>
-          </div>
-        </div>
-      )}
+          {/*pass selectedBetAmount as a string */}
+  <button
+  className="spin-button"
+  onClick={() => spinWheel(selectedBetAmount.toString())}
+  disabled={isSpinning}
+  >
+  <div className="pointer"></div>
+  SPIN
+  </button>
+  </div>
+  </div>
+
+  {showPrizeModal && (
+    <div
+    className="modal is-active"
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      zIndex: 9999,
+      backgroundColor: "rgba(0, 0, 0, 0.8)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+    >
+    <div
+    className="modal-content"
+    style={{
+      width: "clamp(50%, 70%, 80%)",
+      maxWidth: "800px",
+    }}
+    >
+    <div
+    className="box"
+    style={{
+      textAlign: "center",
+      padding: "2rem",
+      borderRadius: "10px",
+    }}
+    >
+    <h1
+    className="prize-title"
+    style={{
+      color: "gold",
+      fontSize: "clamp(2rem, 5vw, 4rem)",
+      fontWeight: "bold",
+    }}
+    >
+    {prizeName}
+    </h1>
+    </div>
+    </div>
+    </div>
+    )}
+
       {/* Error Modal */}
   {error && (
     <div className="modal is-active">
@@ -278,6 +291,5 @@ const Spin = () => {
     )}
   </div>
   );
-};
 
-export default Spin;
+  export default Spin;
