@@ -19,18 +19,6 @@ interface Prize {
   probability: number;
 }
 
-const SPIN_DURATION = 5; // seconds
-const COUNTDOWN_DURATION = 3; // seconds
-const TIPS = [
-  "Big wins coming your way!",
-  "Feeling lucky today?",
-  "Fortune favors the bold!",
-  "Get ready to win big!",
-  "The wheel is spinning your fortune!",
-  "Good luck is just a spin away!",
-  "Jackpot energy incoming!",
-];
-
 const Spin = () => {
   const { getUserAddress, sendToken, checkBalanceForTx } = useWeb3();
   const [userAddress, setUserAddress] = useState<string | null>(null);
@@ -49,69 +37,13 @@ const Spin = () => {
   const [showPrizeModal, setShowPrizeModal] = useState(false);
   const [prizeName, setPrizeName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState<number>(0);
-  const [currentTip, setCurrentTip] = useState<string>("");
-  const [particleSpeed, setParticleSpeed] = useState<number>(0.001);
 
   const wheelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particleSystemRef = useRef<THREE.Points | null>(null);
-  const animationRef = useRef<number>(0);
-  const countdownRef = useRef<NodeJS.Timeout | null>(null);
-  const tipIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     initThreeJS();
-    
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      clearIntervals();
-    };
   }, []);
-
-  useEffect(() => {
-    if (isSpinning) {
-      // Speed up particles during spin
-      setParticleSpeed(0.05);
-      
-      // Start countdown
-      let remaining = COUNTDOWN_DURATION;
-      setCountdown(remaining);
-      
-      countdownRef.current = setInterval(() => {
-        remaining -= 1;
-        setCountdown(remaining);
-        
-        if (remaining <= 0) {
-          clearInterval(countdownRef.current as NodeJS.Timeout);
-          countdownRef.current = null;
-        }
-      }, 1000);
-      
-      // Rotate tips
-      setCurrentTip(TIPS[Math.floor(Math.random() * TIPS.length)]);
-      tipIntervalRef.current = setInterval(() => {
-        setCurrentTip(TIPS[Math.floor(Math.random() * TIPS.length)]);
-      }, 2000);
-    } else {
-      // Slow down particles after spin
-      setParticleSpeed(0.001);
-      clearIntervals();
-    }
-  }, [isSpinning]);
-
-  const clearIntervals = () => {
-    if (countdownRef.current) {
-      clearInterval(countdownRef.current);
-      countdownRef.current = null;
-    }
-    if (tipIntervalRef.current) {
-      clearInterval(tipIntervalRef.current);
-      tipIntervalRef.current = null;
-    }
-  };
 
   const initThreeJS = () => {
     const canvas = canvasRef.current;
@@ -120,11 +52,7 @@ const Spin = () => {
       return;
     }
 
-    const renderer = new THREE.WebGLRenderer({ 
-      canvas,
-      alpha: true,
-      antialias: true 
-    });
+    const renderer = new THREE.WebGLRenderer({ canvas });
     renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
 
     const scene = new THREE.Scene();
@@ -140,51 +68,33 @@ const Spin = () => {
     const particleCount = 10000;
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
-    const sizes = new Float32Array(particleCount);
 
     for (let i = 0; i < particleCount; i++) {
       positions[i * 3] = Math.random() * 20 - 10;
       positions[i * 3 + 1] = Math.random() * 20 - 10;
       positions[i * 3 + 2] = Math.random() * 20 - 10;
 
-      colors[i * 3] = Math.random() * 0.5 + 0.5;
-      colors[i * 3 + 1] = Math.random() * 0.5 + 0.5;
-      colors[i * 3 + 2] = Math.random() * 0.5 + 0.5;
-      
-      sizes[i] = Math.random() * 0.5 + 0.1;
+      colors[i * 3] = Math.random();
+      colors[i * 3 + 1] = Math.random();
+      colors[i * 3 + 2] = Math.random();
     }
 
     particles.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     particles.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    particles.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
 
     const particleMaterial = new THREE.PointsMaterial({
       size: 0.1,
       vertexColors: true,
       blending: THREE.AdditiveBlending,
       transparent: true,
-      sizeAttenuation: true,
     });
 
     const particleSystem = new THREE.Points(particles, particleMaterial);
     scene.add(particleSystem);
-    particleSystemRef.current = particleSystem;
 
     const animate = () => {
-      animationRef.current = requestAnimationFrame(animate);
-      
-      if (particleSystemRef.current) {
-        particleSystemRef.current.rotation.y += particleSpeed;
-        
-        // pulsing effect during spin
-        if (isSpinning) {
-          const scale = 1 + Math.sin(Date.now() * 0.005) * 0.1;
-          particleSystemRef.current.scale.set(scale, scale, scale);
-        } else {
-          particleSystemRef.current.scale.set(1, 1, 1);
-        }
-      }
-      
+      requestAnimationFrame(animate);
+      particleSystem.rotation.y += 0.001;
       renderer.render(scene, camera);
     };
 
@@ -208,14 +118,15 @@ const Spin = () => {
     if (isSpinning) return;
     setError(null);
     setIsSpinning(true);
-    setCountdown(COUNTDOWN_DURATION);
 
     try {
       const address = await getUserAddress();
       setUserAddress(address);
 
+      // Check if the user has enough cUSD
       await checkBalanceForTx(address, betAmount, VortexAddress);
 
+      // Send the cUSD transaction
       const txHash = await sendToken(VortexAddress, betAmount);
       console.log(`Transaction successful: ${txHash}`);
 
@@ -227,7 +138,7 @@ const Spin = () => {
 
       const formattedPrizes = (response.data as Prize[]).map((prize: Prize) => ({
         ...prize,
-        name: `X${parseFloat(prize.value).toString().replace(/\.0+$/, "")}`,
+        name: `X${parseFloat(prize.value).toString().replace(/\.0+$/, "")}`, // e.g. → "X1"
       }));
       setPrizes(formattedPrizes);
 
@@ -240,23 +151,26 @@ const Spin = () => {
         return;
       }
 
+      // Calculate angle using the updated prize array
       const angle = calculateSpinAngle(`X${winningPrize.value}`, formattedPrizes);
       setSpinAngle(angle);
 
       if (wheelRef.current) {
-        wheelRef.current.style.transition = `transform ${SPIN_DURATION}s cubic-bezier(0.2, 0.8, 0.3, 1)`;
+        wheelRef.current.style.transition = "transform 5s ease-out";
         wheelRef.current.style.transform = `rotate(${angle}deg)`;
       }
 
+      // After 10 seconds (spin duration), show the prize modal, then hide it after 3 seconds
       setTimeout(() => {
         setPrizeName(`X${winningPrize.value}`);
         setShowPrizeModal(true);
+        setIsSpinning(false);
 
+        // Hide the modal after 3 seconds
         setTimeout(() => {
           setShowPrizeModal(false);
-          setIsSpinning(false);
         }, 3000);
-      }, SPIN_DURATION * 1000);
+      }, 10000);
     } catch (err: any) {
       setError(err?.message || "Transaction failed.");
       setIsSpinning(false);
@@ -307,33 +221,10 @@ const Spin = () => {
             disabled={isSpinning}
           >
             <div className="pointer"></div>
-            {isSpinning ? "SPINNING..." : "SPIN"}
+            SPIN
           </button>
         </div>
       </div>
-
-      {/* Spin Experience Overlay */}
-      {isSpinning && (
-        <div className="spin-experience">
-          <div className="countdown-bubble">
-            {countdown > 0 ? (
-              <div className="countdown-text">Starting in: {countdown}</div>
-            ) : (
-              <div className="spinning-text">SPINNING!</div>
-            )}
-          </div>
-          
-          <div className="tip-container">
-            <div className="tip-bubble">
-              <div className="sparkle">✨</div>
-              <div className="tip-text">{currentTip}</div>
-              <div className="sparkle">✨</div>
-            </div>
-          </div>
-          
-          <div className="pulse-animation"></div>
-        </div>
-      )}
 
       {showPrizeModal && (
         <div
@@ -364,30 +255,24 @@ const Spin = () => {
                 textAlign: "center",
                 padding: "2rem",
                 borderRadius: "10px",
-                background: "radial-gradient(circle, rgba(255,215,0,0.8) 0%, rgba(255,140,0,0.9) 100%)",
-                boxShadow: "0 0 50px gold",
               }}
             >
-              <h2 className="congrats-text">CONGRATULATIONS!</h2>
               <h1
                 className="prize-title"
                 style={{
-                  color: "white",
+                  color: "gold",
                   fontSize: "clamp(2rem, 5vw, 4rem)",
                   fontWeight: "bold",
-                  textShadow: "0 0 10px #000",
                 }}
               >
-                YOU WON: {prizeName}
+                {prizeName}
               </h1>
-              <div className="confetti"></div>
-              <div className="confetti"></div>
-              <div className="confetti"></div>
             </div>
           </div>
         </div>
       )}
 
+      {/* Error Modal */}
       {error && (
         <div className="modal is-active">
           <div className="modal-content box">
