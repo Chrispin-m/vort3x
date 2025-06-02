@@ -150,7 +150,7 @@ const Spin = () => {
         userAddress: address,
       });
       //console.log("responses", response.data);
-      setPrizes(response.data);
+      setPrizes(response.data.probability);
       const winningPrize = prizes.find((prize) => prize.probability === 100);
 
       if (!response.data) {
