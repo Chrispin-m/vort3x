@@ -48,6 +48,7 @@ const Spin = () => {
   const wheelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+
   useEffect(() => {
     // const fetchPrizes = async () => {
     //   try {
@@ -148,8 +149,8 @@ const Spin = () => {
         value: betAmount,
         userAddress: address,
       });
-      console.log("responses", response.data);
-
+      //console.log("responses", response.data);
+      setPrizes(response.data);
       const winningPrize = prizes.find((prize) => prize.probability === 100);
 
       if (!response.data) {
