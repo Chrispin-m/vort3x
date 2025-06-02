@@ -122,184 +122,184 @@ const Spin = () => {
   };
 
   const calculateSpinAngle = (winningPrizeName: string, prizeArray: Prize[]): number => { … };
-    const prizeIndex = prizes.findIndex((prize) => prize.name === winningPrize);
-    const anglePerSegment = 360 / prizes.length;
-    const winningSegmentAngle = prizeIndex * (anglePerSegment+10) + 360;
-    const randomTurns = Math.floor(Math.random() * 15) + 20;
-    return randomTurns * 360 + (360 - winningSegmentAngle);
-  };
+  const prizeIndex = prizes.findIndex((prize) => prize.name === winningPrize);
+  const anglePerSegment = 360 / prizes.length;
+  const winningSegmentAngle = prizeIndex * (anglePerSegment+10) + 360;
+  const randomTurns = Math.floor(Math.random() * 15) + 20;
+  return randomTurns * 360 + (360 - winningSegmentAngle);
+};
   // ---- Spin Logic ----
-  const spinWheel = async (betAmount: string) => {
-    if (isSpinning) return;
-    setError(null);
-    setIsSpinning(true);
+const spinWheel = async (betAmount: string) => {
+  if (isSpinning) return;
+  setError(null);
+  setIsSpinning(true);
 
-    try {
-      const address = await getUserAddress();
-      setUserAddress(address);
+  try {
+    const address = await getUserAddress();
+    setUserAddress(address);
 
             // Check if the user has enough cUSD
-      await checkBalanceForTx(address, betAmount, VortexAddress);
+    await checkBalanceForTx(address, betAmount, VortexAddress);
 
             // Send the cUSD transaction
-      const txHash = await sendToken(VortexAddress, betAmount);
-      console.log(`Transaction successful: ${txHash}`);
-      const response = await SpinEndSignature({
-        hash:txHash,
-        value: betAmount,
-        userAddress: address,
-      });
+    const txHash = await sendToken(VortexAddress, betAmount);
+    console.log(`Transaction successful: ${txHash}`);
+    const response = await SpinEndSignature({
+      hash:txHash,
+      value: betAmount,
+      userAddress: address,
+    });
       //console.log("responses", response.data);
-      const formattedPrizes = (response.data as Prize[]).map((prize: Prize) => ({
-        ...prize,
-        name: `X${parseFloat(prize.value)
-        .toString()
+    const formattedPrizes = (response.data as Prize[]).map((prize: Prize) => ({
+      ...prize,
+      name: `X${parseFloat(prize.value)
+      .toString()
     .replace(/\.0+$/, "")}`, // e.g. → "X1"
   }));
-      setPrizes(formattedPrizes);
-      const allPrizes: Prize[] = response.data;
-      const winningPrize = allPrizes.find((p) => p.probability === 100);
+    setPrizes(formattedPrizes);
+    const allPrizes: Prize[] = response.data;
+    const winningPrize = allPrizes.find((p) => p.probability === 100);
 
 
-      if (!winningPrize) {
-        console.error("No prize with 100% probability found");
-        setIsSpinning(false);
-        return;
-      }
-
-      const spinAngle = calculateSpinAngle(`X${winningPrize.value}`);
-      setSpinAngle(spinAngle);
-
-      if (wheelRef.current) {
-        wheelRef.current.style.transition = "transform 5s ease-out";
-        wheelRef.current.style.transform = `rotate(${spinAngle}deg)`;
-      }
-
-      setTimeout(() => {
-        setPrizeName(`X${winningPrize.value}`);
-        setShowPrizeModal(true);
-        setIsSpinning(false);      
-      },10000 );
-    } catch (err: any) {
-      setError(err?.message || "Transaction failed.");
+    if (!winningPrize) {
+      console.error("No prize with 100% probability found");
       setIsSpinning(false);
+      return;
     }
-  };
-  return (
-    <div className="relative w-full h-screen overflow-hidden">
-    <div className="canvas-container">
-    <canvas
-    ref={canvasRef}
-    className="three-canvas"
-    style={{ marginTop: "50px" }}
-    ></canvas>
-    </div>
 
-    <h1 className="title">Spin to Win</h1>
+    const spinAngle = calculateSpinAngle(`X${winningPrize.value}`);
+    setSpinAngle(spinAngle);
 
-    <div className="dropdown">
-    <button
-    className="button"
-    onClick={() =>
-    setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))
+    if (wheelRef.current) {
+      wheelRef.current.style.transition = "transform 5s ease-out";
+      wheelRef.current.style.transform = `rotate(${spinAngle}deg)`;
+    }
+
+    setTimeout(() => {
+      setPrizeName(`X${winningPrize.value}`);
+      setShowPrizeModal(true);
+      setIsSpinning(false);      
+    },10000 );
+  } catch (err: any) {
+    setError(err?.message || "Transaction failed.");
+    setIsSpinning(false);
   }
-  >
-  Select Bet Amount: {selectedBetAmount}
-  </button>
+};
+return (
+  <div className="relative w-full h-screen overflow-hidden">
+  <div className="canvas-container">
+  <canvas
+  ref={canvasRef}
+  className="three-canvas"
+  style={{ marginTop: "50px" }}
+  ></canvas>
   </div>
 
-  <div className="wheel-container">
-  <div className="wheel-wrapper">
-  <div className="wheel" ref={wheelRef}>
-  {prizes.map((prize, index) => (
-    <div
-    key={prize.id}
-    className="segment"
-    style={{
-      transform: `rotate(${(360 / prizes.length) * index}deg) skewY(-30deg)`,
-      backgroundColor: generateSegmentColors(index),
-    }}
-    >
-    <span>{prize.name}</span>
-    </div>
-    ))}
+  <h1 className="title">Spin to Win</h1>
+
+  <div className="dropdown">
+  <button
+  className="button"
+  onClick={() =>
+  setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))
+}
+>
+Select Bet Amount: {selectedBetAmount}
+</button>
+</div>
+
+<div className="wheel-container">
+<div className="wheel-wrapper">
+<div className="wheel" ref={wheelRef}>
+{prizes.map((prize, index) => (
+  <div
+  key={prize.id}
+  className="segment"
+  style={{
+    transform: `rotate(${(360 / prizes.length) * index}deg) skewY(-30deg)`,
+    backgroundColor: generateSegmentColors(index),
+  }}
+  >
+  <span>{prize.name}</span>
   </div>
+  ))}
+</div>
 
           {/* pass selectedBetAmount as a string */}
-  <button
-  className="spin-button"
-  onClick={() => spinWheel(selectedBetAmount.toString())}
-  disabled={isSpinning}
+<button
+className="spin-button"
+onClick={() => spinWheel(selectedBetAmount.toString())}
+disabled={isSpinning}
+>
+<div className="pointer"></div>
+SPIN
+</button>
+</div>
+</div>
+
+{showPrizeModal && (
+  <div
+  className="modal is-active"
+  style={{
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    zIndex: 9999,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  }}
   >
-  <div className="pointer"></div>
-  SPIN
+  <div
+  className="modal-content"
+  style={{
+    width: "clamp(50%, 70%, 80%)",
+    maxWidth: "800px",
+  }}
+  >
+  <div
+  className="box"
+  style={{
+    textAlign: "center",
+    padding: "2rem",
+    borderRadius: "10px",
+  }}
+  >
+  <h1
+  className="prize-title"
+  style={{
+    color: "gold",
+    fontSize: "clamp(2rem, 5vw, 4rem)",
+    fontWeight: "bold",
+  }}
+  >
+  {prizeName}
+  </h1>
+  </div>
+  </div>
+  </div>
+  )}
+
+      {/* Error Modal */}
+{error && (
+  <div className="modal is-active">
+  <div className="modal-content box">
+  <h2 className="text-red-600 font-bold">Error</h2>
+  <p className="mt-2">{error}</p>
+  <button
+  className="button mt-4"
+  onClick={() => setError(null)}
+  >
+  Dismiss
   </button>
   </div>
   </div>
-
-  {showPrizeModal && (
-    <div
-    className="modal is-active"
-    style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      zIndex: 9999,
-      backgroundColor: "rgba(0, 0, 0, 0.8)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-    >
-    <div
-    className="modal-content"
-    style={{
-      width: "clamp(50%, 70%, 80%)",
-      maxWidth: "800px",
-    }}
-    >
-    <div
-    className="box"
-    style={{
-      textAlign: "center",
-      padding: "2rem",
-      borderRadius: "10px",
-    }}
-    >
-    <h1
-    className="prize-title"
-    style={{
-      color: "gold",
-      fontSize: "clamp(2rem, 5vw, 4rem)",
-      fontWeight: "bold",
-    }}
-    >
-    {prizeName}
-    </h1>
-    </div>
-    </div>
-    </div>
-    )}
-
-      {/* Error Modal */}
-  {error && (
-    <div className="modal is-active">
-    <div className="modal-content box">
-    <h2 className="text-red-600 font-bold">Error</h2>
-    <p className="mt-2">{error}</p>
-    <button
-    className="button mt-4"
-    onClick={() => setError(null)}
-    >
-    Dismiss
-    </button>
-    </div>
-    </div>
-    )}
-  </div>
-  );
+  )}
+</div>
+);
 };
 
 export default Spin;
