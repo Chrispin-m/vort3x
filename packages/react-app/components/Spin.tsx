@@ -159,7 +159,7 @@ const Spin = () => {
         return;
       }
 
-      const spinAngle = calculateSpinAngle(`X${response.data.value}`);
+      const spinAngle = calculateSpinAngle(`X${winningPrize.value}`);
       setSpinAngle(spinAngle);
 
       if (wheelRef.current) {
@@ -168,7 +168,7 @@ const Spin = () => {
       }
 
       setTimeout(() => {
-        setPrizeName(`X${response.data.value}`);
+        setPrizeName(`X${winningPrize.value}`);
         setShowPrizeModal(true);
         setIsSpinning(false);      
       },10000 );
