@@ -150,9 +150,11 @@ const Spin = () => {
         userAddress: address,
       });
       //console.log("responses", response.data);
-      const formattedPrizes = response.data.map(prize => ({
-    ...prize,
-    name: `X${parseFloat(prize.value).toString().replace(/\.0+$/, '')}` //  eg → "X1"
+      const formattedPrizes = (response.data as Prize[]).map((prize: Prize) => ({
+        ...prize,
+        name: `X${parseFloat(prize.value)
+        .toString()
+    .replace(/\.0+$/, "")}`, // e.g. → "X1"
   }));
       setPrizes(formattedPrizes);
       const allPrizes: Prize[] = response.data;
