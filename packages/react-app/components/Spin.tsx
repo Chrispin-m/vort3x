@@ -4,20 +4,13 @@ import React, { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
 import "./../styles/Spin.css";
 import axios from "axios";
-import { SpinEndPoinSigner,SpinEndPoint,SpinEndSignature } from "@/app/url/vortex";
+import { SpinEndPoinSigner, SpinEndPoint, SpinEndSignature } from "@/app/url/vortex";
 import type { JsonRpcSigner } from "ethers";
 import { useWeb3 } from "../contexts/useWeb3";
 import { VortexAddress } from "@/app/config/addresses";
 import { parseEther, encodeFunctionData } from "viem";
 import StableTokenABI from "@/contexts/cusd-abi.json";
 import { celoAlfajores } from "viem/chains";
-
-
-
-interface SpinProps {
-  userAddress: string;
-}
-
 
 interface Prize {
   id: number;
@@ -30,7 +23,7 @@ const Spin = () => {
   const { getUserAddress, sendToken, checkBalanceForTx } = useWeb3();
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0.2);
-  const [prizes, setPrizes] = useState([
+  const [prizes, setPrizes] = useState<Prize[]>([
     { id: 1, name: "X1", value: "1.00", probability: 0.0 },
     { id: 3, name: "X0.5", value: "0.50", probability: 0.0 },
     { id: 4, name: "X1000", value: "1000.00", probability: 100.0 },
@@ -48,25 +41,12 @@ const Spin = () => {
   const wheelRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-
   useEffect(() => {
-    // const fetchPrizes = async () => {
-    //   try {
-    //     const response = await axios.get("/api/prizes/");
-    //     setPrizes(response.data);
-    //   } catch (error) {
-    //     console.error("Error fetching prizes, using mock data:", error);
-    //     setPrizes(mockPrizes);
-    //   }
-    // };
-
-    //fetchPrizes();
     initThreeJS();
   }, []);
 
   const initThreeJS = () => {
     const canvas = canvasRef.current;
-
     if (!canvas) {
       console.warn("Canvas element not found");
       return;
@@ -76,7 +56,12 @@ const Spin = () => {
     renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight * 0.9), 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / (window.innerHeight * 0.9),
+      0.1,
+      1000
+    );
     camera.position.z = 5;
 
     const particles = new THREE.BufferGeometry();
@@ -122,185 +107,185 @@ const Spin = () => {
   };
 
   const calculateSpinAngle = (winningPrizeName: string, prizeArray: Prize[]): number => {
-  const prizeIndex = prizes.findIndex((prize) => prize.name === winningPrize);
-  const anglePerSegment = 360 / prizes.length;
-  const winningSegmentAngle = prizeIndex * (anglePerSegment+10) + 360;
-  const randomTurns = Math.floor(Math.random() * 15) + 20;
-  return randomTurns * 360 + (360 - winningSegmentAngle);
-};
-  // ---- Spin Logic ----
-const spinWheel = async (betAmount: string) => {
-  if (isSpinning) return;
-  setError(null);
-  setIsSpinning(true);
+    const prizeIndex = prizeArray.findIndex((prize) => prize.name === winningPrizeName);
+    const anglePerSegment = 360 / prizeArray.length;
+    const winningSegmentAngle = prizeIndex * (anglePerSegment + 10) + 360;
+    const randomTurns = Math.floor(Math.random() * 15) + 20;
+    return randomTurns * 360 + (360 - winningSegmentAngle);
+  };
 
-  try {
-    const address = await getUserAddress();
-    setUserAddress(address);
+  const spinWheel = async (betAmount: string) => {
+    if (isSpinning) return;
+    setError(null);
+    setIsSpinning(true);
 
-            // Check if the user has enough cUSD
-    await checkBalanceForTx(address, betAmount, VortexAddress);
+    try {
+      const address = await getUserAddress();
+      setUserAddress(address);
 
-            // Send the cUSD transaction
-    const txHash = await sendToken(VortexAddress, betAmount);
-    console.log(`Transaction successful: ${txHash}`);
-    const response = await SpinEndSignature({
-      hash:txHash,
-      value: betAmount,
-      userAddress: address,
-    });
-      //console.log("responses", response.data);
-    const formattedPrizes = (response.data as Prize[]).map((prize: Prize) => ({
-      ...prize,
-      name: `X${parseFloat(prize.value)
-      .toString()
-    .replace(/\.0+$/, "")}`, // e.g. → "X1"
-  }));
-    setPrizes(formattedPrizes);
-    const allPrizes: Prize[] = response.data;
-    const winningPrize = allPrizes.find((p) => p.probability === 100);
+      // Check if the user has enough cUSD
+      await checkBalanceForTx(address, betAmount, VortexAddress);
 
+      // Send the cUSD transaction
+      const txHash = await sendToken(VortexAddress, betAmount);
+      console.log(`Transaction successful: ${txHash}`);
 
-    if (!winningPrize) {
-      console.error("No prize with 100% probability found");
+      const response = await SpinEndSignature({
+        hash: txHash,
+        value: betAmount,
+        userAddress: address,
+      });
+
+      const formattedPrizes = (response.data as Prize[]).map((prize: Prize) => ({
+        ...prize,
+        name: `X${parseFloat(prize.value).toString().replace(/\.0+$/, "")}`, // e.g. → "X1"
+      }));
+      setPrizes(formattedPrizes);
+
+      const allPrizes: Prize[] = response.data as Prize[];
+      const winningPrize = allPrizes.find((p) => p.probability === 100);
+
+      if (!winningPrize) {
+        console.error("No prize with 100% probability found");
+        setIsSpinning(false);
+        return;
+      }
+
+      // Calculate angle using the updated prize array
+      const angle = calculateSpinAngle(`X${winningPrize.value}`, formattedPrizes);
+      setSpinAngle(angle);
+
+      if (wheelRef.current) {
+        wheelRef.current.style.transition = "transform 5s ease-out";
+        wheelRef.current.style.transform = `rotate(${angle}deg)`;
+      }
+
+      // After 10 seconds (spin duration), show the prize modal, then hide it after 3 seconds
+      setTimeout(() => {
+        setPrizeName(`X${winningPrize.value}`);
+        setShowPrizeModal(true);
+        setIsSpinning(false);
+
+        // Hide the modal after 3 seconds
+        setTimeout(() => {
+          setShowPrizeModal(false);
+        }, 3000);
+      }, 10000);
+    } catch (err: any) {
+      setError(err?.message || "Transaction failed.");
       setIsSpinning(false);
-      return;
     }
+  };
 
-    const spinAngle = calculateSpinAngle(`X${winningPrize.value}`);
-    setSpinAngle(spinAngle);
+  return (
+    <div className="relative w-full h-screen overflow-hidden">
+      <div className="canvas-container">
+        <canvas
+          ref={canvasRef}
+          className="three-canvas"
+          style={{ marginTop: "50px" }}
+        ></canvas>
+      </div>
 
-    if (wheelRef.current) {
-      wheelRef.current.style.transition = "transform 5s ease-out";
-      wheelRef.current.style.transform = `rotate(${spinAngle}deg)`;
-    }
+      <h1 className="title">Spin to Win</h1>
 
-    setTimeout(() => {
-      setPrizeName(`X${winningPrize.value}`);
-      setShowPrizeModal(true);
-      setIsSpinning(false);      
-    },10000 );
-  } catch (err: any) {
-    setError(err?.message || "Transaction failed.");
-    setIsSpinning(false);
-  }
-};
-return (
-  <div className="relative w-full h-screen overflow-hidden">
-  <div className="canvas-container">
-  <canvas
-  ref={canvasRef}
-  className="three-canvas"
-  style={{ marginTop: "50px" }}
-  ></canvas>
-  </div>
+      <div className="dropdown">
+        <button
+          className="button"
+          onClick={() => setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))}
+        >
+          Select Bet Amount: {selectedBetAmount}
+        </button>
+      </div>
 
-  <h1 className="title">Spin to Win</h1>
+      <div className="wheel-container">
+        <div className="wheel-wrapper">
+          <div className="wheel" ref={wheelRef}>
+            {prizes.map((prize, index) => (
+              <div
+                key={prize.id}
+                className="segment"
+                style={{
+                  transform: `rotate(${(360 / prizes.length) * index}deg) skewY(-30deg)`,
+                  backgroundColor: generateSegmentColors(index),
+                }}
+              >
+                <span>{prize.name}</span>
+              </div>
+            ))}
+          </div>
 
-  <div className="dropdown">
-  <button
-  className="button"
-  onClick={() =>
-  setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))
-}
->
-Select Bet Amount: {selectedBetAmount}
-</button>
-</div>
+          <button
+            className="spin-button"
+            onClick={() => spinWheel(selectedBetAmount.toString())}
+            disabled={isSpinning}
+          >
+            <div className="pointer"></div>
+            SPIN
+          </button>
+        </div>
+      </div>
 
-<div className="wheel-container">
-<div className="wheel-wrapper">
-<div className="wheel" ref={wheelRef}>
-  {prizes.map((prize, index) => (
-    <div
-      key={prize.id}
-      className="segment"
-      style={{
-        transform: `rotate(${(360 / prizes.length) * index}deg) skewY(-30deg)`,
-        backgroundColor: generateSegmentColors(index),
-      }}
-    >
-      <span>{prize.name}</span>
-    </div>
-  ))}
-</div>
-
-
-          {/* pass selectedBetAmount as a string */}
-<button
-className="spin-button"
-onClick={() => spinWheel(selectedBetAmount.toString())}
-disabled={isSpinning}
->
-<div className="pointer"></div>
-SPIN
-</button>
-</div>
-</div>
-
-{showPrizeModal && (
-  <div
-  className="modal is-active"
-  style={{
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    zIndex: 9999,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  }}
-  >
-  <div
-  className="modal-content"
-  style={{
-    width: "clamp(50%, 70%, 80%)",
-    maxWidth: "800px",
-  }}
-  >
-  <div
-  className="box"
-  style={{
-    textAlign: "center",
-    padding: "2rem",
-    borderRadius: "10px",
-  }}
-  >
-  <h1
-  className="prize-title"
-  style={{
-    color: "gold",
-    fontSize: "clamp(2rem, 5vw, 4rem)",
-    fontWeight: "bold",
-  }}
-  >
-  {prizeName}
-  </h1>
-  </div>
-  </div>
-  </div>
-  )}
+      {showPrizeModal && (
+        <div
+          className="modal is-active"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: 9999,
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <div
+            className="modal-content"
+            style={{
+              width: "clamp(50%, 70%, 80%)",
+              maxWidth: "800px",
+            }}
+          >
+            <div
+              className="box"
+              style={{
+                textAlign: "center",
+                padding: "2rem",
+                borderRadius: "10px",
+              }}
+            >
+              <h1
+                className="prize-title"
+                style={{
+                  color: "gold",
+                  fontSize: "clamp(2rem, 5vw, 4rem)",
+                  fontWeight: "bold",
+                }}
+              >
+                {prizeName}
+              </h1>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error Modal */}
-{error && (
-  <div className="modal is-active">
-  <div className="modal-content box">
-  <h2 className="text-red-600 font-bold">Error</h2>
-  <p className="mt-2">{error}</p>
-  <button
-  className="button mt-4"
-  onClick={() => setError(null)}
-  >
-  Dismiss
-  </button>
-  </div>
-  </div>
-  )}
-</div>
-);
+      {error && (
+        <div className="modal is-active">
+          <div className="modal-content box">
+            <h2 className="text-red-600 font-bold">Error</h2>
+            <p className="mt-2">{error}</p>
+            <button className="button mt-4" onClick={() => setError(null)}>
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default Spin;
