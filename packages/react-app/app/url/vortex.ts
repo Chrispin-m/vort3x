@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE = "https://vortex-bd.vercel.app/api/stake";
+const BASE = "https://vortex-dapbe.onrender.com/api/stake";
 
 export interface SpinInterface {
   amount: number;
