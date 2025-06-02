@@ -29,7 +29,7 @@ interface Prize {
 const Spin = () => {
   const { getUserAddress, sendToken, checkBalanceForTx } = useWeb3();
   const [userAddress, setUserAddress] = useState<string | null>(null);
-  const [selectedBetAmount, setSelectedBetAmount] = useState<number>(1);
+  const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0.01);
   const [prizes, setPrizes] = useState([
     { id: 1, name: "X1", value: "1.00", probability: 0.0 },
     { id: 3, name: "X0.5", value: "0.50", probability: 0.0 },
