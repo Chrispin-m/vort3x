@@ -151,9 +151,11 @@ const Spin = () => {
       });
       //console.log("responses", response.data);
       setPrizes(response.data);
-      const winningPrize = prizes.find((prize) => prize.probability === 100);
+      const allPrizes: Prize[] = response.data;
+      const winningPrize = allPrizes.find((p) => p.probability === 100);
 
-      if (!response.data) {
+
+      if (!winningPrize) {
         console.error("No prize with 100% probability found");
         setIsSpinning(false);
         return;
