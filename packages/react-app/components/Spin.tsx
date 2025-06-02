@@ -150,7 +150,11 @@ const Spin = () => {
         userAddress: address,
       });
       //console.log("responses", response.data);
-      setPrizes(response.data);
+      const formattedPrizes = response.data.map(prize => ({
+    ...prize,
+    name: `X${parseFloat(prize.value).toString().replace(/\.0+$/, '')}` //  eg → "X1"
+  }));
+      setPrizes(formattedPrizes);
       const allPrizes: Prize[] = response.data;
       const winningPrize = allPrizes.find((p) => p.probability === 100);
 
