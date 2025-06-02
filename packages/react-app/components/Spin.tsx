@@ -121,7 +121,7 @@ const Spin = () => {
     return colors[index % colors.length];
   };
 
-  const calculateSpinAngle = (winningPrizeName: string, prizeArray: Prize[]): number => { … };
+  const calculateSpinAngle = (winningPrizeName: string, prizeArray: Prize[]): number => {
   const prizeIndex = prizes.findIndex((prize) => prize.name === winningPrize);
   const anglePerSegment = 360 / prizes.length;
   const winningSegmentAngle = prizeIndex * (anglePerSegment+10) + 360;
@@ -211,19 +211,20 @@ Select Bet Amount: {selectedBetAmount}
 <div className="wheel-container">
 <div className="wheel-wrapper">
 <div className="wheel" ref={wheelRef}>
-{prizes.map((prize, index) => (
-  <div
-  key={prize.id}
-  className="segment"
-  style={{
-    transform: `rotate(${(360 / prizes.length) * index}deg) skewY(-30deg)`,
-    backgroundColor: generateSegmentColors(index),
-  }}
-  >
-  <span>{prize.name}</span>
-  </div>
+  {prizes.map((prize, index) => (
+    <div
+      key={prize.id}
+      className="segment"
+      style={{
+        transform: `rotate(${(360 / prizes.length) * index}deg) skewY(-30deg)`,
+        backgroundColor: generateSegmentColors(index),
+      }}
+    >
+      <span>{prize.name}</span>
+    </div>
   ))}
 </div>
+
 
           {/* pass selectedBetAmount as a string */}
 <button
