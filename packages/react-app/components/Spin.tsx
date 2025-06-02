@@ -121,7 +121,7 @@ const Spin = () => {
     return colors[index % colors.length];
   };
 
-  const calculateSpinAngle = (winningPrize: any): number => {
+  const calculateSpinAngle = (winningPrizeName: string, prizeArray: Prize[]): number => { … };
     const prizeIndex = prizes.findIndex((prize) => prize.name === winningPrize);
     const anglePerSegment = 360 / prizes.length;
     const winningSegmentAngle = prizeIndex * (anglePerSegment+10) + 360;
