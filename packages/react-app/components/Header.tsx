@@ -11,8 +11,8 @@ import {
   withdrawOffchain,
 } from "../app/url/vortex";
 import { formatUnits, parseUnits } from "viem";
-import { VortexAddress } from "../app/config/addresses";
 
+// Declare ethereum on the window object
 declare global {
   interface Window {
     ethereum?: any;
@@ -51,12 +51,12 @@ export default function Header() {
     if (!amt || isNaN(Number(amt)) || Number(amt) <= 0) return;
     try {
       const user = await getUserAddress();
-      await checkBalanceForTx(user, amt, VortexAddress);
-      const hash = await sendToken(VortexAddress, amt);
+      await checkBalanceForTx(user, amt);
+      const hash = await sendToken(amt);
       await depositOffchain({
-        address: user,
-        amount: parseUnits(amt, 18).toString(),
-        tx_hash_input: hash,
+        userAddress: user,
+        value: parseUnits(amt, 18).toString(),
+        hash,
       });
       const resp = await getOffchainBalance(user);
       setOffchainBalance(formatUnits(BigInt(resp.balance), 18));
@@ -70,12 +70,12 @@ export default function Header() {
     if (!amt || isNaN(Number(amt)) || Number(amt) <= 0) return;
     try {
       const user = await getUserAddress();
-      await checkBalanceForTx(user, amt, VortexAddress);
-      const hash = await sendToken(user, amt);
+      await checkBalanceForTx(user, amt);
+      const hash = await sendToken(amt);
       await withdrawOffchain({
-        address: user,
-        amount: parseUnits(amt, 18).toString(),
-        tx_hash_input: hash,
+        userAddress: user,
+        value: parseUnits(amt, 18).toString(),
+        hash,
       });
       alert("Withdrawal requested");
     } catch (e: any) {
