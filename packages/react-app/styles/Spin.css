@@ -334,35 +334,49 @@ line-height: 0.1;
 }
 
 
-.surreal-glow-container {
-  position: relative;
-  display: inline-block;    /* shrink-wrap to its contents */
-  border-radius: 1rem;     
-  border: 2px solid transparent;
-  box-shadow: 0 0 20px 5px rgba(100, 150, 255, 0.4);
-  animation: glowPulse 2s infinite ease-in-out;
+.canvas-container {
+  position: relative; 
+}
+
+.canvas-container::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  pointer-events: none;
+  border: 2px solid rgba(120, 200, 255, 0.6);
+  border-radius: 20px;
+  box-shadow: 
+    0 0 30px 10px rgba(120, 200, 255, 0.4),
+    0 0 60px 20px rgba(120, 200, 255, 0.2);
+  animation: surrealPulse 2.5s infinite ease-in-out;
   z-index: 0;
 }
 
-.surreal-glow-container:hover {
-  animation-duration: 1.5s;
-  box-shadow: 0 0 30px 8px rgba(100, 150, 255, 0.6);
-}
-
-@keyframes glowPulse {
-  0% {
-    box-shadow: 0 0 10px 3px rgba(100, 150, 255, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 25px 8px rgba(100, 150, 255, 0.5);
-  }
-  100% {
-    box-shadow: 0 0 10px 3px rgba(100, 150, 255, 0.3);
-  }
-}
-
-.surreal-glow-container > .relative {
+.canvas-container canvas {
   position: relative;
   z-index: 1;
 }
 
+@keyframes surrealPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px 5px rgba(120, 200, 255, 0.3),
+      0 0 40px 10px rgba(120, 200, 255, 0.2);
+    border-color: rgba(120, 200, 255, 0.4);
+  }
+  50% {
+    box-shadow:
+      0 0 40px 15px rgba(120, 200, 255, 0.8),
+      0 0 80px 30px rgba(120, 200, 255, 0.4);
+    border-color: rgba(120, 200, 255, 0.8);
+  }
+}
+
+
+.canvas-container .three-canvas {
+  border-radius: 16px; 
+  overflow: hidden;
+}
