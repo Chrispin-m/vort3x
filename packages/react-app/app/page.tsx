@@ -36,20 +36,15 @@ export default function Home() {
           ))}
         </div>
       ) : (
-        <div className="glow-container">
+        <div className="glow-wrapper">
           <Spin />
         </div>
       )}
 
       <style jsx>{`
-        .glow-container {
+        .glow-wrapper {
           position: relative;
-          /* Give a bit of padding so the glow has room */
-          padding: 2rem;
           border-radius: 1rem;
-          /* Apply a subtle backdrop so the glow stands out */
-          background: rgba(20, 20, 40, 0.6);
-          /* Animate the box-shadow to “pulse” like a heartbeat */
           animation: heartbeat 2s infinite ease-in-out;
         }
 
@@ -78,11 +73,6 @@ export default function Home() {
               0 0 30px rgba(100, 100, 255, 0.3),
               0 0 60px rgba(100, 100, 255, 0.2);
           }
-        }
-
-        /* Slightly round the corners of the glow container */
-        .glow-container {
-          border-radius: 1rem;
         }
       `}</style>
     </div>
