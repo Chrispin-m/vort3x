@@ -88,7 +88,7 @@ const Spin: React.FC = () => {
     );
     camera.position.z = 5;
 
-    const particleCount = 10000;
+    const particleCount = 500;
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
 
