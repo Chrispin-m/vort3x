@@ -29,7 +29,6 @@ const Spin: React.FC = () => {
   ]);
 
   const [countdownPrizes, setCountdownPrizes] = useState<Prize[] | null>(null);
-
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0.2);
 
@@ -115,8 +114,7 @@ const Spin: React.FC = () => {
     return randomTurns * 360 + (360 - winningSegmentAngle);
   };
 
-  /**
-   */
+  /** Fired when CountdownLoader completes its 100→90 animation */
   const onCountdownComplete = (prizesForCountdown: Prize[]) => {
     setShowCountdown(false);
 
@@ -146,17 +144,8 @@ const Spin: React.FC = () => {
     }, 6000);
   };
 
-  /**
-   * Main handler for “SPIN” button:
-   * 1) Check balance, send cUSD → get txHash
-   * 2) Call SpinEndSignature(...) → get Prize[]
-   * 3) Hide “Signing transaction…”, store prizes in countdownPrizes, then show countdown
-   */
+  /** Handler for “SPIN” button click */
   const spinWheel = async (betAmount: string) => {
-    // Prevent re-clicking while either:
-    //  • We’re waiting for the on-chain signature, or
-    //  • The countdown is running, or
-    //  • The wheel is currently spinning
     if (isWaitingSignature || showCountdown || isSpinning) return;
 
     setError(null);
@@ -167,7 +156,6 @@ const Spin: React.FC = () => {
       setUserAddress(address);
 
       await checkBalanceForTx(address, betAmount, VortexAddress);
-
       const txHash = await sendToken(VortexAddress, betAmount);
       console.log(`Transaction successful: ${txHash}`);
 
@@ -177,7 +165,6 @@ const Spin: React.FC = () => {
         userAddress: address,
       });
 
-      // Format the Prize[] into “X1”, “X0.5”, etc.
       const formattedPrizes: Prize[] = (response.data as Prize[]).map((prize: Prize) => ({
         ...prize,
         name: `X${parseFloat(prize.value).toString().replace(/\.0+$/, "")}`,
@@ -198,138 +185,138 @@ const Spin: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full max-w-4xl aspect-square flex flex-col items-center justify-center">
-      {/* Three.js starfield background */}
-      <div className="canvas-container absolute inset-0 -z-10">
-        <canvas ref={canvasRef} className="three-canvas w-full h-full"></canvas>
-      </div>
+    <div className="surreal-glow-container">
+      <div className="relative w-full max-w-4xl aspect-square flex flex-col items-center justify-center">
+        <div className="canvas-container absolute inset-0 -z-10">
+          <canvas ref={canvasRef} className="three-canvas w-full h-full"></canvas>
+        </div>
 
-      <h1 className="title text-2xl md:text-3xl font-bold mb-4">Spin to Win</h1>
+        <h1 className="title text-2xl md:text-3xl font-bold mb-4">Spin to Win</h1>
 
-      <div className="dropdown mb-4">
-        <button
-          className="button px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors"
-          onClick={() =>
-            setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))
-          }
-          disabled={isWaitingSignature || showCountdown || isSpinning}
-        >
-          Select Bet Amount: {selectedBetAmount}
-        </button>
-      </div>
-
-      <div className="wheel-container w-full max-w-md">
-        <div className="wheel-wrapper">
-          <div className="wheel" ref={wheelRef}>
-            {prizes.map((prize, index) => (
-              <div
-                key={prize.id}
-                className="segment"
-                style={{
-                  transform: `rotate(${
-                    (360 / prizes.length) * index
-                  }deg) skewY(-30deg)`,
-                  backgroundColor: generateSegmentColors(index),
-                }}
-              >
-                <span>{prize.name}</span>
-              </div>
-            ))}
-          </div>
-
+        <div className="dropdown mb-4">
           <button
-            className="spin-button"
-            onClick={() => spinWheel(selectedBetAmount.toString())}
+            className="button px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+            onClick={() =>
+              setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))
+            }
             disabled={isWaitingSignature || showCountdown || isSpinning}
           >
-            <div className="pointer"></div>
-            SPIN
+            Select Bet Amount: {selectedBetAmount}
           </button>
         </div>
-      </div>
 
-      {/* “Signing transaction… Please wait”*/}
-      {isWaitingSignature && (
-        <div className="mt-4 p-2 bg-yellow-300 text-black rounded">
-          Signing transaction… Please wait
-        </div>
-      )}
-
-      <CountdownLoader
-        visible={showCountdown}
-        duration={10}
-        startNumber={100}
-        endNumber={90}
-        onComplete={() => {
-          if (countdownPrizes) {
-            onCountdownComplete(countdownPrizes);
-          } else {
-            // hide countdown if something went wrong
-            setShowCountdown(false);
-            setIsSpinning(false);
-          }
-        }}
-      />
-
-      {/* Prize Modal */}
-      {showPrizeModal && (
-        <div
-          className="modal is-active"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            zIndex: 9999,
-            backgroundColor: "rgba(0, 0, 0, 0.8)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <div
-            className="modal-content"
-            style={{
-              width: "clamp(50%, 70%, 80%)",
-              maxWidth: "800px",
-            }}
-          >
-            <div
-              className="box"
-              style={{
-                textAlign: "center",
-                padding: "2rem",
-                borderRadius: "10px",
-              }}
-            >
-              <h1
-                className="prize-title"
-                style={{
-                  color: "gold",
-                  fontSize: "clamp(2rem, 5vw, 4rem)",
-                  fontWeight: "bold",
-                }}
-              >
-                {prizeName}
-              </h1>
+        <div className="wheel-container w-full max-w-md">
+          <div className="wheel-wrapper">
+            <div className="wheel" ref={wheelRef}>
+              {prizes.map((prize, index) => (
+                <div
+                  key={prize.id}
+                  className="segment"
+                  style={{
+                    transform: `rotate(${
+                      (360 / prizes.length) * index
+                    }deg) skewY(-30deg)`,
+                    backgroundColor: generateSegmentColors(index),
+                  }}
+                >
+                  <span>{prize.name}</span>
+                </div>
+              ))}
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Error Modal */}
-      {error && (
-        <div className="modal is-active">
-          <div className="modal-content box">
-            <h2 className="text-red-600 font-bold">Error</h2>
-            <p className="mt-2">{error}</p>
-            <button className="button mt-4" onClick={() => setError(null)}>
-              Dismiss
+            <button
+              className="spin-button"
+              onClick={() => spinWheel(selectedBetAmount.toString())}
+              disabled={isWaitingSignature || showCountdown || isSpinning}
+            >
+              <div className="pointer"></div>
+              SPIN
             </button>
           </div>
         </div>
-      )}
+
+        {/* “Signing transaction… Please wait” */}
+        {isWaitingSignature && (
+          <div className="mt-4 p-2 bg-yellow-300 text-black rounded">
+            Signing transaction… Please wait
+          </div>
+        )}
+
+        <CountdownLoader
+          visible={showCountdown}
+          duration={10}
+          startNumber={100}
+          endNumber={90}
+          onComplete={() => {
+            if (countdownPrizes) {
+              onCountdownComplete(countdownPrizes);
+            } else {
+              setShowCountdown(false);
+              setIsSpinning(false);
+            }
+          }}
+        />
+
+        {/* Prize Modal */}
+        {showPrizeModal && (
+          <div
+            className="modal is-active"
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: 9999,
+              backgroundColor: "rgba(0, 0, 0, 0.8)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <div
+              className="modal-content"
+              style={{
+                width: "clamp(50%, 70%, 80%)",
+                maxWidth: "800px",
+              }}
+            >
+              <div
+                className="box"
+                style={{
+                  textAlign: "center",
+                  padding: "2rem",
+                  borderRadius: "10px",
+                }}
+              >
+                <h1
+                  className="prize-title"
+                  style={{
+                    color: "gold",
+                    fontSize: "clamp(2rem, 5vw, 4rem)",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {prizeName}
+                </h1>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error Modal */}
+        {error && (
+          <div className="modal is-active">
+            <div className="modal-content box">
+              <h2 className="text-red-600 font-bold">Error</h2>
+              <p className="mt-2">{error}</p>
+              <button className="button mt-4" onClick={() => setError(null)}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
