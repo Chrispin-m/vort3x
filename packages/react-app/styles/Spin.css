@@ -14,8 +14,7 @@ box-shadow:
     0 0 30px rgba(72, 219, 251, 0.6),
     0 0 60px rgba(72, 219, 251, 0.4),
     inset 0 0 20px rgba(72, 219, 251, 0.3);
-  animation: heartbeat-glow 2s infinite;
-}
+animation: heartbeat-glow 2s infinite;
 overflow: hidden;
 pointer-events: none;
 }
