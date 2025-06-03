@@ -166,15 +166,12 @@ const Spin: React.FC = () => {
       wheelRef.current.style.transform = `rotate(${angle}deg)`;
     }
 
-    // Keep particles fast until modal closes
     setParticleSpeed(0.02);
 
-    // After 6 seconds (wheel spinning), show prize modal
     setTimeout(() => {
       setPrizeName(winningPrize.name);
       setShowPrizeModal(true);
 
-      // After 2 seconds, hide modal, reset states
       setTimeout(() => {
         setShowPrizeModal(false);
         setIsSpinning(false);
