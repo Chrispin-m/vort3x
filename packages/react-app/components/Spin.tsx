@@ -238,12 +238,10 @@ const Spin: React.FC = () => {
         ))}
       </div>
 
-      {/* Three.js canvas with pulsing glow */}
       <div className="canvas-glow-wrapper">
         <canvas ref={canvasRef} className="three-canvas"></canvas>
       </div>
 
-      {/* Main content overlaid on the canvas */}
       <div className="spin-content">
         <h1 className="title">Spin to Win</h1>
 
@@ -284,12 +282,10 @@ const Spin: React.FC = () => {
           </div>
         </div>
 
-        {/* Signing banner */}
         {isWaitingSignature && (
           <div className="signing-banner">Signing transaction… Please wait</div>
         )}
 
-        {/* Countdown overlay */}
         <CountdownLoader
           visible={showCountdown}
           duration={10}
