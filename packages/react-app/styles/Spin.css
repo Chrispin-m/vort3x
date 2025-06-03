@@ -3,22 +3,23 @@
   height: 200vw;
 }
 .three-canvas {
-position: fixed;
-top: 0;
-left: 0;
-width: 100vw;
-height: 100vh;
-z-index: -1; /* Ensure particles are below other content */
-background-color: #000;
-overflow: hidden;
-pointer-events: none;
-border-radius: 20px;
+  position: fixed;
+  top: 50px; /* Add distance from the top */
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - 50px); /* Adjust height to fit within viewport */
+  z-index: -1; /* Ensure particles are below other content */
+  background-color: #000;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 20px;
   box-shadow:
     0 0 30px rgba(72, 219, 251, 0.6),
     0 0 60px rgba(72, 219, 251, 0.4),
     inset 0 0 20px rgba(72, 219, 251, 0.3);
   animation: heartbeat-glow 2s infinite;
 }
+
 /* Heartbeat pulsing of the glow */
 @keyframes heartbeat-glow {
   0% {
@@ -381,7 +382,6 @@ line-height: 0.1;
    1. Wrapper + Glow Around Canvas
    ============================= */
 .spin-wrapper {
-  position: relative;
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
