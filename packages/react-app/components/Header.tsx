@@ -317,7 +317,6 @@ export default function Header() {
     );
   };
 
-  // Toast notifications
   const [toasts, setToasts] = useState<{id: number, message: string}[]>([]);
   
   const addToast = (message: string) => {
@@ -419,6 +418,7 @@ export default function Header() {
               )}
             </div>
             
+            {/* Navigation with enhanced floating effect */}
             <nav className="relative z-10 flex-1 space-y-5">
               <Link href="/" onClick={() => setIsOpen(false)}>
                 <div className="px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group">
