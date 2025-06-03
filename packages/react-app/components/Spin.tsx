@@ -143,7 +143,7 @@ const Spin: React.FC = () => {
         setShowPrizeModal(false);
         setIsSpinning(false);
       }, 2000);
-    }, 2000);
+    }, 6000);
   };
 
   /**
