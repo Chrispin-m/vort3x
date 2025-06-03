@@ -53,6 +53,7 @@ const Spin: React.FC = () => {
 
   const particleSystemRef = useRef<THREE.Points | null>(null);
   const [particleSpeed, setParticleSpeed] = useState<number>(0.001);
+  const particleSpeedRef = useRef(particleSpeed);
 
   const toastIdRef = useRef(0);
 
@@ -63,6 +64,10 @@ const Spin: React.FC = () => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4000);
   }, []);
+
+  useEffect(() => {
+    particleSpeedRef.current = particleSpeed;
+  }, [particleSpeed]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -115,7 +120,7 @@ const Spin: React.FC = () => {
     const animate = () => {
       requestAnimationFrame(animate);
       if (particleSystemRef.current) {
-        particleSystemRef.current.rotation.y += particleSpeed;
+        particleSystemRef.current.rotation.y += particleSpeedRef.current;
       }
       renderer.render(scene, camera);
     };
@@ -133,7 +138,7 @@ const Spin: React.FC = () => {
       window.removeEventListener("resize", onResize);
       renderer.dispose();
     };
-  }, [particleSpeed]);
+  }, []);
 
   const generateSegmentColors = (index: number): string => {
     const colors = ["#FF5733", "#33B5FF", "#FF33EC", "#33FF57", "#FFBD33"];
@@ -153,6 +158,7 @@ const Spin: React.FC = () => {
 
     const winningPrize = prizesForCountdown.find((p) => p.probability === 100);
     if (!winningPrize) {
+      console.error("No prize with 100% probability found");
       setIsSpinning(false);
       setParticleSpeed(0.001);
       return;
@@ -177,7 +183,7 @@ const Spin: React.FC = () => {
         setShowPrizeModal(false);
         setIsSpinning(false);
       }, 2000);
-    }, 5000);
+    }, 6000);
   };
 
   const spinWheel = async (betAmount: string) => {
