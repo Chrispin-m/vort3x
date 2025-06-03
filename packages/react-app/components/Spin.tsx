@@ -3,12 +3,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
 import "./../styles/Spin.css";
-import CountdownLoader from "./CountdownLoader"; // ← import the loader component
-import axios from "axios";
+import CountdownLoader from "./CountdownLoader";
 import { SpinEndSignature } from "@/app/url/vortex";
 import { useWeb3 } from "../contexts/useWeb3";
 import { VortexAddress } from "@/app/config/addresses";
-import type { JsonRpcSigner } from "ethers";
 
 interface Prize {
   id: number;
@@ -46,12 +44,11 @@ const Spin: React.FC = () => {
 
   const initThreeJS = () => {
     const canvas = canvasRef.current;
-    if (!canvas) {
-      console.warn("Canvas element not found");
-      return;
-    }
+    if (!canvas) return;
+
     const renderer = new THREE.WebGLRenderer({ canvas });
     renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
+
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -70,6 +67,7 @@ const Spin: React.FC = () => {
       positions[i * 3] = Math.random() * 20 - 10;
       positions[i * 3 + 1] = Math.random() * 20 - 10;
       positions[i * 3 + 2] = Math.random() * 20 - 10;
+
       colors[i * 3] = Math.random();
       colors[i * 3 + 1] = Math.random();
       colors[i * 3 + 2] = Math.random();
@@ -103,7 +101,7 @@ const Spin: React.FC = () => {
   };
 
   const calculateSpinAngle = (winningPrizeName: string, prizeArray: Prize[]): number => {
-    const prizeIndex = prizeArray.findIndex((prize) => prize.name === winningPrizeName);
+    const prizeIndex = prizeArray.findIndex((p) => p.name === winningPrizeName);
     const anglePerSegment = 360 / prizeArray.length;
     const winningSegmentAngle = prizeIndex * (anglePerSegment + 10) + 360;
     const randomTurns = Math.floor(Math.random() * 15) + 20;
@@ -118,33 +116,28 @@ const Spin: React.FC = () => {
       wheelRef.current.style.transform = `rotate(${pendingAngle}deg)`;
 
       setTimeout(() => {
-        setPrizeName(prizeName); 
         setShowPrizeModal(true);
         setIsSpinning(false);
 
         setTimeout(() => {
           setShowPrizeModal(false);
-        }, 2000);
-      }, 2000);
+        }, 3000);
+      }, 5000);
     } else {
-      // If something went wrong (no angle), just reset
       setIsSpinning(false);
       setError("Unable to spin wheel. Please try again.");
     }
   };
 
-  // Called when user clicks “SPIN”
   const spinWheel = async (betAmount: string) => {
     if (isSpinning) return;
     setError(null);
     setIsSpinning(true);
-    setShowLoader(true);
 
     try {
       // 1) Get user address & check balance
       const address = await getUserAddress();
       setUserAddress(address);
-
       await checkBalanceForTx(address, betAmount, VortexAddress);
 
       const txHash = await sendToken(VortexAddress, betAmount);
@@ -156,7 +149,7 @@ const Spin: React.FC = () => {
         userAddress: address,
       });
 
-      const formattedPrizes: Prize[] = (response.data as Prize[]).map((prize: Prize) => ({
+      const formattedPrizes: Prize[] = (response.data as Prize[]).map((prize) => ({
         ...prize,
         name: `X${parseFloat(prize.value).toString().replace(/\.0+$/, "")}`,
       }));
@@ -164,9 +157,7 @@ const Spin: React.FC = () => {
 
       const winningPrize = (response.data as Prize[]).find((p) => p.probability === 100);
       if (!winningPrize) {
-        console.error("No prize with 100% probability found");
         setError("No guaranteed prize found.");
-        setShowLoader(false);
         setIsSpinning(false);
         return;
       }
@@ -174,9 +165,10 @@ const Spin: React.FC = () => {
       const angle = calculateSpinAngle(`X${winningPrize.value}`, formattedPrizes);
       setPendingAngle(angle);
       setPrizeName(`X${winningPrize.value}`);
+
+      setShowLoader(true);
     } catch (err: any) {
       setError(err?.message || "Transaction failed.");
-      setShowLoader(false);
       setIsSpinning(false);
     }
   };
@@ -287,10 +279,9 @@ const Spin: React.FC = () => {
         </div>
       )}
 
-      {/* COUNTDOWN LOADER OVERLAY */}
       <CountdownLoader
         visible={showLoader}
-        duration={10} // 10 seconds from 100→90
+        duration={10}
         onComplete={onLoaderComplete}
       />
     </div>
