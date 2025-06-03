@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const BASE = "https://vortex-dapbe.onrender.com/api/stake";
+const BASEOFF = "https://vortex-dapbe.onrender.com/api/offchain";
 
 export interface SpinInterface {
   amount: number;
@@ -74,7 +75,7 @@ export async function depositOffchain({
   value: string;
   hash: string;
 }) {
-  const resp = await axios.post(`${BASE}/deposit`, {
+  const resp = await axios.post(`${BASEOFF}/deposit`, {
     address: userAddress,
     amount: value,
     tx_hash_input: hash,
@@ -91,7 +92,7 @@ export async function withdrawOffchain({
   value: string;
   hash: string;
 }) {
-  const resp = await axios.post(`${BASE}/withdraw`, {
+  const resp = await axios.post(`${BASEOFF}/withdraw`, {
     address: userAddress,
     amount: value,
     tx_hash_input: hash,
