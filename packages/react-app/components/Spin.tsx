@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import "./../styles/Spin.css";
 import { SpinEndSignature } from "@/app/url/vortex";
@@ -13,6 +13,11 @@ interface Prize {
   name: string;
   value: string;
   probability: number;
+}
+
+interface Toast {
+  id: number;
+  message: string;
 }
 
 const Spin: React.FC = () => {
@@ -37,27 +42,39 @@ const Spin: React.FC = () => {
   const [showCountdown, setShowCountdown] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
 
+  const [spinAngle, setSpinAngle] = useState(0);
   const [showPrizeModal, setShowPrizeModal] = useState(false);
   const [prizeName, setPrizeName] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  const wheelRef = useRef<HTMLDivElement>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const wheelRef = useRef<HTMLDivElement>(null);
 
-  const speedRef = useRef<number>(0.001);
+  const particleSystemRef = useRef<THREE.Points | null>(null);
+  const [particleSpeed, setParticleSpeed] = useState<number>(0.001);
 
-  useEffect(() => {
-    initThreeJS();
+  const toastIdRef = useRef(0);
+
+  const showErrorToast = useCallback((message: string) => {
+    const id = toastIdRef.current++;
+    setToasts((prev) => [...prev, { id, message }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
   }, []);
 
-  const initThreeJS = () => {
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
 
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a2a);
+
     const camera = new THREE.PerspectiveCamera(
       75,
       window.innerWidth / (window.innerHeight * 0.9),
@@ -66,7 +83,6 @@ const Spin: React.FC = () => {
     );
     camera.position.z = 5;
 
-    const particles = new THREE.BufferGeometry();
     const particleCount = 10000;
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
@@ -81,8 +97,9 @@ const Spin: React.FC = () => {
       colors[i * 3 + 2] = Math.random();
     }
 
-    particles.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    particles.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    const particlesGeom = new THREE.BufferGeometry();
+    particlesGeom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    particlesGeom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
     const particleMaterial = new THREE.PointsMaterial({
       size: 0.1,
@@ -91,17 +108,32 @@ const Spin: React.FC = () => {
       transparent: true,
     });
 
-    const particleSystem = new THREE.Points(particles, particleMaterial);
+    const particleSystem = new THREE.Points(particlesGeom, particleMaterial);
+    particleSystemRef.current = particleSystem;
     scene.add(particleSystem);
 
     const animate = () => {
       requestAnimationFrame(animate);
-      particleSystem.rotation.y += speedRef.current;
+      if (particleSystemRef.current) {
+        particleSystemRef.current.rotation.y += particleSpeed;
+      }
       renderer.render(scene, camera);
     };
-
     animate();
-  };
+
+    const onResize = () => {
+      if (!canvas) return;
+      renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
+      camera.aspect = window.innerWidth / (window.innerHeight * 0.9);
+      camera.updateProjectionMatrix();
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      renderer.dispose();
+    };
+  }, [particleSpeed]);
 
   const generateSegmentColors = (index: number): string => {
     const colors = ["#FF5733", "#33B5FF", "#FF33EC", "#33FF57", "#FFBD33"];
@@ -116,6 +148,7 @@ const Spin: React.FC = () => {
     return randomTurns * 360 + (360 - winningSegmentAngle);
   };
 
+
   const onCountdownComplete = (prizesForCountdown: Prize[]) => {
     setShowCountdown(false);
 
@@ -123,7 +156,6 @@ const Spin: React.FC = () => {
     if (!winningPrize) {
       console.error("No prize with 100% probability found");
       setIsSpinning(false);
-      speedRef.current = 0.001;
       return;
     }
 
@@ -135,6 +167,8 @@ const Spin: React.FC = () => {
       wheelRef.current.style.transform = `rotate(${angle}deg)`;
     }
 
+    setParticleSpeed(0.02);
+
     setTimeout(() => {
       setPrizeName(winningPrize.name);
       setShowPrizeModal(true);
@@ -142,23 +176,28 @@ const Spin: React.FC = () => {
       setTimeout(() => {
         setShowPrizeModal(false);
         setIsSpinning(false);
-        speedRef.current = 0.001;
+        setParticleSpeed(0.001);
       }, 2000);
     }, 6000);
   };
 
+  /**
+   * Main “SPIN” handler:
+   * 1) Check balance, send cUSD
+   * 2) Call backend → Prize[]
+   * 3) Hide signing banner, store prizes, show countdown, boost particles
+   */
   const spinWheel = async (betAmount: string) => {
     if (isWaitingSignature || showCountdown || isSpinning) return;
 
-    setError(null);
     setIsWaitingSignature(true);
+    setError(null);
 
     try {
       const address = await getUserAddress();
       setUserAddress(address);
 
       await checkBalanceForTx(address, betAmount, VortexAddress);
-
       const txHash = await sendToken(VortexAddress, betAmount);
       console.log(`Transaction successful: ${txHash}`);
 
@@ -177,148 +216,107 @@ const Spin: React.FC = () => {
       setCountdownPrizes(formattedPrizes);
 
       setIsWaitingSignature(false);
-
-      speedRef.current = 0.01;
-
       setShowCountdown(true);
       setIsSpinning(true);
+      setParticleSpeed(0.02);
     } catch (err: any) {
-      setError(err?.message || "Transaction failed.");
+      const message = err?.message || "Transaction failed.";
+      showErrorToast(message);
       setIsWaitingSignature(false);
       setIsSpinning(false);
-      speedRef.current = 0.001;
+      setParticleSpeed(0.001);
     }
   };
 
   return (
-    <div className="relative w-full max-w-4xl aspect-square flex flex-col items-center justify-center">
-      <div className="canvas-container absolute inset-0 -z-10">
-        <canvas ref={canvasRef} className="three-canvas w-full h-full"></canvas>
-      </div>
-
-      <h1 className="title text-2xl md:text-3xl font-bold mb-4">Spin to Win</h1>
-
-      <div className="dropdown mb-4">
-        <button
-          className="button px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors"
-          onClick={() =>
-            setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))
-          }
-          disabled={isWaitingSignature || showCountdown || isSpinning}
-        >
-          Select Bet Amount: {selectedBetAmount}
-        </button>
-      </div>
-
-      <div className="wheel-container w-full max-w-md">
-        <div className="wheel-wrapper">
-          <div className="wheel" ref={wheelRef}>
-            {prizes.map((prize, index) => (
-              <div
-                key={prize.id}
-                className="segment"
-                style={{
-                  transform: `rotate(${
-                    (360 / prizes.length) * index
-                  }deg) skewY(-30deg)`,
-                  backgroundColor: generateSegmentColors(index),
-                }}
-              >
-                <span>{prize.name}</span>
-              </div>
-            ))}
+    <div className="spin-wrapper">
+      {/* Toast Container */}
+      <div className="toast-container">
+        {toasts.map((t) => (
+          <div key={t.id} className="toast">
+            {t.message}
           </div>
+        ))}
+      </div>
 
+      {/* Three.js canvas wrapped by glow container */}
+      <div className="canvas-glow-wrapper">
+        <canvas ref={canvasRef} className="three-canvas"></canvas>
+      </div>
+
+      <div className="spin-content">
+        <h1 className="title">Spin to Win</h1>
+
+        <div className="dropdown">
           <button
-            className="spin-button"
-            onClick={() => spinWheel(selectedBetAmount.toString())}
+            className="button"
+            onClick={() => setSelectedBetAmount((p) => (p === 3 ? 6 : 3))}
             disabled={isWaitingSignature || showCountdown || isSpinning}
           >
-            <div className="pointer"></div>
-            SPIN
+            Select Bet Amount: {selectedBetAmount}
           </button>
         </div>
-      </div>
 
-      {isWaitingSignature && (
-        <div className="mt-4 p-2 bg-yellow-300 text-black rounded">
-          Signing transaction… Please wait
-        </div>
-      )}
-
-      <CountdownLoader
-        visible={showCountdown}
-        duration={10}
-        startNumber={100}
-        endNumber={90}
-        onComplete={() => {
-          if (countdownPrizes) {
-            onCountdownComplete(countdownPrizes);
-          } else {
-            setShowCountdown(false);
-            setIsSpinning(false);
-            speedRef.current = 0.001;
-          }
-        }}
-      />
-
-      {showPrizeModal && (
-        <div
-          className="modal is-active"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            zIndex: 9999,
-            backgroundColor: "rgba(0, 0, 0, 0.8)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <div
-            className="modal-content"
-            style={{
-              width: "clamp(50%, 70%, 80%)",
-              maxWidth: "800px",
-            }}
-          >
-            <div
-              className="box"
-              style={{
-                textAlign: "center",
-                padding: "2rem",
-                borderRadius: "10px",
-              }}
-            >
-              <h1
-                className="prize-title"
-                style={{
-                  color: "gold",
-                  fontSize: "clamp(2rem, 5vw, 4rem)",
-                  fontWeight: "bold",
-                }}
-              >
-                {prizeName}
-              </h1>
+        <div className="wheel-container">
+          <div className="wheel-wrapper">
+            <div className="wheel" ref={wheelRef}>
+              {prizes.map((prize, idx) => (
+                <div
+                  key={prize.id}
+                  className="segment"
+                  style={{
+                    transform: `rotate(${(360 / prizes.length) * idx}deg) skewY(-30deg)`,
+                    backgroundColor: generateSegmentColors(idx),
+                  }}
+                >
+                  <span>{prize.name}</span>
+                </div>
+              ))}
             </div>
-          </div>
-        </div>
-      )}
-
-      {error && (
-        <div className="modal is-active">
-          <div className="modal-content box">
-            <h2 className="text-red-600 font-bold">Error</h2>
-            <p className="mt-2">{error}</p>
-            <button className="button mt-4" onClick={() => setError(null)}>
-              Dismiss
+            <button
+              className="spin-button"
+              onClick={() => spinWheel(selectedBetAmount.toString())}
+              disabled={isWaitingSignature || showCountdown || isSpinning}
+            >
+              <div className="pointer"></div>
+              SPIN
             </button>
           </div>
         </div>
-      )}
+
+        {/* Signing banner */}
+        {isWaitingSignature && (
+          <div className="signing-banner">Signing transaction… Please wait</div>
+        )}
+
+        {/*  */}
+        <CountdownLoader
+          visible={showCountdown}
+          duration={10}
+          startNumber={100}
+          endNumber={90}
+          onComplete={() => {
+            if (countdownPrizes) {
+              onCountdownComplete(countdownPrizes);
+            } else {
+              setShowCountdown(false);
+              setIsSpinning(false);
+              setParticleSpeed(0.001);
+            }
+          }}
+        />
+
+        {/* Prize Modal */}
+        {showPrizeModal && (
+          <div className="modal-backdrop">
+            <div className="modal-content">
+              <div className="box">
+                <h1 className="prize-title">{prizeName}</h1>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

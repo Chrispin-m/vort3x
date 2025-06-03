@@ -333,50 +333,264 @@ transform: translate(-50%, -50%); /* Center the pointer */
 line-height: 0.1;
 }
 
+/* styles/Spin.css */
 
-.canvas-container {
-  position: relative; 
-}
-
-.canvas-container::before {
-  content: "";
-  position: absolute;
-  top: -4px;
-  left: -4px;
-  right: -4px;
-  bottom: -4px;
-  pointer-events: none;
-  border: 2px solid rgba(120, 200, 255, 0.6);
-  border-radius: 20px;
-  box-shadow: 
-    0 0 30px 10px rgba(120, 200, 255, 0.4),
-    0 0 60px 20px rgba(120, 200, 255, 0.2);
-  animation: surrealPulse 2.5s infinite ease-in-out;
-  z-index: 0;
-}
-
-.canvas-container canvas {
+/* =============================
+   1. Wrapper + Glow Around Canvas
+   ============================= */
+.spin-wrapper {
   position: relative;
-  z-index: 1;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
 }
 
-@keyframes surrealPulse {
-  0%, 100% {
-    box-shadow: 
-      0 0 20px 5px rgba(120, 200, 255, 0.3),
-      0 0 40px 10px rgba(120, 200, 255, 0.2);
-    border-color: rgba(120, 200, 255, 0.4);
+/* Glow container around the canvas */
+.canvas-glow-wrapper {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 90%; /* maintain aspect ratio */
+}
+
+/* The Three.js canvas stretches to fill */
+.three-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  /* Surreal, ethereal glow around edges */
+  box-shadow:
+    0 0 30px rgba(72, 219, 251, 0.6),
+    0 0 60px rgba(72, 219, 251, 0.4),
+    inset 0 0 20px rgba(72, 219, 251, 0.3);
+  animation: heartbeat-glow 2s infinite;
+}
+
+/* Heartbeat pulsing of the glow */
+@keyframes heartbeat-glow {
+  0% {
+    box-shadow:
+      0 0 30px rgba(72, 219, 251, 0.3),
+      0 0 60px rgba(72, 219, 251, 0.2),
+      inset 0 0 20px rgba(72, 219, 251, 0.2);
+  }
+  25% {
+    box-shadow:
+      0 0 50px rgba(72, 219, 251, 0.6),
+      0 0 100px rgba(72, 219, 251, 0.4),
+      inset 0 0 40px rgba(72, 219, 251, 0.3);
   }
   50% {
     box-shadow:
-      0 0 40px 15px rgba(120, 200, 255, 0.8),
-      0 0 80px 30px rgba(120, 200, 255, 0.4);
-    border-color: rgba(120, 200, 255, 0.8);
+      0 0 30px rgba(72, 219, 251, 0.3),
+      0 0 60px rgba(72, 219, 251, 0.2),
+      inset 0 0 20px rgba(72, 219, 251, 0.2);
+  }
+  75% {
+    box-shadow:
+      0 0 50px rgba(72, 219, 251, 0.6),
+      0 0 100px rgba(72, 219, 251, 0.4),
+      inset 0 0 40px rgba(72, 219, 251, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0 30px rgba(72, 219, 251, 0.3),
+      0 0 60px rgba(72, 219, 251, 0.2),
+      inset 0 0 20px rgba(72, 219, 251, 0.2);
   }
 }
 
-
-.canvas-container .three-canvas {
-  border-radius: 16px; 
-  overflow: hidden;
+/* =============================
+   2. Spin Content (buttons, title, wheel)
+   ============================= */
+.spin-content {
+  position: relative;
+  margin-top: -90%; /* pull content up so it overlaps the canvas */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
+
+.title {
+  font-size: 2rem;
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.5rem;
+}
+
+.dropdown {
+  margin-bottom: 1rem;
+}
+
+.button {
+  background-color: #1e3a8a;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 9999px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.button:disabled {
+  background-color: #4b5563;
+  cursor: not-allowed;
+}
+.button:hover:not(:disabled) {
+  background-color: #4338ca;
+}
+
+.wheel-container {
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 1;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.wheel-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.wheel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  transform: rotate(0deg);
+}
+
+.segment {
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  left: 50%;
+  top: 50%;
+  transform-origin: 0% 0%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10%;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+}
+
+.spin-button {
+  position: absolute;
+  left: 50%;
+  bottom: -20%;
+  transform: translateX(-50%);
+  background-color: #d97706;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  box-shadow: 0 0 15px rgba(255, 147, 0, 0.5);
+  transition: background-color 0.2s;
+}
+.spin-button:disabled {
+  background-color: #9a3412;
+  cursor: not-allowed;
+}
+.spin-button:hover:not(:disabled) {
+  background-color: #c2410c;
+}
+
+.pointer {
+  position: absolute;
+  top: -1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2rem;
+  height: 2rem;
+  background-color: #111;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.signing-banner {
+  margin-top: 1rem;
+  background-color: #facc15;
+  color: #000;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  text-align: center;
+}
+
+
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 20000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.toast {
+  background-color: rgba(51, 51, 51, 0.9);
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+  animation: toast-in 0.3s ease-out;
+}
+@keyframes toast-in {
+  from {
+    transform: translateX(50%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  z-index: 15000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content {
+  background: radial-gradient(
+    circle,
+    rgba(20, 20, 40, 0.9) 0%,
+    rgba(10, 10, 20, 0.95) 70%
+  );
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+}
+.prize-title {
+  color: gold;
+  font-size: clamp(2rem, 6vw, 5rem);
+  font-weight: bold;
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+  text-align: center;
+}
+
