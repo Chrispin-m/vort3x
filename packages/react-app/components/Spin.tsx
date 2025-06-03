@@ -142,8 +142,8 @@ const Spin: React.FC = () => {
       setTimeout(() => {
         setShowPrizeModal(false);
         setIsSpinning(false);
-      }, 3000);
-    }, 10000);
+      }, 2000);
+    }, 2000);
   };
 
   /**
