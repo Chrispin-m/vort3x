@@ -170,6 +170,7 @@ const Spin: React.FC = () => {
 
     setTimeout(() => {
       setPrizeName(winningPrize.name);
+      setParticleSpeed(0.001);
       setShowPrizeModal(true);
 
       setTimeout(() => {
