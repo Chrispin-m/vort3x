@@ -11,6 +11,13 @@ import {
   withdrawOffchain,
 } from "../app/url/vortex";
 import { formatUnits, parseUnits } from "viem";
+import { VortexAddress } from "../app/config/addresses";
+
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -47,9 +54,9 @@ export default function Header() {
       await checkBalanceForTx(user, amt, VortexAddress);
       const hash = await sendToken(VortexAddress, amt);
       await depositOffchain({
-        userAddress: user,
-        value: parseUnits(amt, 18).toString(),
-        hash,
+        address: user,
+        amount: parseUnits(amt, 18).toString(),
+        tx_hash_input: hash,
       });
       const resp = await getOffchainBalance(user);
       setOffchainBalance(formatUnits(BigInt(resp.balance), 18));
@@ -66,9 +73,9 @@ export default function Header() {
       await checkBalanceForTx(user, amt, VortexAddress);
       const hash = await sendToken(user, amt);
       await withdrawOffchain({
-        userAddress: user,
-        value: parseUnits(amt, 18).toString(),
-        hash,
+        address: user,
+        amount: parseUnits(amt, 18).toString(),
+        tx_hash_input: hash,
       });
       alert("Withdrawal requested");
     } catch (e: any) {
