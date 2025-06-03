@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { XMarkIcon, Bars3Icon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { useWeb3 } from "../contexts/useWeb3";
@@ -20,8 +20,14 @@ export default function Header() {
   const [loadingBalance, setLoadingBalance] = useState(false);
   const { address, getUserAddress, sendToken, checkBalanceForTx } = useWeb3();
   const { connect } = useConnect();
+  
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [modalError, setModalError] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-connect to MiniPay when detected
   useEffect(() => {
     if (typeof window !== "undefined" && (window as any).ethereum?.isMiniPay) {
       connect({ connector: injected() });
@@ -29,20 +35,26 @@ export default function Header() {
   }, [connect]);
 
   useEffect(() => {
-    async function fetchOffchain() {
-      setLoadingBalance(true);
-      try {
-        const user = await getUserAddress();
-        const resp = await getOffchainBalance(user);
-        const cusd = formatUnits(BigInt(resp.balance), 18);
-        setOffchainBalance(cusd);
-      } catch {
-        setOffchainBalance("0.0");
-      } finally {
-        setLoadingBalance(false);
-      }
+    if ((showDepositModal || showWithdrawModal) && inputRef.current) {
+      inputRef.current.focus();
     }
-    
+  }, [showDepositModal, showWithdrawModal]);
+
+  const fetchOffchain = async () => {
+    setLoadingBalance(true);
+    try {
+      const user = await getUserAddress();
+      const resp = await getOffchainBalance(user);
+      const cusd = formatUnits(BigInt(resp.balance), 18);
+      setOffchainBalance(cusd);
+    } catch {
+      setOffchainBalance("0.0");
+    } finally {
+      setLoadingBalance(false);
+    }
+  };
+
+  useEffect(() => {
     if (address) {
       fetchOffchain();
       const id = setInterval(fetchOffchain, 15000);
@@ -50,49 +62,287 @@ export default function Header() {
     }
   }, [address, getUserAddress]);
 
-  const handleDeposit = async () => {
-    const amt = prompt("Enter amount to deposit (CUSD):");
-    if (!amt || isNaN(Number(amt)) || Number(amt) <= 0) return;
-    
-    try {
-      const user = await getUserAddress();
-      await checkBalanceForTx(user, amt, VortexAddress);
-      const hash = await sendToken(VortexAddress, amt);
-      await depositOffchain({
-        userAddress: user,
-        value: parseUnits(amt, 18).toString(),
-        hash,
-      });
-      const resp = await getOffchainBalance(user);
-      setOffchainBalance(formatUnits(BigInt(resp.balance), 18));
-    } catch (e: any) {
-      alert(e.message || "Deposit failed");
-    }
+  const renderDepositModal = () => {
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      if (!amount || isNaN(Number(amount)) {
+        setModalError("Please enter a valid amount");
+        return;
+      }
+      
+      if (Number(amount) <= 0) {
+        setModalError("Amount must be greater than zero");
+        return;
+      }
+      
+      try {
+        setIsProcessing(true);
+        const user = await getUserAddress();
+        await checkBalanceForTx(user, amount, VortexAddress);
+        const hash = await sendToken(VortexAddress, amount);
+        await depositOffchain({
+          userAddress: user,
+          value: parseUnits(amount, 18).toString(),
+          hash,
+        });
+        await fetchOffchain();
+        setShowDepositModal(false);
+      } catch (e: any) {
+        setModalError(e.message || "Deposit failed");
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 z-[2000] flex items-center justify-center">
+        <div 
+          className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 to-purple-900/90 backdrop-blur-xl"
+          onClick={() => setShowDepositModal(false)}
+        />
+        
+        <div className="relative z-[2001] w-full max-w-md p-8 bg-gradient-to-br from-indigo-900/95 to-purple-900/95 backdrop-blur-3xl rounded-2xl border border-cyan-500/30 shadow-[0_0_60px_-15px_rgba(192,132,252,0.7)]">
+          <div className="absolute inset-0 overflow-hidden">
+            {[...Array(10)].map((_, i) => (
+              <div 
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  width: `${Math.random() * 8 + 2}px`,
+                  height: `${Math.random() * 8 + 2}px`,
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  backgroundColor: `hsl(${Math.random() * 60 + 240}, 70%, 60%)`,
+                  opacity: Math.random() * 0.4 + 0.1,
+                  filter: 'blur(2px)',
+                  animation: `float ${Math.random() * 15 + 5}s infinite ${i * 0.3}s`,
+                  boxShadow: '0 0 10px 2px currentColor'
+                }}
+              />
+            ))}
+          </div>
+          
+          <div className="relative z-10">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">
+                Deposit CUSD
+              </h2>
+              <button
+                onClick={() => setShowDepositModal(false)}
+                className="p-2 text-cyan-300 hover:text-white transition-all"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmit}>
+              <div className="mb-6">
+                <label className="block text-cyan-300 mb-2 text-sm">
+                  Enter amount to deposit
+                </label>
+                <div className="relative">
+                  <input
+                    ref={inputRef}
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    className="w-full py-3 px-4 bg-indigo-800/50 border border-cyan-400/30 rounded-xl text-white text-xl placeholder-cyan-300/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-cyan-300">
+                    CUSD
+                  </div>
+                </div>
+                {modalError && (
+                  <p className="mt-2 text-red-400 text-sm">{modalError}</p>
+                )}
+              </div>
+              
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setShowDepositModal(false)}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-indigo-800/40 to-purple-800/40 border border-cyan-400/30 rounded-xl text-white hover:shadow-[0_0_15px_-3px_rgba(192,132,252,0.5)] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-600/70 to-emerald-600/70 rounded-xl text-white hover:shadow-[0_0_15px_-3px_rgba(56,189,248,0.5)] transition-all flex items-center justify-center"
+                >
+                  {isProcessing ? (
+                    <div className="w-6 h-6 border-t-2 border-white rounded-full animate-spin"></div>
+                  ) : (
+                    "Deposit"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
   };
 
-  const handleWithdraw = async () => {
-    const amt = prompt("Enter amount to withdraw (CUSD):");
-    if (!amt || isNaN(Number(amt)) || Number(amt) <= 0) return;
+  const renderWithdrawModal = () => {
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      if (!amount || isNaN(Number(amount))) {
+        setModalError("Please enter a valid amount");
+        return;
+      }
+      
+      if (Number(amount) <= 0) {
+        setModalError("Amount must be greater than zero");
+        return;
+      }
+      
+      try {
+        setIsProcessing(true);
+        const user = await getUserAddress();
+        await checkBalanceForTx(user, amount, VortexAddress);
+        const hash = await sendToken(user, amount);
+        await withdrawOffchain({
+          userAddress: user,
+          value: parseUnits(amount, 18).toString(),
+          hash,
+        });
+        setShowWithdrawModal(false);
+        setToasts([...toasts, { 
+          id: Date.now(), 
+          message: "Withdrawal requested successfully!" 
+        }]);
+      } catch (e: any) {
+        setModalError(e.message || "Withdrawal failed");
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 z-[2000] flex items-center justify-center">
+        <div 
+          className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 to-purple-900/90 backdrop-blur-xl"
+          onClick={() => setShowWithdrawModal(false)}
+        />
+        
+        <div className="relative z-[2001] w-full max-w-md p-8 bg-gradient-to-br from-indigo-900/95 to-purple-900/95 backdrop-blur-3xl rounded-2xl border border-amber-500/30 shadow-[0_0_60px_-15px_rgba(245,158,11,0.4)]">
+          <div className="absolute inset-0 overflow-hidden">
+            {[...Array(10)].map((_, i) => (
+              <div 
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  width: `${Math.random() * 8 + 2}px`,
+                  height: `${Math.random() * 8 + 2}px`,
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  backgroundColor: `hsl(${Math.random() * 30 + 30}, 70%, 60%)`,
+                  opacity: Math.random() * 0.4 + 0.1,
+                  filter: 'blur(2px)',
+                  animation: `float ${Math.random() * 15 + 5}s infinite ${i * 0.3}s`,
+                  boxShadow: '0 0 10px 2px currentColor'
+                }}
+              />
+            ))}
+          </div>
+          
+          <div className="relative z-10">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-400">
+                Withdraw CUSD
+              </h2>
+              <button
+                onClick={() => setShowWithdrawModal(false)}
+                className="p-2 text-amber-300 hover:text-white transition-all"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmit}>
+              <div className="mb-6">
+                <label className="block text-amber-300 mb-2 text-sm">
+                  Enter amount to withdraw
+                </label>
+                <div className="relative">
+                  <input
+                    ref={inputRef}
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    className="w-full py-3 px-4 bg-indigo-800/50 border border-amber-400/30 rounded-xl text-white text-xl placeholder-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-amber-300">
+                    CUSD
+                  </div>
+                </div>
+                {modalError && (
+                  <p className="mt-2 text-red-400 text-sm">{modalError}</p>
+                )}
+              </div>
+              
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setShowWithdrawModal(false)}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-indigo-800/40 to-purple-800/40 border border-amber-400/30 rounded-xl text-white hover:shadow-[0_0_15px_-3px_rgba(245,158,11,0.3)] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-600/70 to-orange-600/70 rounded-xl text-white hover:shadow-[0_0_15px_-3px_rgba(245,158,11,0.5)] transition-all flex items-center justify-center"
+                >
+                  {isProcessing ? (
+                    <div className="w-6 h-6 border-t-2 border-white rounded-full animate-spin"></div>
+                  ) : (
+                    "Withdraw"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Toast notifications
+  const [toasts, setToasts] = useState<{id: number, message: string}[]>([]);
+  
+  const addToast = (message: string) => {
+    const id = Date.now();
+    setToasts([...toasts, { id, message }]);
     
-    try {
-      const user = await getUserAddress();
-      await checkBalanceForTx(user, amt, VortexAddress);
-      const hash = await sendToken(user, amt);
-      await withdrawOffchain({
-        userAddress: user,
-        value: parseUnits(amt, 18).toString(),
-        hash,
-      });
-      alert("Withdrawal requested");
-    } catch (e: any) {
-      alert(e.message || "Withdraw failed");
-    }
+    setTimeout(() => {
+      setToasts(current => current.filter(t => t.id !== id));
+    }, 4000);
   };
 
   return (
     <>
-      {/* Floating Navbar */}
-      <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-indigo-900/70 to-purple-900/70 backdrop-blur-xl rounded-xl shadow-2xl border border-indigo-500/30">
+      <div className="fixed top-4 right-4 z-[300] space-y-2">
+        {toasts.map(toast => (
+          <div 
+            key={toast.id}
+            className="px-4 py-3 bg-gradient-to-r from-indigo-800/80 to-purple-800/80 backdrop-blur-sm rounded-xl border border-cyan-400/30 text-white shadow-lg animate-fadeIn"
+          >
+            {toast.message}
+          </div>
+        ))}
+      </div>
+
+      <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-indigo-900/70 to-purple-900/70 backdrop-blur-xl shadow-2xl border-b border-indigo-500/30">
         <div className="flex items-center justify-between h-16 px-6">
           <button
             onClick={() => setIsOpen(true)}
@@ -121,7 +371,6 @@ export default function Header() {
               boxShadow: '0 0 80px -20px rgba(139, 92, 246, 0.9), 0 0 60px -15px rgba(192, 132, 252, 0.6) inset'
             }}
           >
-            {/* Floating particles background */}
             <div className="absolute inset-0 overflow-hidden">
               {[...Array(15)].map((_, i) => (
                 <div 
@@ -142,7 +391,6 @@ export default function Header() {
               ))}
             </div>
             
-            {/* Close button with enhanced glow */}
             <div className="relative z-10">
               <button
                 onClick={() => setIsOpen(false)}
@@ -171,7 +419,6 @@ export default function Header() {
               )}
             </div>
             
-            {/* Navigation with enhanced floating effect */}
             <nav className="relative z-10 flex-1 space-y-5">
               <Link href="/" onClick={() => setIsOpen(false)}>
                 <div className="px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group">
@@ -181,7 +428,10 @@ export default function Header() {
               </Link>
               
               <button
-                onClick={handleDeposit}
+                onClick={() => {
+                  setIsOpen(false);
+                  setTimeout(() => setShowDepositModal(true), 300);
+                }}
                 className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group"
               >
                 <div className="w-3 h-3 rounded-full bg-emerald-400 mr-3 shadow-[0_0_10px_3px_rgba(52,211,153,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(52,211,153,0.9)] transition-all"></div>
@@ -189,7 +439,10 @@ export default function Header() {
               </button>
               
               <button
-                onClick={handleWithdraw}
+                onClick={() => {
+                  setIsOpen(false);
+                  setTimeout(() => setShowWithdrawModal(true), 300);
+                }}
                 className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group"
               >
                 <div className="w-3 h-3 rounded-full bg-amber-400 mr-3 shadow-[0_0_10px_3px_rgba(245,158,11,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(245,158,11,0.9)] transition-all"></div>
@@ -204,7 +457,6 @@ export default function Header() {
               </Link>
             </nav>
             
-            {/* Floating particles footer */}
             <div className="relative z-10 mt-auto pt-8">
               <div className="flex justify-center space-x-1">
                 {[...Array(7)].map((_, i) => (
@@ -223,6 +475,9 @@ export default function Header() {
         </div>
       )}
 
+      {showDepositModal && renderDepositModal()}
+      {showWithdrawModal && renderWithdrawModal()}
+
       <style jsx>{`
         @keyframes float {
           0%, 100% { transform: translateY(0) rotate(0deg); }
@@ -232,6 +487,11 @@ export default function Header() {
         @keyframes pulse-slow {
           0%, 100% { opacity: 0.1; }
           50% { opacity: 0.3; }
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </>
