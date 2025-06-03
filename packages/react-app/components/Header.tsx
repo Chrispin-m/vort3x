@@ -64,7 +64,7 @@ export default function Header() {
 
         // Schedule next fetch only if this effect is still “mounted”
         if (!isCancelled) {
-          setTimeout(fetchOffchainLoop, 15_000);
+          setTimeout(fetchOffchain, 15_000);
         }
       }
     }
