@@ -500,3 +500,18 @@ line-height: 0.1;
   text-align: center;
 }
 
+.spin-content {
+  position: fixed;
+  top: 50px; 
+  left: 0;
+  width: 100%;
+  z-index: 10;
+  align-items: center;
+  padding-top: 20px; 
+  pointer-events: none; 
+}
+
+/* Make all children of spin-content have pointer events */
+.spin-content > * {
+  pointer-events: auto;
+}
