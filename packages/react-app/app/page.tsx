@@ -20,24 +20,24 @@ export default function Home() {
         }
     };
 
-    return (
-        <>
-            {!isConnected || !address ? (
-                <div className="flex items-center justify-center h-full space-x-4">
-                    {connectors.map((c) => (
-                        <button
-                            key={c.id}
-                            onClick={() => handleConnect(c)}
-                            className="px-6 py-3 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
-                            disabled={isConnecting}
-                        >
-                            {isConnecting ? "Connecting..." : `Connect with ${c.name}`}
-                        </button>
-                    ))}
-                </div>
-            ) : (
-                <Spin />
-            )}
-        </>
-    );
+  return (
+    <div className="w-full h-full flex items-center justify-center">
+      {!isConnected || !address ? (
+        <div className="flex flex-col items-center justify-center space-y-4">
+          {connectors.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => handleConnect(c)}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+              disabled={isConnecting}
+            >
+              {isConnecting ? "Connecting..." : `Connect with ${c.name}`}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <Spin />
+      )}
+    </div>
+  );
 }

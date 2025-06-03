@@ -178,23 +178,26 @@ const Spin = () => {
   };
 
   return (
-    <div className="relative w-full min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center py-8">
+   <div className="relative w-full max-w-4xl aspect-square flex flex-col items-center justify-center">
       <div className="canvas-container absolute inset-0 -z-10">
-        <canvas ref={canvasRef} className="three-canvas w-full h-full" />
+        <canvas
+          ref={canvasRef}
+          className="three-canvas w-full h-full"
+        ></canvas>
       </div>
 
-      <h1 className="title">Spin to Win</h1>
+      <h1 className="title text-2xl md:text-3xl font-bold mb-4">Spin to Win</h1>
 
-      <div className="dropdown">
+      <div className="dropdown mb-4">
         <button
-          className="button"
+          className="button px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors"
           onClick={() => setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))}
         >
           Select Bet Amount: {selectedBetAmount}
         </button>
       </div>
 
-      <div className="wheel-container z-10">
+      <div className="wheel-container w-full max-w-md">
         <div className="wheel-wrapper">
           <div className="wheel" ref={wheelRef}>
             {prizes.map((prize, index) => (
