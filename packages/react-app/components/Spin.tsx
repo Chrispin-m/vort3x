@@ -153,7 +153,6 @@ const Spin: React.FC = () => {
 
     const winningPrize = prizesForCountdown.find((p) => p.probability === 100);
     if (!winningPrize) {
-      console.error("No prize with 100% probability found");
       setIsSpinning(false);
       setParticleSpeed(0.001);
       return;
@@ -172,13 +171,13 @@ const Spin: React.FC = () => {
     setTimeout(() => {
       setPrizeName(winningPrize.name);
       setShowPrizeModal(true);
+      setParticleSpeed(0.001);
 
       setTimeout(() => {
         setShowPrizeModal(false);
         setIsSpinning(false);
-        setParticleSpeed(0.001);
       }, 2000);
-    }, 6000);
+    }, 5000);
   };
 
   const spinWheel = async (betAmount: string) => {
