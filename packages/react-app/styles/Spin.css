@@ -75,7 +75,7 @@ position: relative;
 position: relative;
 top: 2rem;
 right: 1rem;
-z-index: 1000; /* Ensure this is above the canvas */
+z-index: 999; /* Ensure this is above the canvas */
 }
 
 .wheel-container {
