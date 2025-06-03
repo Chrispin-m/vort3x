@@ -92,7 +92,7 @@ export default function Header() {
   return (
     <>
       {/* Floating Navbar */}
-      <div className="fixed top-4 left-4 right-4 z-50 bg-gradient-to-r from-indigo-900/70 to-purple-900/70 backdrop-blur-xl rounded-xl shadow-2xl border border-indigo-500/30">
+      <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-indigo-900/70 to-purple-900/70 backdrop-blur-xl rounded-xl shadow-2xl border border-indigo-500/30">
         <div className="flex items-center justify-between h-16 px-6">
           <button
             onClick={() => setIsOpen(true)}
@@ -108,32 +108,62 @@ export default function Header() {
       </div>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-[1000] flex">
           <div 
-            className="w-80 bg-gradient-to-br from-indigo-900/95 to-purple-900/95 backdrop-blur-3xl shadow-[0_0_60px_-15px_rgba(192,132,252,0.5)] border-r border-cyan-500/30 p-6 flex flex-col transform transition-all duration-500"
+            className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 to-purple-900/90 backdrop-blur-2xl"
+            onClick={() => setIsOpen(false)}
+          />
+          
+          <div 
+            className="relative z-[1001] w-80 bg-gradient-to-br from-indigo-900/95 to-purple-900/95 backdrop-blur-3xl shadow-[0_0_80px_-20px_rgba(192,132,252,0.7)] border-r border-cyan-500/30 p-6 flex flex-col transform transition-all duration-500"
             style={{
               clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
-              boxShadow: '0 0 60px -15px rgba(139, 92, 246, 0.7), 0 0 40px -10px rgba(192, 132, 252, 0.5) inset'
+              boxShadow: '0 0 80px -20px rgba(139, 92, 246, 0.9), 0 0 60px -15px rgba(192, 132, 252, 0.6) inset'
             }}
           >
-            {/* Close button with glow */}
-            <button
-              onClick={() => setIsOpen(false)}
-              className="self-end p-2 text-cyan-300 hover:text-white transition-all transform hover:scale-110"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
+            {/* Floating particles background */}
+            <div className="absolute inset-0 overflow-hidden">
+              {[...Array(15)].map((_, i) => (
+                <div 
+                  key={i}
+                  className="absolute rounded-full"
+                  style={{
+                    width: `${Math.random() * 10 + 2}px`,
+                    height: `${Math.random() * 10 + 2}px`,
+                    top: `${Math.random() * 100}%`,
+                    left: `${Math.random() * 100}%`,
+                    backgroundColor: `hsl(${Math.random() * 60 + 240}, 70%, 60%)`,
+                    opacity: Math.random() * 0.4 + 0.1,
+                    filter: 'blur(2px)',
+                    animation: `float ${Math.random() * 20 + 10}s infinite ${i * 0.5}s`,
+                    boxShadow: '0 0 10px 2px currentColor'
+                  }}
+                />
+              ))}
+            </div>
             
-            <div className="mt-6 mb-8 text-center p-6 bg-gradient-to-r from-indigo-800/50 to-purple-800/50 rounded-xl border border-cyan-400/30 relative overflow-hidden">
+            {/* Close button with enhanced glow */}
+            <div className="relative z-10">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="self-end p-2 text-cyan-300 hover:text-white transition-all transform hover:scale-110 bg-indigo-800/30 rounded-full border border-cyan-400/30 backdrop-blur-sm"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="relative z-10 mt-6 mb-8 text-center p-6 bg-gradient-to-r from-indigo-800/50 to-purple-800/50 rounded-xl border border-cyan-400/30 backdrop-blur-sm overflow-hidden">
+              <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+              <div className="absolute -inset-4 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent animate-pulse-slow"></div>
+              
               {loadingBalance ? (
                 <div className="flex justify-center items-center">
-                  <div className="w-6 h-6 border-t-2 border-cyan-400 rounded-full animate-spin"></div>
+                  <div className="w-8 h-8 border-t-2 border-cyan-400 rounded-full animate-spin"></div>
                 </div>
               ) : (
                 <>
-                  <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20"></div>
-                  <div className="text-sm text-cyan-300 mb-1">Your Balance</div>
-                  <div className="text-3xl font-bold text-white tracking-wide drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]">
+                  <div className="text-sm text-cyan-300 mb-1">Offchain Balance</div>
+                  <div className="text-3xl font-bold text-white tracking-wide drop-shadow-[0_0_15px_rgba(56,189,248,0.8)]">
                     {offchainBalance} CUSD
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
@@ -141,67 +171,67 @@ export default function Header() {
               )}
             </div>
             
-            {/* Navigation with floating effect */}
-            <nav className="flex-1 space-y-5">
+            {/* Navigation with enhanced floating effect */}
+            <nav className="relative z-10 flex-1 space-y-5">
               <Link href="/" onClick={() => setIsOpen(false)}>
-                <div className="px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_15px_-3px_rgba(192,132,252,0.3)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-0.5 duration-300 flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-cyan-400 mr-3 shadow-[0_0_8px_2px_rgba(56,189,248,0.7)]"></div>
+                <div className="px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group">
+                  <div className="w-3 h-3 rounded-full bg-cyan-400 mr-3 shadow-[0_0_10px_3px_rgba(56,189,248,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(56,189,248,0.9)] transition-all"></div>
                   Home
                 </div>
               </Link>
               
               <button
                 onClick={handleDeposit}
-                className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_15px_-3px_rgba(192,132,252,0.3)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-0.5 duration-300 flex items-center"
+                className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group"
               >
-                <div className="w-3 h-3 rounded-full bg-emerald-400 mr-3 shadow-[0_0_8px_2px_rgba(52,211,153,0.7)]"></div>
+                <div className="w-3 h-3 rounded-full bg-emerald-400 mr-3 shadow-[0_0_10px_3px_rgba(52,211,153,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(52,211,153,0.9)] transition-all"></div>
                 Deposit
               </button>
               
               <button
                 onClick={handleWithdraw}
-                className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_15px_-3px_rgba(192,132,252,0.3)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-0.5 duration-300 flex items-center"
+                className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group"
               >
-                <div className="w-3 h-3 rounded-full bg-amber-400 mr-3 shadow-[0_0_8px_2px_rgba(245,158,11,0.7)]"></div>
+                <div className="w-3 h-3 rounded-full bg-amber-400 mr-3 shadow-[0_0_10px_3px_rgba(245,158,11,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(245,158,11,0.9)] transition-all"></div>
                 Withdraw
               </button>
               
               <Link href="/help" onClick={() => setIsOpen(false)}>
-                <div className="px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_15px_-3px_rgba(192,132,252,0.3)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-0.5 duration-300 flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-violet-400 mr-3 shadow-[0_0_8px_2px_rgba(167,139,250,0.7)]"></div>
+                <div className="px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group">
+                  <div className="w-3 h-3 rounded-full bg-violet-400 mr-3 shadow-[0_0_10px_3px_rgba(167,139,250,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(167,139,250,0.9)] transition-all"></div>
                   Help/Support
                 </div>
               </Link>
             </nav>
             
-            <div className="mt-auto pt-6">
+            {/* Floating particles footer */}
+            <div className="relative z-10 mt-auto pt-8">
               <div className="flex justify-center space-x-1">
-                {[...Array(5)].map((_, i) => (
+                {[...Array(7)].map((_, i) => (
                   <div 
                     key={i}
-                    className="w-2 h-2 rounded-full bg-cyan-400 opacity-70"
+                    className="w-3 h-3 rounded-full bg-cyan-400 opacity-80"
                     style={{
-                      animation: `float 3s infinite ${i * 0.2}s`,
-                      boxShadow: '0 0 10px 2px rgba(56, 189, 248, 0.8)'
+                      animation: `float ${Math.random() * 6 + 4}s infinite ${i * 0.3}s`,
+                      boxShadow: '0 0 12px 3px rgba(56, 189, 248, 0.9)'
                     }}
                   ></div>
                 ))}
               </div>
             </div>
           </div>
-          
-          {/* Dreamy overlay */}
-          <div
-            className="flex-1 bg-gradient-to-br from-indigo-900/70 to-purple-900/80 backdrop-blur-sm"
-            onClick={() => setIsOpen(false)}
-          />
         </div>
       )}
 
       <style jsx>{`
         @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-15px) rotate(10deg); }
+        }
+        
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.1; }
+          50% { opacity: 0.3; }
         }
       `}</style>
     </>
