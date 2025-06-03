@@ -8,16 +8,51 @@ top: 0;
 left: 0;
 width: 100vw;
 height: 100vh;
-border-radius: 20px;
 z-index: -1; /* Ensure particles are below other content */
-box-shadow:
+background-color: #000;
+overflow: hidden;
+pointer-events: none;
+border-radius: 20px;
+  box-shadow:
     0 0 30px rgba(72, 219, 251, 0.6),
     0 0 60px rgba(72, 219, 251, 0.4),
     inset 0 0 20px rgba(72, 219, 251, 0.3);
-animation: heartbeat-glow 2s infinite;
-overflow: hidden;
-pointer-events: none;
+  animation: heartbeat-glow 2s infinite;
 }
+/* Heartbeat pulsing of the glow */
+@keyframes heartbeat-glow {
+  0% {
+    box-shadow:
+      0 0 30px rgba(72, 219, 251, 0.3),
+      0 0 60px rgba(72, 219, 251, 0.2),
+      inset 0 0 20px rgba(72, 219, 251, 0.2);
+  }
+  25% {
+    box-shadow:
+      0 0 50px rgba(72, 219, 251, 0.6),
+      0 0 100px rgba(72, 219, 251, 0.4),
+      inset 0 0 40px rgba(72, 219, 251, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 30px rgba(72, 219, 251, 0.3),
+      0 0 60px rgba(72, 219, 251, 0.2),
+      inset 0 0 20px rgba(72, 219, 251, 0.2);
+  }
+  75% {
+    box-shadow:
+      0 0 50px rgba(72, 219, 251, 0.6),
+      0 0 100px rgba(72, 219, 251, 0.4),
+      inset 0 0 40px rgba(72, 219, 251, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0 30px rgba(72, 219, 251, 0.3),
+      0 0 60px rgba(72, 219, 251, 0.2),
+      inset 0 0 20px rgba(72, 219, 251, 0.2);
+  }
+}
+
 
 .container {
 position: relative;
@@ -94,8 +129,9 @@ box-sizing: border-box;
 overflow: hidden; /* Hide any overflowed text */
 text-align: center; /* Center the text horizontally */
 white-space: normal; /* Allow wrapping if needed */
-text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
 z-index: 10; /* Ensure this is above the canvas */
+text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+
 }
 
 .segment span {
@@ -365,42 +401,6 @@ line-height: 0.1;
 
 /* The Three.js canvas stretches to fill */
 
-
-/* Heartbeat pulsing of the glow */
-@keyframes heartbeat-glow {
-  0% {
-    box-shadow:
-      0 0 30px rgba(72, 219, 251, 0.3),
-      0 0 60px rgba(72, 219, 251, 0.2),
-      inset 0 0 20px rgba(72, 219, 251, 0.2);
-  }
-  25% {
-    box-shadow:
-      0 0 50px rgba(72, 219, 251, 0.6),
-      0 0 100px rgba(72, 219, 251, 0.4),
-      inset 0 0 40px rgba(72, 219, 251, 0.3);
-  }
-  50% {
-    box-shadow:
-      0 0 30px rgba(72, 219, 251, 0.3),
-      0 0 60px rgba(72, 219, 251, 0.2),
-      inset 0 0 20px rgba(72, 219, 251, 0.2);
-  }
-  75% {
-    box-shadow:
-      0 0 50px rgba(72, 219, 251, 0.6),
-      0 0 100px rgba(72, 219, 251, 0.4),
-      inset 0 0 40px rgba(72, 219, 251, 0.3);
-  }
-  100% {
-    box-shadow:
-      0 0 30px rgba(72, 219, 251, 0.3),
-      0 0 60px rgba(72, 219, 251, 0.2),
-      inset 0 0 20px rgba(72, 219, 251, 0.2);
-  }
-}
-
-
 .title {
   font-size: 2rem;
   color: #fff;
@@ -412,6 +412,16 @@ line-height: 0.1;
   margin-bottom: 1rem;
 }
 
+.button {
+  background-color: #1e3a8a;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 9999px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
 .button:disabled {
   background-color: #4b5563;
   cursor: not-allowed;
@@ -419,6 +429,7 @@ line-height: 0.1;
 .button:hover:not(:disabled) {
   background-color: #4338ca;
 }
+
 
 .signing-banner {
   margin-top: 1rem;
