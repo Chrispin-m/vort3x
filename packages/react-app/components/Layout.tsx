@@ -12,8 +12,8 @@ const Layout: FC<Props> = ({ children }) => {
   return (
     <div className="bg-gypsum overflow-hidden flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 mt-16 mb-8"> {/* Added margin for header/footer spacing */}
-        <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main className="flex-grow pt-16 pb-8"> {/* Adjusted padding */}
+        <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           {children}
         </div>
       </main>

@@ -178,13 +178,9 @@ const Spin = () => {
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden">
-      <div className="canvas-container">
-        <canvas
-          ref={canvasRef}
-          className="three-canvas"
-          style={{ marginTop: "50px" }}
-        ></canvas>
+    <div className="relative w-full min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center py-8">
+      <div className="canvas-container absolute inset-0 -z-10">
+        <canvas ref={canvasRef} className="three-canvas w-full h-full" />
       </div>
 
       <h1 className="title">Spin to Win</h1>
@@ -198,7 +194,7 @@ const Spin = () => {
         </button>
       </div>
 
-      <div className="wheel-container">
+      <div className="wheel-container z-10">
         <div className="wheel-wrapper">
           <div className="wheel" ref={wheelRef}>
             {prizes.map((prize, index) => (
