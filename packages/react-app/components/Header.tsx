@@ -11,19 +11,24 @@ import {
   withdrawOffchain,
 } from "../app/url/vortex";
 import { formatUnits, parseUnits } from "viem";
+import { useConnect } from "wagmi";
+import { injected } from "wagmi/connectors";
+import { VortexAddress } from "@/app/config/addresses";
 
-// Declare ethereum on the window object
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
-}
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [offchainBalance, setOffchainBalance] = useState<string>("0.0");
   const [loadingBalance, setLoadingBalance] = useState(false);
   const { address, getUserAddress, sendToken, checkBalanceForTx } = useWeb3();
+  const { connect } = useConnect();
+
+  // Auto-connect to MiniPay when detected
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).ethereum?.isMiniPay) {
+      connect({ connector: injected() });
+    }
+  }, [connect]);
 
   useEffect(() => {
     async function fetchOffchain() {
@@ -39,6 +44,7 @@ export default function Header() {
         setLoadingBalance(false);
       }
     }
+    
     if (address) {
       fetchOffchain();
       const id = setInterval(fetchOffchain, 15000);
@@ -49,10 +55,11 @@ export default function Header() {
   const handleDeposit = async () => {
     const amt = prompt("Enter amount to deposit (CUSD):");
     if (!amt || isNaN(Number(amt)) || Number(amt) <= 0) return;
+    
     try {
       const user = await getUserAddress();
-      await checkBalanceForTx(user, amt);
-      const hash = await sendToken(amt);
+      await checkBalanceForTx(user, amt, VortexAddress);
+      const hash = await sendToken(VortexAddress, amt);
       await depositOffchain({
         userAddress: user,
         value: parseUnits(amt, 18).toString(),
@@ -68,10 +75,11 @@ export default function Header() {
   const handleWithdraw = async () => {
     const amt = prompt("Enter amount to withdraw (CUSD):");
     if (!amt || isNaN(Number(amt)) || Number(amt) <= 0) return;
+    
     try {
       const user = await getUserAddress();
-      await checkBalanceForTx(user, amt);
-      const hash = await sendToken(amt);
+      await checkBalanceForTx(user, amt, VortexAddress);
+      const hash = await sendToken(user, amt);
       await withdrawOffchain({
         userAddress: user,
         value: parseUnits(amt, 18).toString(),
