@@ -3,9 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
 import "./../styles/Spin.css";
-import axios from "axios";
 import { SpinEndSignature } from "@/app/url/vortex";
-import type { JsonRpcSigner } from "ethers";
 import { useWeb3 } from "../contexts/useWeb3";
 import { VortexAddress } from "@/app/config/addresses";
 import CountdownLoader from "@/components/CountdownLoader";
@@ -19,8 +17,7 @@ interface Prize {
 
 const Spin: React.FC = () => {
   const { getUserAddress, sendToken, checkBalanceForTx } = useWeb3();
-  const [userAddress, setUserAddress] = useState<string | null>(null);
-  const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0.2);
+
   const [prizes, setPrizes] = useState<Prize[]>([
     { id: 1, name: "X1", value: "1.00", probability: 0.0 },
     { id: 3, name: "X0.5", value: "0.50", probability: 0.0 },
@@ -31,8 +28,13 @@ const Spin: React.FC = () => {
     { id: 10, name: "X9", value: "9.00", probability: 0.0 },
   ]);
 
-  const [showCountdown, setShowCountdown] = useState(false);
+  const [countdownPrizes, setCountdownPrizes] = useState<Prize[] | null>(null);
+
+  const [userAddress, setUserAddress] = useState<string | null>(null);
+  const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0.2);
+
   const [isWaitingSignature, setIsWaitingSignature] = useState(false);
+  const [showCountdown, setShowCountdown] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
 
   const [spinAngle, setSpinAngle] = useState(0);
@@ -47,13 +49,9 @@ const Spin: React.FC = () => {
     initThreeJS();
   }, []);
 
-  /** Initialize the Three.js background */
   const initThreeJS = () => {
     const canvas = canvasRef.current;
-    if (!canvas) {
-      console.warn("Canvas element not found");
-      return;
-    }
+    if (!canvas) return;
 
     const renderer = new THREE.WebGLRenderer({ canvas });
     renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
@@ -117,15 +115,19 @@ const Spin: React.FC = () => {
     return randomTurns * 360 + (360 - winningSegmentAngle);
   };
 
-  const onCountdownComplete = (formattedPrizes: Prize[]) => {
+  /**
+   */
+  const onCountdownComplete = (prizesForCountdown: Prize[]) => {
     setShowCountdown(false);
-    const winningPrize = formattedPrizes.find((p) => p.probability === 100);
+
+    const winningPrize = prizesForCountdown.find((p) => p.probability === 100);
     if (!winningPrize) {
       console.error("No prize with 100% probability found");
       setIsSpinning(false);
       return;
     }
-    const angle = calculateSpinAngle(winningPrize.name, formattedPrizes);
+
+    const angle = calculateSpinAngle(winningPrize.name, prizesForCountdown);
     setSpinAngle(angle);
 
     if (wheelRef.current) {
@@ -136,16 +138,26 @@ const Spin: React.FC = () => {
     setTimeout(() => {
       setPrizeName(winningPrize.name);
       setShowPrizeModal(true);
-      setIsSpinning(false);
 
       setTimeout(() => {
         setShowPrizeModal(false);
+        setIsSpinning(false);
       }, 3000);
     }, 10000);
   };
 
+  /**
+   * Main handler for “SPIN” button:
+   * 1) Check balance, send cUSD → get txHash
+   * 2) Call SpinEndSignature(...) → get Prize[]
+   * 3) Hide “Signing transaction…”, store prizes in countdownPrizes, then show countdown
+   */
   const spinWheel = async (betAmount: string) => {
-    if (isSpinning || isWaitingSignature || showCountdown) return;
+    // Prevent re-clicking while either:
+    //  • We’re waiting for the on-chain signature, or
+    //  • The countdown is running, or
+    //  • The wheel is currently spinning
+    if (isWaitingSignature || showCountdown || isSpinning) return;
 
     setError(null);
     setIsWaitingSignature(true);
@@ -165,17 +177,19 @@ const Spin: React.FC = () => {
         userAddress: address,
       });
 
+      // Format the Prize[] into “X1”, “X0.5”, etc.
       const formattedPrizes: Prize[] = (response.data as Prize[]).map((prize: Prize) => ({
         ...prize,
         name: `X${parseFloat(prize.value).toString().replace(/\.0+$/, "")}`,
       }));
+
       setPrizes(formattedPrizes);
+      setCountdownPrizes(formattedPrizes);
 
       setIsWaitingSignature(false);
+
       setShowCountdown(true);
-
       setIsSpinning(true);
-
     } catch (err: any) {
       setError(err?.message || "Transaction failed.");
       setIsWaitingSignature(false);
@@ -185,6 +199,7 @@ const Spin: React.FC = () => {
 
   return (
     <div className="relative w-full max-w-4xl aspect-square flex flex-col items-center justify-center">
+      {/* Three.js starfield background */}
       <div className="canvas-container absolute inset-0 -z-10">
         <canvas ref={canvasRef} className="three-canvas w-full h-full"></canvas>
       </div>
@@ -194,8 +209,10 @@ const Spin: React.FC = () => {
       <div className="dropdown mb-4">
         <button
           className="button px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors"
-          onClick={() => setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))}
-          disabled={isSpinning || isWaitingSignature || showCountdown}
+          onClick={() =>
+            setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))
+          }
+          disabled={isWaitingSignature || showCountdown || isSpinning}
         >
           Select Bet Amount: {selectedBetAmount}
         </button>
@@ -209,7 +226,9 @@ const Spin: React.FC = () => {
                 key={prize.id}
                 className="segment"
                 style={{
-                  transform: `rotate(${(360 / prizes.length) * index}deg) skewY(-30deg)`,
+                  transform: `rotate(${
+                    (360 / prizes.length) * index
+                  }deg) skewY(-30deg)`,
                   backgroundColor: generateSegmentColors(index),
                 }}
               >
@@ -221,7 +240,7 @@ const Spin: React.FC = () => {
           <button
             className="spin-button"
             onClick={() => spinWheel(selectedBetAmount.toString())}
-            disabled={isSpinning || isWaitingSignature || showCountdown}
+            disabled={isWaitingSignature || showCountdown || isSpinning}
           >
             <div className="pointer"></div>
             SPIN
@@ -229,20 +248,27 @@ const Spin: React.FC = () => {
         </div>
       </div>
 
-      {/*  */}
+      {/* “Signing transaction… Please wait”*/}
       {isWaitingSignature && (
         <div className="mt-4 p-2 bg-yellow-300 text-black rounded">
           Signing transaction… Please wait
         </div>
       )}
 
-      {/* Countdown overlay (full-screen) */}
       <CountdownLoader
         visible={showCountdown}
         duration={10}
         startNumber={100}
         endNumber={90}
-        onComplete={() => onCountdownComplete(prizes)}
+        onComplete={() => {
+          if (countdownPrizes) {
+            onCountdownComplete(countdownPrizes);
+          } else {
+            // hide countdown if something went wrong
+            setShowCountdown(false);
+            setIsSpinning(false);
+          }
+        }}
       />
 
       {/* Prize Modal */}

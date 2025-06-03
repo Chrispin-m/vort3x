@@ -177,8 +177,8 @@ const CountdownLoader: React.FC<CountdownLoaderProps> = ({
     <div className="countdown-overlay">
       <div className="background-stars" ref={starsContainerRef}></div>
       <div className="container">
-        <h1>Ethereal Countdown</h1>
-        <div className="subtitle">A mesmerizing visual journey from {startNumber} to {endNumber}</div>
+        <h1>Vortex</h1>
+        <div className="subtitle">Home of risk takers!!...</div>
         <div className="loader-container" ref={loaderRef}></div>
         {/*omitted the “Restart” and “Sound” controls intended as a one-shot overlay. */}
         <div className="footer">
