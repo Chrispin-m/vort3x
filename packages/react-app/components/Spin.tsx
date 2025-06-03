@@ -155,6 +155,7 @@ const Spin: React.FC = () => {
     if (!winningPrize) {
       console.error("No prize with 100% probability found");
       setIsSpinning(false);
+      setParticleSpeed(0.001);
       return;
     }
 
@@ -170,7 +171,6 @@ const Spin: React.FC = () => {
 
     setTimeout(() => {
       setPrizeName(winningPrize.name);
-      setParticleSpeed(0.001);
       setShowPrizeModal(true);
 
       setTimeout(() => {
@@ -181,17 +181,11 @@ const Spin: React.FC = () => {
     }, 6000);
   };
 
-  /**
-   * Handler for the SPIN button:
-   *  • Disable further clicks while awaiting signature or countdown or spin.
-   *  • Show “Signing…” banner.
-   *  • On success, store returned prizes, hide banner, show countdown, boost particles.
-   *  • On error, show toast and reset state.
-   */
   const spinWheel = async (betAmount: string) => {
     if (isWaitingSignature || showCountdown || isSpinning) return;
 
     setIsWaitingSignature(true);
+    setParticleSpeed(0.01);
 
     try {
       const address = await getUserAddress();
@@ -214,7 +208,6 @@ const Spin: React.FC = () => {
       setPrizes(formattedPrizes);
       setCountdownPrizes(formattedPrizes);
 
-      // Hide “Signing…” banner, show countdown, mark spinning, boost particles
       setIsWaitingSignature(false);
       setShowCountdown(true);
       setIsSpinning(true);
@@ -230,7 +223,6 @@ const Spin: React.FC = () => {
 
   return (
     <div className="spin-wrapper">
-      {/* Toasts */}
       <div className="toast-container">
         {toasts.map((t) => (
           <div key={t.id} className="toast">
@@ -303,7 +295,6 @@ const Spin: React.FC = () => {
           }}
         />
 
-        {/* Prize Modal */}
         {showPrizeModal && (
           <div className="modal-backdrop">
             <div className="modal-content">
