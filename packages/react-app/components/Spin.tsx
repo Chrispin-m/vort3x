@@ -3,14 +3,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
 import "./../styles/Spin.css";
+import CountdownLoader from "./CountdownLoader"; // ← import the loader component
 import axios from "axios";
-import { SpinEndPoinSigner, SpinEndPoint, SpinEndSignature } from "@/app/url/vortex";
-import type { JsonRpcSigner } from "ethers";
+import { SpinEndSignature } from "@/app/url/vortex";
 import { useWeb3 } from "../contexts/useWeb3";
 import { VortexAddress } from "@/app/config/addresses";
-import { parseEther, encodeFunctionData } from "viem";
-import StableTokenABI from "@/contexts/cusd-abi.json";
-import { celoAlfajores } from "viem/chains";
+import type { JsonRpcSigner } from "ethers";
 
 interface Prize {
   id: number;
@@ -19,7 +17,7 @@ interface Prize {
   probability: number;
 }
 
-const Spin = () => {
+const Spin: React.FC = () => {
   const { getUserAddress, sendToken, checkBalanceForTx } = useWeb3();
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0.2);
@@ -33,7 +31,8 @@ const Spin = () => {
     { id: 10, name: "X9", value: "9.00", probability: 0.0 },
   ]);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [spinAngle, setSpinAngle] = useState(0);
+  const [pendingAngle, setPendingAngle] = useState<number | null>(null);
+  const [showLoader, setShowLoader] = useState(false);
   const [showPrizeModal, setShowPrizeModal] = useState(false);
   const [prizeName, setPrizeName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,10 +50,8 @@ const Spin = () => {
       console.warn("Canvas element not found");
       return;
     }
-
     const renderer = new THREE.WebGLRenderer({ canvas });
     renderer.setSize(window.innerWidth, window.innerHeight * 0.9);
-
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -73,7 +70,6 @@ const Spin = () => {
       positions[i * 3] = Math.random() * 20 - 10;
       positions[i * 3 + 1] = Math.random() * 20 - 10;
       positions[i * 3 + 2] = Math.random() * 20 - 10;
-
       colors[i * 3] = Math.random();
       colors[i * 3 + 1] = Math.random();
       colors[i * 3 + 2] = Math.random();
@@ -114,19 +110,43 @@ const Spin = () => {
     return randomTurns * 360 + (360 - winningSegmentAngle);
   };
 
+  const onLoaderComplete = () => {
+    setShowLoader(false);
+
+    if (pendingAngle !== null && wheelRef.current) {
+      wheelRef.current.style.transition = "transform 5s ease-out";
+      wheelRef.current.style.transform = `rotate(${pendingAngle}deg)`;
+
+      setTimeout(() => {
+        setPrizeName(prizeName); 
+        setShowPrizeModal(true);
+        setIsSpinning(false);
+
+        setTimeout(() => {
+          setShowPrizeModal(false);
+        }, 2000);
+      }, 2000);
+    } else {
+      // If something went wrong (no angle), just reset
+      setIsSpinning(false);
+      setError("Unable to spin wheel. Please try again.");
+    }
+  };
+
+  // Called when user clicks “SPIN”
   const spinWheel = async (betAmount: string) => {
     if (isSpinning) return;
     setError(null);
     setIsSpinning(true);
+    setShowLoader(true);
 
     try {
+      // 1) Get user address & check balance
       const address = await getUserAddress();
       setUserAddress(address);
 
-      // Check if the user has enough cUSD
       await checkBalanceForTx(address, betAmount, VortexAddress);
 
-      // Send the cUSD transaction
       const txHash = await sendToken(VortexAddress, betAmount);
       console.log(`Transaction successful: ${txHash}`);
 
@@ -136,54 +156,36 @@ const Spin = () => {
         userAddress: address,
       });
 
-      const formattedPrizes = (response.data as Prize[]).map((prize: Prize) => ({
+      const formattedPrizes: Prize[] = (response.data as Prize[]).map((prize: Prize) => ({
         ...prize,
-        name: `X${parseFloat(prize.value).toString().replace(/\.0+$/, "")}`, // e.g. → "X1"
+        name: `X${parseFloat(prize.value).toString().replace(/\.0+$/, "")}`,
       }));
       setPrizes(formattedPrizes);
 
-      const allPrizes: Prize[] = response.data as Prize[];
-      const winningPrize = allPrizes.find((p) => p.probability === 100);
-
+      const winningPrize = (response.data as Prize[]).find((p) => p.probability === 100);
       if (!winningPrize) {
         console.error("No prize with 100% probability found");
+        setError("No guaranteed prize found.");
+        setShowLoader(false);
         setIsSpinning(false);
         return;
       }
 
-      // Calculate angle using the updated prize array
       const angle = calculateSpinAngle(`X${winningPrize.value}`, formattedPrizes);
-      setSpinAngle(angle);
-
-      if (wheelRef.current) {
-        wheelRef.current.style.transition = "transform 5s ease-out";
-        wheelRef.current.style.transform = `rotate(${angle}deg)`;
-      }
-
-      // After 10 seconds (spin duration), show the prize modal, then hide it after 3 seconds
-      setTimeout(() => {
-        setPrizeName(`X${winningPrize.value}`);
-        setShowPrizeModal(true);
-        setIsSpinning(false);
-
-        // Hide the modal after 3 seconds
-        setTimeout(() => {
-          setShowPrizeModal(false);
-        }, 3000);
-      }, 10000);
+      setPendingAngle(angle);
+      setPrizeName(`X${winningPrize.value}`);
     } catch (err: any) {
       setError(err?.message || "Transaction failed.");
+      setShowLoader(false);
       setIsSpinning(false);
     }
   };
 
   return (
-   <div className="relative w-full max-w-4xl aspect-square flex flex-col items-center justify-center">
+    <div className="relative w-full max-w-4xl aspect-square flex flex-col items-center justify-center">
+      {/* BACKGROUND PARTICLES */}
       <div className="canvas-container absolute inset-0 -z-10">
-        <canvas
-          ref={canvasRef}
-          className="three-canvas w-full h-full"
-        ></canvas>
+        <canvas ref={canvasRef} className="three-canvas w-full h-full"></canvas>
       </div>
 
       <h1 className="title text-2xl md:text-3xl font-bold mb-4">Spin to Win</h1>
@@ -192,6 +194,7 @@ const Spin = () => {
         <button
           className="button px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors"
           onClick={() => setSelectedBetAmount((prev) => (prev === 3 ? 6 : 3))}
+          disabled={isSpinning}
         >
           Select Bet Amount: {selectedBetAmount}
         </button>
@@ -283,6 +286,13 @@ const Spin = () => {
           </div>
         </div>
       )}
+
+      {/* COUNTDOWN LOADER OVERLAY */}
+      <CountdownLoader
+        visible={showLoader}
+        duration={10} // 10 seconds from 100→90
+        onComplete={onLoaderComplete}
+      />
     </div>
   );
 };
