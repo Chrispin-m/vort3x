@@ -503,15 +503,13 @@ line-height: 0.1;
 .spin-content {
   position: fixed;
   top: 50px; 
-  left: 0;
+  left: 15px;
   width: 100%;
   z-index: 10;
   align-items: center;
-  padding-top: 20px; 
   pointer-events: none; 
 }
 
-/* Make all children of spin-content have pointer events */
 .spin-content > * {
   pointer-events: auto;
 }
