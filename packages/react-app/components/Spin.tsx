@@ -148,7 +148,6 @@ const Spin: React.FC = () => {
     return randomTurns * 360 + (360 - winningSegmentAngle);
   };
 
-
   const onCountdownComplete = (prizesForCountdown: Prize[]) => {
     setShowCountdown(false);
 
@@ -167,12 +166,15 @@ const Spin: React.FC = () => {
       wheelRef.current.style.transform = `rotate(${angle}deg)`;
     }
 
+    // Keep particles fast until modal closes
     setParticleSpeed(0.02);
 
+    // After 6 seconds (wheel spinning), show prize modal
     setTimeout(() => {
       setPrizeName(winningPrize.name);
       setShowPrizeModal(true);
 
+      // After 2 seconds, hide modal, reset states
       setTimeout(() => {
         setShowPrizeModal(false);
         setIsSpinning(false);
@@ -182,16 +184,16 @@ const Spin: React.FC = () => {
   };
 
   /**
-   * Main “SPIN” handler:
-   * 1) Check balance, send cUSD
-   * 2) Call backend → Prize[]
-   * 3) Hide signing banner, store prizes, show countdown, boost particles
+   * Handler for the SPIN button:
+   *  • Disable further clicks while awaiting signature or countdown or spin.
+   *  • Show “Signing…” banner.
+   *  • On success, store returned prizes, hide banner, show countdown, boost particles.
+   *  • On error, show toast and reset state.
    */
   const spinWheel = async (betAmount: string) => {
     if (isWaitingSignature || showCountdown || isSpinning) return;
 
     setIsWaitingSignature(true);
-    setError(null);
 
     try {
       const address = await getUserAddress();
@@ -199,7 +201,6 @@ const Spin: React.FC = () => {
 
       await checkBalanceForTx(address, betAmount, VortexAddress);
       const txHash = await sendToken(VortexAddress, betAmount);
-      console.log(`Transaction successful: ${txHash}`);
 
       const response = await SpinEndSignature({
         hash: txHash,
@@ -215,6 +216,7 @@ const Spin: React.FC = () => {
       setPrizes(formattedPrizes);
       setCountdownPrizes(formattedPrizes);
 
+      // Hide “Signing…” banner, show countdown, mark spinning, boost particles
       setIsWaitingSignature(false);
       setShowCountdown(true);
       setIsSpinning(true);
@@ -230,7 +232,7 @@ const Spin: React.FC = () => {
 
   return (
     <div className="spin-wrapper">
-      {/* Toast Container */}
+      {/* Toasts */}
       <div className="toast-container">
         {toasts.map((t) => (
           <div key={t.id} className="toast">
@@ -239,11 +241,12 @@ const Spin: React.FC = () => {
         ))}
       </div>
 
-      {/* Three.js canvas wrapped by glow container */}
+      {/* Three.js canvas with pulsing glow */}
       <div className="canvas-glow-wrapper">
         <canvas ref={canvasRef} className="three-canvas"></canvas>
       </div>
 
+      {/* Main content overlaid on the canvas */}
       <div className="spin-content">
         <h1 className="title">Spin to Win</h1>
 
@@ -289,7 +292,7 @@ const Spin: React.FC = () => {
           <div className="signing-banner">Signing transaction… Please wait</div>
         )}
 
-        {/*  */}
+        {/* Countdown overlay */}
         <CountdownLoader
           visible={showCountdown}
           duration={10}
