@@ -8,10 +8,16 @@ import {
   parseEther,
   formatUnits,
   encodeFunctionData,
-  hexToBigInt,
 } from "viem";
 import { celoAlfajores } from "viem/chains";
 import { stableTokenABI } from "@celo/abis";
+
+//ethereum on window interface to fix TypeScript error
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
 
 // Supported tokens for MiniPay (Alfajores addresses)
 type MiniPayToken = {
@@ -20,6 +26,7 @@ type MiniPayToken = {
   decimals: number;
   abi?: typeof stableTokenABI; 
 };
+
 const TOKENS: MiniPayToken[] = [
   {
     symbol: "cUSD",
@@ -64,17 +71,17 @@ const publicClient = createPublicClient({
   transport: http(),
 });
 
-// Fixed buffer for CELO fees (0.01 CELO)
 const CELO_FEE_BUFFER = parseEther("0.01");
 
 export const useWeb3 = () => {
   const [address, setAddress] = useState<`0x${string}` | null>(null);
 
-  // Get user address (MiniPay or regular wallet)
   const getUserAddress = async (): Promise<`0x${string}`> => {
+    // Fixed TypeScript error using global declaration
     if (typeof window !== "undefined" && window.ethereum) {
       let accounts: `0x${string}`[] = [];
-      if ((window.ethereum as any).isMiniPay) {
+      
+      if (window.ethereum.isMiniPay) {
         accounts = await window.ethereum.request({
           method: "eth_requestAccounts",
           params: [],
@@ -84,32 +91,32 @@ export const useWeb3 = () => {
           transport: custom(window.ethereum),
           chain: celoAlfajores,
         });
-        accounts = (await walletClient.getAddresses()) as `0x${string}`[];
+        accounts = await walletClient.getAddresses() as `0x${string}`[];
       }
+      
       setAddress(accounts[0]);
       return accounts[0];
     }
     throw new Error("No injected wallet found");
   };
 
-  // Get token balance (internal)
   const getTokenBalance = async (
     userAddress: `0x${string}`,
     token: MiniPayToken
   ): Promise<bigint> => {
     if (token.symbol === "CELO") {
       return await publicClient.getBalance({ address: userAddress });
-    } else {
+    } else if (token.address && token.abi) {
       return await publicClient.readContract({
-        abi: token.abi!,
-        address: token.address!,
+        abi: token.abi,
+        address: token.address,
         functionName: "balanceOf",
         args: [userAddress],
       });
     }
+    throw new Error("Invalid token configuration");
   };
 
-  // balance check without gas estimation
   const findTokenWithBalance = async (
     userAddress: `0x${string}`,
     amount: string,
@@ -122,15 +129,13 @@ export const useWeb3 = () => {
           amountInWei = parseEther(amount);
           const balance = await getTokenBalance(userAddress, token);
           
-          // For CELOamount + fixed fee buffer
           if (balance >= amountInWei + CELO_FEE_BUFFER) {
             return token;
           }
-        } else {
+        } else if (token.address && token.abi) {
           amountInWei = parseUnits(amount, token.decimals);
           const balance = await getTokenBalance(userAddress, token);
           
-          // For ERC20 only need amount (fees are separate)
           if (balance >= amountInWei) {
             return token;
           }
@@ -142,11 +147,11 @@ export const useWeb3 = () => {
     throw new Error("Insufficient balance in all supported tokens");
   };
 
-  // Send token to another address (auto-selects token)
   const sendToken = async (
     to: `0x${string}`,
     amount: string
   ): Promise<`0x${string}`> => {
+    // Fixed TypeScript error using global declaration
     if (!window.ethereum) throw new Error("No wallet found");
 
     const walletClient = createWalletClient({
@@ -154,22 +159,19 @@ export const useWeb3 = () => {
       chain: celoAlfajores,
     });
 
-    const [userAddress] = (await walletClient.getAddresses()) as [
-      `0x${string}`
-    ];
+    const [userAddress] = await walletClient.getAddresses() as [`0x${string}`];
 
-    // Find token with sufficient balance
     const token = await findTokenWithBalance(userAddress, amount, to);
     
-    // Convert amount to wei
     let amountInWei: bigint;
     if (token.symbol === "CELO") {
       amountInWei = parseEther(amount);
-    } else {
+    } else if (token.decimals) {
       amountInWei = parseUnits(amount, token.decimals);
+    } else {
+      throw new Error("Invalid token decimals");
     }
 
-    // Build transaction
     const txRequest = {
       account: userAddress,
       feeCurrency: token.symbol === "CELO" ? undefined : token.address!,
@@ -178,23 +180,21 @@ export const useWeb3 = () => {
             to,
             value: amountInWei,
           }
-        : {
-            to: token.address!,
+        : token.address && token.abi
+        ? {
+            to: token.address,
             data: encodeFunctionData({
-              abi: token.abi!,
+              abi: token.abi,
               functionName: "transfer",
               args: [to, amountInWei],
             }),
             value: 0n,
-          }),
+          }
+        : {}),
     };
 
-    // Proceed with transaction - wallet will handle gas estimation
     try {
-      const hash = await walletClient.sendTransaction({
-        ...txRequest,
-        // automatically estimate gas if not provided
-      });
+      const hash = await walletClient.sendTransaction(txRequest);
       return hash;
     } catch (error: any) {
       console.error("Transaction failed:", error);
@@ -202,7 +202,6 @@ export const useWeb3 = () => {
     }
   };
 
-  // Check if user has enough balance for a transaction
   const checkBalanceForTx = async (
     userAddress: `0x${string}`,
     amount: string,
