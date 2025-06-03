@@ -59,3 +59,42 @@ export async function SpinEndSignature({
   );
   return resp.data;
 }
+
+export async function getOffchainBalance(userAddress: string) {
+  const resp = await axios.get(`${BASE}/balance/${userAddress}`);
+  return resp.data;
+}
+
+export async function depositOffchain({
+  userAddress,
+  value,
+  hash,
+}: {
+  userAddress: string;
+  value: string;
+  hash: string;
+}) {
+  const resp = await axios.post(`${BASE}/deposit`, {
+    address: userAddress,
+    amount: value,
+    tx_hash_input: hash,
+  });
+  return resp.data;
+}
+
+export async function withdrawOffchain({
+  userAddress,
+  value,
+  hash,
+}: {
+  userAddress: string;
+  value: string;
+  hash: string;
+}) {
+  const resp = await axios.post(`${BASE}/withdraw`, {
+    address: userAddress,
+    amount: value,
+    tx_hash_input: hash,
+  });
+  return resp.data;
+}

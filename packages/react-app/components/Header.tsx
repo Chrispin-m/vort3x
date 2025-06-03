@@ -1,88 +1,139 @@
+// components/Header.tsx
 "use client";
 
-import { Disclosure } from "@headlessui/react";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import Image from "next/image";
-import { useEffect, useState } from "react";
-import { useConnect } from "wagmi";
-import { injected } from "wagmi/connectors";
+import React, { useState, useEffect } from "react";
+import { XMarkIcon, Bars3Icon } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { useWeb3 } from "../contexts/useWeb3";
+import {
+  getOffchainBalance,
+  depositOffchain,
+  withdrawOffchain,
+} from "../app/url/vortex";
+import { formatUnits, parseUnits } from "viem";
 
 export default function Header() {
-  const [hideConnectBtn, setHideConnectBtn] = useState(false);
-  const { connect } = useConnect();
+  const [isOpen, setIsOpen] = useState(false);
+  const [offchainBalance, setOffchainBalance] = useState<string>("0.0");
+  const [loadingBalance, setLoadingBalance] = useState(false);
+  const { address, getUserAddress, sendToken, checkBalanceForTx } = useWeb3();
 
   useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).ethereum?.isMiniPay) {
-      setHideConnectBtn(true);
-      connect({ connector: injected() });
+    async function fetchOffchain() {
+      setLoadingBalance(true);
+      try {
+        const user = await getUserAddress();
+        const resp = await getOffchainBalance(user);
+        const cusd = formatUnits(BigInt(resp.balance), 18);
+        setOffchainBalance(cusd);
+      } catch {
+        setOffchainBalance("0.0");
+      } finally {
+        setLoadingBalance(false);
+      }
     }
-  }, [connect]);
+    if (address) {
+      fetchOffchain();
+      const id = setInterval(fetchOffchain, 15000);
+      return () => clearInterval(id);
+    }
+  }, [address, getUserAddress]);
+
+  const handleDeposit = async () => {
+    const amt = prompt("Enter amount to deposit (CUSD):");
+    if (!amt || isNaN(Number(amt)) || Number(amt) <= 0) return;
+    try {
+      const user = await getUserAddress();
+      await checkBalanceForTx(user, amt, VortexAddress);
+      const hash = await sendToken(VortexAddress, amt);
+      await depositOffchain({
+        userAddress: user,
+        value: parseUnits(amt, 18).toString(),
+        hash,
+      });
+      const resp = await getOffchainBalance(user);
+      setOffchainBalance(formatUnits(BigInt(resp.balance), 18));
+    } catch (e: any) {
+      alert(e.message || "Deposit failed");
+    }
+  };
+
+  const handleWithdraw = async () => {
+    const amt = prompt("Enter amount to withdraw (CUSD):");
+    if (!amt || isNaN(Number(amt)) || Number(amt) <= 0) return;
+    try {
+      const user = await getUserAddress();
+      await checkBalanceForTx(user, amt, VortexAddress);
+      const hash = await sendToken(user, amt);
+      await withdrawOffchain({
+        userAddress: user,
+        value: parseUnits(amt, 18).toString(),
+        hash,
+      });
+      alert("Withdrawal requested");
+    } catch (e: any) {
+      alert(e.message || "Withdraw failed");
+    }
+  };
 
   return (
-    <Disclosure as="nav" className="fixed top-0 left-0 right-0 z-50 bg-colors-primary border-b border-black">
-      {({ open }) => (
-        <>
-          <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
-            <div className="relative flex h-16 justify-between">
-              {/* Mobile menu button */}
-              <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
-                <Disclosure.Button className="inline-flex items-center justify-center rounded-md p-2 text-black focus:outline-none focus:ring-1 focus:ring-inset focus:ring-black">
-                  <span className="sr-only">Open main menu</span>
-                  {open ? (
-                    <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
-                  ) : (
-                    <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
-                  )}
-                </Disclosure.Button>
-              </div>
+    <>
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow">
+        <div className="flex items-center justify-between h-16 px-4">
+          <button
+            onClick={() => setIsOpen(true)}
+            className="p-2 text-gray-700 hover:text-black"
+          >
+            <Bars3Icon className="h-6 w-6" />
+          </button>
+          <div className="text-lg font-semibold">Vort3x</div>
+          <div style={{ width: 24 }} />
+        </div>
+      </div>
 
-              {/* Logo + desktop menu */}
-              <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-                <div className="flex flex-shrink-0 items-center">
-                  <Image
-                    src="/logo.svg"
-                    width={24}
-                    height={24}
-                    alt="Celo Logo"
-                    className="block h-8 w-auto"
-                  />
-                </div>
-                <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                  <a
-                    href="#"
-                    className="inline-flex items-center border-b-2 border-black px-1 pt-1 text-sm font-medium text-gray-900"
-                  >
-                    Home
-                  </a>
-                </div>
-              </div>
-
-              {/* Connect button */}
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-                {!hideConnectBtn && (
-                  <ConnectButton
-                    showBalance={{ smallScreen: true, largeScreen: false }}
-                  />
-                )}
-              </div>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="w-64 bg-white shadow-lg flex flex-col p-4">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="self-end p-2 text-gray-700 hover:text-black"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+            <div className="mt-4 mb-6 text-center">
+              {loadingBalance ? (
+                <span>Loading...</span>
+              ) : (
+                <span className="text-2xl font-bold">{offchainBalance} CUSD</span>
+              )}
             </div>
-          </div>
-
-          {/* Mobile menu panel */}
-          <Disclosure.Panel className="sm:hidden">
-            <div className="space-y-1 pt-2 pb-4">
-              <Disclosure.Button
-                as="a"
-                href="#"
-                className="block border-l-4 border-black py-2 pl-3 pr-4 text-base font-medium text-black"
+            <nav className="flex-1 space-y-4">
+              <Link href="/" onClick={() => setIsOpen(false)}>
+                <div className="px-2 py-2 rounded hover:bg-gray-100">Home</div>
+              </Link>
+              <button
+                onClick={handleDeposit}
+                className="w-full text-left px-2 py-2 rounded hover:bg-gray-100"
               >
-                Home
-              </Disclosure.Button>
-            </div>
-          </Disclosure.Panel>
-        </>
+                Deposit
+              </button>
+              <button
+                onClick={handleWithdraw}
+                className="w-full text-left px-2 py-2 rounded hover:bg-gray-100"
+              >
+                Withdraw
+              </button>
+              <Link href="/help" onClick={() => setIsOpen(false)}>
+                <div className="px-2 py-2 rounded hover:bg-gray-100">Help/Support</div>
+              </Link>
+            </nav>
+          </div>
+          <div
+            className="flex-1 bg-black bg-opacity-30"
+            onClick={() => setIsOpen(false)}
+          />
+        </div>
       )}
-    </Disclosure>
+    </>
   );
 }
