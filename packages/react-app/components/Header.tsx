@@ -40,41 +40,56 @@ export default function Header() {
     }
   }, [showDepositModal, showWithdrawModal]);
 
-   // recursive timeout
   useEffect(() => {
     let isCancelled = false;
 
-    async function fetchOffchain() {
+    async function fetchOffchainLoop() {
       if (!address || isCancelled) return;
 
       setLoadingBalance(true);
       try {
         const user = await getUserAddress();
         const resp = await getOffchainBalance(user);
-        // to a decimal cUSD string, and fix to 2 decimals.
-        const rawCusdString = formatUnits(BigInt(resp.balance), 18);
-        const rawCusdNumber = parseFloat(rawCusdString);
-        const rounded = rawCusdNumber.toFixed(2);
+        //
+        // 1e18 as a BigNumber:
+        const WEI_PER_CUSD = BigNumber.from("1000000000000000000");
+        const amountWei = BigNumber.from(resp.balance);
 
-        setOffchainBalance(rounded);
+        // so that we keep TWO decimal places:
+        const times100 = amountWei.mul(100);
+
+        // + (1e18 ÷ 2) to times100 so that dividing by 1e18 will round to nearest:
+        const roundingOffset = WEI_PER_CUSD.div(2);
+        const times100Rounded = times100.add(roundingOffset);
+
+        // (wei * 100 + ½·1e18) // 1e18:
+        const finalCusdTimes100 = times100Rounded.div(WEI_PER_CUSD);
+
+        // Split into integer and “cents”:
+        const integerPart = finalCusdTimes100.div(100).toString();
+        let decimalPart = finalCusdTimes100.mod(100).toString();
+        if (decimalPart.length === 1) {
+          decimalPart = "0" + decimalPart;
+        }
+        const fixed = `${integerPart}.${decimalPart}`;
+
+        setOffchainBalance(fixed);
       } catch (err) {
         setOffchainBalance("_");
       } finally {
         setLoadingBalance(false);
-
-        // Schedule next fetch only if this effect is still “mounted”
         if (!isCancelled) {
-          setTimeout(fetchOffchain, 15_000);
+          setTimeout(fetchOffchainLoop, 15_000);
         }
       }
     }
 
-    fetchOffchain();
-
+    fetchOffchainLoop();
     return () => {
       isCancelled = true;
     };
   }, [address, getUserAddress]);
+
 
   const renderDepositModal = () => {
     const handleSubmit = async (e: React.FormEvent) => {
@@ -100,7 +115,7 @@ export default function Header() {
           value: parseUnits(amount, 18).toString(),
           hash,
         });
-        await fetchOffchain();
+        await fetchOffchainLoop();
         setShowDepositModal(false);
       } catch (e: any) {
         setModalError(e.message || "Deposit failed");
