@@ -9,7 +9,7 @@ import {
   depositOffchain,
   withdrawOffchain,
 } from "../app/url/vortex";
-import { formatUnits, parseUnits } from "viem";
+import { parseUnits } from "viem";
 import { useConnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { VortexAddress } from "@/app/config/addresses";
