@@ -219,5 +219,7 @@ export const useWeb3 = () => {
     getUserAddress,
     sendToken,
     checkBalanceForTx,
+    findTokenWithBalance,
+    getTokenBalance,
   };
 };
