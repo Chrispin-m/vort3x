@@ -54,7 +54,7 @@ export default function Header() {
       // Fetch offchain balance
       const resp = await getOffchainBalance(user);
       prompt(`${resp}`);
-      const balanceCUSD = (parseFloat(resp.balance).toFixed(2);
+      const balanceCUSD = parseFloat(resp.balance).toFixed(2);
 
       setOffchainBalance(`${balanceCUSD}`);
       
