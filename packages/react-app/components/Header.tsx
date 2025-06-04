@@ -9,12 +9,11 @@ import {
   depositOffchain,
   withdrawOffchain,
 } from "../app/url/vortex";
-import { parseUnits } from "viem";
+import { formatUnits, parseUnits } from "viem";
 import { useConnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { VortexAddress } from "@/app/config/addresses";
 import { BigNumber } from "ethers";
-import { formatUnits } from "ethers/lib/utils";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
