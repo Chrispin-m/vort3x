@@ -63,7 +63,7 @@ export async function SpinEndSignature({
 
 export async function getOffchainBalance(userAddress: string) {
   const resp = await axios.get(`${BASEOFF}/balance/${userAddress}`);
-  return resp.data;
+  return resp.json();
 }
 
 export async function depositOffchain({
