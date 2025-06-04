@@ -53,17 +53,10 @@ export default function Header() {
       
       // Fetch offchain balance
       const resp = await getOffchainBalance(user);
-      prompt(`${resp}:`);
-      const WEI_PER_CUSD = BigNumber.from("1000000000000000000");
-      const amountWei = BigNumber.from(resp.balance);
-      const times100 = amountWei.mul(100);
-      const roundingOffset = WEI_PER_CUSD.div(2);
-      const times100Rounded = times100.add(roundingOffset);
-      const finalCusdTimes100 = times100Rounded.div(WEI_PER_CUSD);
-      const integerPart = finalCusdTimes100.div(100).toString();
-      let decimalPart = finalCusdTimes100.mod(100).toString();
-      if (decimalPart.length === 1) decimalPart = "0" + decimalPart;
-      setOffchainBalance(`${integerPart}.${decimalPart}`);
+      prompt(`${resp}`);
+      const balanceCUSD = (parseFloat(resp.balance) / 1e18).toFixed(2);
+
+      setOffchainBalance(`${balanceCUSD}`);
       
       // Fetch onchain balance
       const token = {
