@@ -54,7 +54,6 @@ export default function Header() {
       
       // Fetch offchain balance
       const resp = await getOffchainBalance(user);
-      prompt(`${}`);
       const rawCusdString = formatUnits(resp.balance, 18);
         prompt(`_____:${rawCusdString}`);
       const cusdTwoDecimals = Number(rawCusdString).toFixed(2);
