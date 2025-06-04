@@ -14,6 +14,7 @@ import { useConnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { VortexAddress } from "@/app/config/addresses";
 import { BigNumber } from "ethers";
+import { formatUnits } from "ethers/lib/utils";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,10 +54,11 @@ export default function Header() {
       
       // Fetch offchain balance
       const resp = await getOffchainBalance(user);
-      prompt(`${resp}`);
-      const balanceCUSD = parseFloat(resp.balance).toFixed(2);
-
-      setOffchainBalance(`${balanceCUSD}`);
+      prompt(`${}`);
+      const rawCusdString = formatUnits(resp.balance, 18);
+        prompt(`_____:${rawCusdString}`);
+      const cusdTwoDecimals = Number(rawCusdString).toFixed(2);
+      setOffchainBalance(cusdTwoDecimals);
       
       // Fetch onchain balance
       const token = {
@@ -362,27 +364,27 @@ export default function Header() {
     {toasts.map(toast => {
       let bgColor, borderColor;
       switch (toast.type) {
-        case 'success':
-          bgColor = 'from-emerald-800/80 to-emerald-900/80';
-          borderColor = 'border-emerald-400/30';
-          break;
-        case 'error':
-          bgColor = 'from-red-800/80 to-red-900/80';
-          borderColor = 'border-red-400/30';
-          break;
-        default:
-          bgColor = 'from-indigo-800/80 to-purple-800/80';
-          borderColor = 'border-cyan-400/30';
+      case 'success':
+        bgColor = 'from-emerald-800/80 to-emerald-900/80';
+        borderColor = 'border-emerald-400/30';
+        break;
+      case 'error':
+        bgColor = 'from-red-800/80 to-red-900/80';
+        borderColor = 'border-red-400/30';
+        break;
+      default:
+        bgColor = 'from-indigo-800/80 to-purple-800/80';
+        borderColor = 'border-cyan-400/30';
       }
       
       return (
         <div 
-          key={toast.id}
-          className={`px-4 py-3 bg-gradient-to-r ${bgColor} backdrop-blur-sm rounded-xl border ${borderColor} text-white shadow-lg animate-fadeIn`}
+        key={toast.id}
+        className={`px-4 py-3 bg-gradient-to-r ${bgColor} backdrop-blur-sm rounded-xl border ${borderColor} text-white shadow-lg animate-fadeIn`}
         >
-          {toast.message}
+        {toast.message}
         </div>
-      )
+        )
     })}
     </div>
 
@@ -445,31 +447,31 @@ export default function Header() {
       </div>
 
       <div 
-        onClick={fetchBalances}
-        className="relative z-10 mt-6 mb-8 text-center p-6 bg-gradient-to-r from-indigo-800/50 to-purple-800/50 rounded-xl border border-cyan-400/30 backdrop-blur-sm overflow-hidden cursor-pointer hover:shadow-[0_0_20px_-5px_rgba(56,189,248,0.5)] transition-all group"
+      onClick={fetchBalances}
+      className="relative z-10 mt-6 mb-8 text-center p-6 bg-gradient-to-r from-indigo-800/50 to-purple-800/50 rounded-xl border border-cyan-400/30 backdrop-blur-sm overflow-hidden cursor-pointer hover:shadow-[0_0_20px_-5px_rgba(56,189,248,0.5)] transition-all group"
       >
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        <div className="absolute -inset-4 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent animate-pulse-slow"></div>
+      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+      <div className="absolute -inset-4 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent animate-pulse-slow"></div>
 
-        {loadingBalance ? (
-          <div className="flex justify-center items-center">
-            <div className="w-8 h-8 border-t-2 border-cyan-400 rounded-full animate-spin"></div>
-          </div>
+      {loadingBalance ? (
+        <div className="flex justify-center items-center">
+        <div className="w-8 h-8 border-t-2 border-cyan-400 rounded-full animate-spin"></div>
+        </div>
         ) : (
-          <>
-            <div className="text-sm text-cyan-300 mb-1 group-hover:text-white transition-colors">
-              Offchain Balance
-            </div>
-            <div className="text-3xl font-bold text-white tracking-wide drop-shadow-[0_0_15px_rgba(56,189,248,0.8)] group-hover:drop-shadow-[0_0_20px_rgba(56,189,248,0.9)] transition-all">
-              {offchainBalance} CUSD
-            </div>
-            <div className="mt-2 text-sm text-cyan-200 opacity-80">
-              Onchain: {onchainBalance} CUSD
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
-          </>
+        <>
+        <div className="text-sm text-cyan-300 mb-1 group-hover:text-white transition-colors">
+        Offchain Balance
+        </div>
+        <div className="text-3xl font-bold text-white tracking-wide drop-shadow-[0_0_15px_rgba(56,189,248,0.8)] group-hover:drop-shadow-[0_0_20px_rgba(56,189,248,0.9)] transition-all">
+        {offchainBalance} CUSD
+        </div>
+        <div className="mt-2 text-sm text-cyan-200 opacity-80">
+        Onchain: {onchainBalance} CUSD
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+        </>
         )}
-      </div>
+        </div>
 
         <nav className="relative z-10 flex-1 space-y-5">
         <Link href="/" onClick={() => setIsOpen(false)}>
