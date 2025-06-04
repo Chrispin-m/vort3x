@@ -53,7 +53,7 @@ export default function Header() {
       
       // Fetch offchain balance
       const resp = await getOffchainBalance(user);
-      //prompt(`${resp}:`);
+      prompt(`${resp}:`);
       const WEI_PER_CUSD = BigNumber.from("1000000000000000000");
       const amountWei = BigNumber.from(resp.balance);
       const times100 = amountWei.mul(100);

@@ -62,7 +62,10 @@ export async function SpinEndSignature({
 }
 
 export async function getOffchainBalance(userAddress: string) {
-  const resp = await axios.get(`${BASEOFF}/balance/${userAddress}`);
+  const resp = await axios.get(`${BASEOFF}/balance/${encodeURIComponent(userAddress)}`);
+  if (!resp.ok) {
+    throw new Error("Network error: " + response.status);
+  }
   return resp.json();
 }
 
