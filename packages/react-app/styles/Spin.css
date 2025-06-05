@@ -79,7 +79,7 @@ z-index: 999;
 }
 
 .wheel-container {
-top: 2rem;
+top: 0.5rem;
 display: flex;
 justify-content: center;
 align-items: center;
