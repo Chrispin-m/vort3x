@@ -1,9 +1,9 @@
 import axios from "axios";
 
-const BASE = "https://vortex-dapbe.onrender.com/api/stake";
-const BASEOFF = "https://vortex-dapbe.onrender.com/api/offchain";
+const BASE_URL = "https://vortex-dapbe.onrender.com/api/stake";
+const OFFCHAIN_URL = "https://vortex-dapbe.onrender.com/api/offchain";
 
-export interface SpinInterface {
+export interface SpinTransaction {
   amount: number;
   signedTx: string;
   userAddress: string;
@@ -11,92 +11,99 @@ export interface SpinInterface {
 
 export interface SpinWithSigner {
   amount: number;
-  signer: unknown; // not used client-side
+  signer: unknown;
 }
 
-export interface SpinEndSignatureWithHash {
+export interface SignedSpinRequest {
   hash: string;
   value: string;
   userAddress: string;
 }
 
-export async function SpinEndPoint({
-  signedTx,
-  amount,
-  userAddress
-}: SpinInterface) {
-  const resp = await axios.post(
-    `${BASE}/Spinsign`,
-    { amount, signedTx, userAddress },
-    { headers: { "Content-Type": "application/json" } }
-  );
-  return resp.data;
+export interface DepositWithdrawalRequest {
+  userAddress: string;
+  value: string;
+  hash: string;
 }
 
-export async function SpinEndPoinSigner({
-  amount
-}: { amount: number }) {
-  const resp = await axios.post(
-    `${BASE}/spin`,
-    { amount },
-    { headers: { "Content-Type": "application/json" } }
-  );
-  return resp.data;
+export interface SpinOffChainRequest {
+  address: string;
+  amount: number;
 }
 
-export async function SpinEndSignature({
-  hash,
-  value,
-  userAddress
-}: SpinEndSignatureWithHash) {
-  const resp = await axios.post(
-    `${BASE}/Spinsignwithhash`,
+
+export async function spinEndpoint(transaction: SpinTransaction) {
+  const { data } = await axios.post(
+    `${BASE_URL}/Spinsign`,
     {
-      txHash: hash,
-      address: userAddress,
-      amount: value
+      amount: transaction.amount,
+      signedTx: transaction.signedTx,
+      userAddress: transaction.userAddress
     },
     { headers: { "Content-Type": "application/json" } }
   );
-  return resp.data;
+  return data;
+}
+
+
+export async function spinEndpointSigner(request: { amount: number }) {
+  const { data } = await axios.post(
+    `${BASE_URL}/spin`,
+    { amount: request.amount },
+    { headers: { "Content-Type": "application/json" } }
+  );
+  return data;
+}
+
+
+export async function spinEndSignature(request: SignedSpinRequest) {
+  const { data } = await axios.post(
+    `${BASE_URL}/Spinsignwithhash`,
+    {
+      txHash: request.hash,
+      address: request.userAddress,
+      amount: request.value
+    },
+    { headers: { "Content-Type": "application/json" } }
+  );
+  return data;
 }
 
 export async function getOffchainBalance(userAddress: string) {
-  const resp = await axios.get(`${BASEOFF}/balance/${encodeURIComponent(userAddress)}`);
-  return resp.data;
+  const { data } = await axios.get(
+    `${OFFCHAIN_URL}/balance/${encodeURIComponent(userAddress)}`
+  );
+  return data;
 }
 
 
-export async function depositOffchain({
-  userAddress,
-  value,
-  hash,
-}: {
-  userAddress: string;
-  value: string;
-  hash: string;
-}) {
-  const resp = await axios.post(`${BASEOFF}/deposit`, {
-    address: userAddress,
-    amount: value,
-    tx_hash_input: hash,
+export async function depositOffchain(request: DepositWithdrawalRequest) {
+  const { data } = await axios.post(`${OFFCHAIN_URL}/deposit`, {
+    address: request.userAddress,
+    amount: request.value,
+    tx_hash_input: request.hash
   });
-  return resp.data;
+  return data;
 }
 
-export async function withdrawOffchain({
-  userAddress,
-  value,
-  hash,
-}: {
-  userAddress: string;
-  value: string;
-  hash: string;
-}) {
-  const resp = await axios.post(`${BASEOFF}/withdraw`, {
-    address: userAddress,
-    amount: value,
-    tx_hash_input: hash,
+
+export async function withdrawOffchain(request: DepositWithdrawalRequest) {
+  const { data } = await axios.post(`${OFFCHAIN_URL}/withdraw`, {
+    address: request.userAddress,
+    amount: request.value,
+    tx_hash_input: request.hash
   });
-  return resp.data;
+  return data;
+}
+
+export async function spinoffchain(request: SpinOffChainRequest) {
+  const { data } = await axios.post(
+    `${OFFCHAIN_URL}/spin-offchain`,
+    {
+      address: request.address,
+      betAmount: request.amount
+    },
+    { headers: { "Content-Type": "application/json" } }
+  );
+  return data;
 }
