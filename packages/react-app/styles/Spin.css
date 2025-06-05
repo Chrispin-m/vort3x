@@ -79,7 +79,7 @@ z-index: 999;
 }
 
 .wheel-container {
-top: 0.5rem;
+top: 0rem;
 display: flex;
 justify-content: center;
 align-items: center;
@@ -533,6 +533,7 @@ line-height: 0.1;
   cursor: pointer;
   transition: all 0.3s ease;
   overflow: hidden;
+  margin-bottom: 0.5rem
 }
 
 .ethereal-radio.active {
