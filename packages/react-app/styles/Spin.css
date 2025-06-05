@@ -73,13 +73,13 @@ position: relative;
 
 .dropdown {
 position: relative;
-top: 2rem;
+top: 1rem;
 right: 1rem;
-z-index: 999; /* Ensure this is above the canvas */
+z-index: 999; 
 }
 
 .wheel-container {
-top: 4rem;
+top: 2rem;
 display: flex;
 justify-content: center;
 align-items: center;
