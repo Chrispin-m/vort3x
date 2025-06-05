@@ -27,6 +27,7 @@
     "encoding": "^0.1.13",
     "eslint-config-next": "^15.0.2",
     "ethers": "^6.14.1",
+    "framer-motion": "^12.16.0",
     "lucide-react": "^0.454.0",
     "next": "^15.0.2",
     "pino-pretty": "^11.3.0",
