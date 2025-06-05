@@ -83,7 +83,7 @@ top: 2rem;
 display: flex;
 justify-content: center;
 align-items: center;
-height: calc(60vh - 4rem);
+height: calc(60vh - 2rem);
 z-index: 10; /* Ensure this is above the canvas */
 position: relative;
 }
