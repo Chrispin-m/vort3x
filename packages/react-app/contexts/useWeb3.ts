@@ -120,8 +120,6 @@ export const useWeb3 = () => {
     }
   };
 
-  return { address, setAddress, getUserAddress };
-};
 
 const getTokenBalance = async (
   userAddress: `0x${string}`,
@@ -151,14 +149,14 @@ const findTokenWithBalance = async (
       if (token.symbol === "CELO") {
         amountInWei = parseEther(amount);
         const balance = await getTokenBalance(userAddress, token);
-        
+
         if (balance >= amountInWei + CELO_FEE_BUFFER) {
           return token;
         }
       } else if (token.address && token.abi) {
         amountInWei = parseUnits(amount, token.decimals);
         const balance = await getTokenBalance(userAddress, token);
-        
+
         if (balance >= amountInWei) {
           return token;
         }
@@ -185,7 +183,7 @@ const sendToken = async (
   const [userAddress] = await walletClient.getAddresses() as [`0x${string}`];
 
   const token = await findTokenWithBalance(userAddress, amount, to);
-  
+
   let amountInWei: bigint;
   if (token.symbol === "CELO") {
     amountInWei = parseEther(amount);
