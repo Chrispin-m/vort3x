@@ -7,9 +7,8 @@ import { motion } from "framer-motion";
 
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
-// Icon components for different wallets
 const WalletIcon = ({ connectorName }: { connectorName: string }) => {
-  const iconClass = "w-6 h-6 text-white";
+  const iconClass = "w-8 h-8";
   
   switch (connectorName.toLowerCase()) {
     case "metamask":
@@ -41,6 +40,21 @@ const WalletIcon = ({ connectorName }: { connectorName: string }) => {
   }
 };
 
+const getConnectorGradient = (name: string) => {
+  switch (name.toLowerCase()) {
+    case "metamask":
+      return "bg-gradient-to-br from-amber-400/30 via-orange-500/30 to-amber-300/30";
+    case "walletconnect":
+      return "bg-gradient-to-br from-blue-400/30 via-indigo-500/30 to-blue-300/30";
+    case "coinbase wallet":
+      return "bg-gradient-to-br from-blue-500/30 via-blue-600/30 to-indigo-400/30";
+    case "ledger":
+      return "bg-gradient-to-br from-emerald-400/30 via-teal-500/30 to-emerald-300/30";
+    default:
+      return "bg-gradient-to-br from-purple-400/30 via-pink-500/30 to-purple-300/30";
+  }
+};
+
 export default function Home() {
   const { connectAsync, connectors } = useConnect();
   const { address, isConnected } = useAccount();
@@ -64,26 +78,41 @@ export default function Home() {
   };
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-4">
+    <div className="w-full h-full flex items-center justify-center p-4 bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
       {!isConnected || !address ? (
-        <div className="w-full max-w-3xl">
-          <motion.h1 
-            className="text-3xl md:text-4xl font-bold text-center mb-8 text-white drop-shadow-lg"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            Connect Your Wallet
-          </motion.h1>
+        <motion.div 
+          className="w-full max-w-4xl bg-white rounded-3xl shadow-xl p-6 sm:p-8 md:p-10"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="text-center mb-10">
+            <motion.h1 
+              className="text-3xl md:text-4xl font-bold text-gray-800 mb-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              Connect Your Wallet
+            </motion.h1>
+            <motion.p 
+              className="text-sm text-gray-500"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+            >
+              Select your preferred wallet provider
+            </motion.p>
+          </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {uniqueConnectors.map((connector) => (
               <motion.div
                 key={connector.id}
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3 }}
-                whileHover={{ scale: 1.03 }}
+                transition={{ duration: 0.4 }}
+                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
                 <button
@@ -91,51 +120,79 @@ export default function Home() {
                   disabled={isConnecting}
                   className={`
                     w-full h-full flex flex-col items-center justify-center
-                    p-6 rounded-2xl backdrop-blur-lg bg-white/10
-                    border border-white/20 shadow-lg
-                    transition-all duration-300
-                    hover:bg-white/20 hover:border-white/30
+                    p-5 rounded-2xl backdrop-blur-lg border border-gray-200
+                    transition-all duration-300 overflow-hidden
+                    hover:shadow-lg relative
                     ${isConnecting ? "opacity-80 cursor-not-allowed" : ""}
                   `}
                 >
-                  <div className="bg-indigo-500/20 p-3 rounded-full mb-4">
-                    <WalletIcon connectorName={connector.name} />
-                  </div>
+                  {/* Ethereal background */}
+                  <div className={`absolute inset-0 ${getConnectorGradient(connector.name)} opacity-70 z-0`} />
                   
-                  <h3 className="text-lg font-semibold text-white mb-1">
-                    {connector.name}
-                  </h3>
+                  {/* Glowing orb effect */}
+                  <div className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 bg-white/30 rounded-full filter blur-3xl z-0" />
                   
-                  {connectingId === connector.id ? (
-                    <div className="flex items-center mt-2">
-                      <svg 
-                        className="animate-spin h-5 w-5 text-white mr-2" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        fill="none" 
-                        viewBox="0 0 24 24"
-                      >
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span className="text-sm text-white/80">Connecting...</span>
+                  {/* Content */}
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="mb-4 p-3 rounded-full bg-white/80 backdrop-blur-sm shadow-sm">
+                      <WalletIcon connectorName={connector.name} />
                     </div>
-                  ) : (
-                    <p className="text-sm text-white/60 mt-1">Click to connect</p>
-                  )}
+                    
+                    <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                      {connector.name}
+                    </h3>
+                    
+                    {connectingId === connector.id ? (
+                      <div className="flex items-center mt-2">
+                        <svg 
+                          className="animate-spin h-5 w-5 text-gray-600 mr-2" 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          fill="none" 
+                          viewBox="0 0 24 24"
+                        >
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-sm text-gray-600">Connecting...</span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 mt-1">Click to connect</p>
+                    )}
+                  </div>
                 </button>
               </motion.div>
             ))}
           </div>
           
-          <motion.p 
-            className="text-center text-white/60 mt-8 text-sm"
+          {/* Footer with glowing text */}
+          <motion.div 
+            className="text-center mt-10 pt-6 border-t border-gray-100"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
           >
-            Secure connection powered by blockchain technology
-          </motion.p>
-        </div>
+            <p className="text-sm text-gray-500">
+              Secure connection powered by blockchain technology
+            </p>
+            <div className="mt-2 flex justify-center">
+              {[...Array(3)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="w-2 h-2 rounded-full bg-blue-400 mx-1"
+                  animate={{ 
+                    opacity: [0.3, 1, 0.3],
+                    scale: [0.8, 1.2, 0.8]
+                  }}
+                  transition={{ 
+                    duration: 1.5, 
+                    repeat: Infinity, 
+                    delay: i * 0.2 
+                  }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
       ) : (
         <Spin />
       )}
