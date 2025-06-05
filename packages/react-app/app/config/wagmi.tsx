@@ -12,15 +12,15 @@ if (!WC_PROJECT_ID) {
 }
 
 const { connectors } = getDefaultWallets({
-  appName: "mini",
+  appName: "Vort3x",
   projectId: WC_PROJECT_ID,
 });
 
 const wagmiConfig = createConfig({
   chains: [celoAlfajores, mainnet],
   connectors: [
+    injected(), 
     ...connectors,
-    injected()
   ],
   transports: {
     [celoAlfajores.id]: fallback([
