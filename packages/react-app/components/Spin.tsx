@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import "./../styles/Spin.css";
-import { SpinEndSignature, spinoffchain } from "@/app/url/vortex";
+import { spinEndSignature, spinoffchain } from "@/app/url/vortex";
 import { useWeb3 } from "../contexts/useWeb3";
 import { VortexAddress } from "@/app/config/addresses";
 import CountdownLoader from "@/components/CountdownLoader";
@@ -201,7 +201,7 @@ const Spin: React.FC = () => {
       await checkBalanceForTx(address, betAmount, VortexAddress);
       const txHash = await sendToken(VortexAddress, betAmount);
 
-      const response = await SpinEndSignature({
+      const response = await spinEndSignature({
         hash: txHash,
         value: betAmount,
         userAddress: address,
