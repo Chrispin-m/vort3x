@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   createPublicClient,
   createWalletClient,
@@ -11,8 +11,6 @@ import {
 } from "viem";
 import { celoAlfajores } from "viem/chains";
 import { stableTokenABI } from "@celo/abis";
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-
 
 //ethereum on window interface to fix TypeScript error
 declare global {
@@ -88,159 +86,149 @@ export const useWeb3 = () => {
 
 
   const getUserAddress = async (): Promise<`0x${string}`> => {
-    try {
-      if (isConnected && wagmiAddress) return wagmiAddress;
-
-      if (typeof window !== 'undefined' && window.ethereum?.isMiniPay) {
-        const accounts = await window.ethereum.request({
-          method: 'eth_requestAccounts',
+    // Fixed TypeScript error using global declaration
+    if (typeof window !== "undefined" && window.ethereum) {
+      let accounts: `0x${string}`[] = [];
+      
+      if (window.ethereum.isMiniPay) {
+        accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
           params: [],
         });
-        setAddress(accounts[0]);
-        return accounts[0];
-      }
-
-      const { account } = await connectAsync();
-      if (!account) throw new Error('Connection failed');
-      return account;
-      
-    } catch (error) {
-      // Fallback to injection
-      if (typeof window !== 'undefined' && window.ethereum) {
+      } else {
         const walletClient = createWalletClient({
           transport: custom(window.ethereum),
           chain: celoAlfajores,
         });
-        const [account] = await walletClient.getAddresses();
-        setAddress(account);
-        return account;
+        accounts = await walletClient.getAddresses() as `0x${string}`[];
       }
       
-      throw new Error('No wallet found');
+      setAddress(accounts[0]);
+      return accounts[0];
     }
+    throw new Error("No injected wallet found");
   };
 
-
-const getTokenBalance = async (
-  userAddress: `0x${string}`,
-  token: MiniPayToken
+  const getTokenBalance = async (
+    userAddress: `0x${string}`,
+    token: MiniPayToken
   ): Promise<bigint> => {
-  if (token.symbol === "CELO") {
-    return await publicClient.getBalance({ address: userAddress });
-  } else if (token.address && token.abi) {
-    return await publicClient.readContract({
-      abi: token.abi,
-      address: token.address,
-      functionName: "balanceOf",
-      args: [userAddress],
-    });
-  }
-  throw new Error("Invalid token configuration");
-};
-
-const findTokenWithBalance = async (
-  userAddress: `0x${string}`,
-  amount: string,
-  to: `0x${string}`
-  ): Promise<MiniPayToken> => {
-  for (const token of TOKENS) {
-    try {
-      let amountInWei: bigint;
-      if (token.symbol === "CELO") {
-        amountInWei = parseEther(amount);
-        const balance = await getTokenBalance(userAddress, token);
-
-        if (balance >= amountInWei + CELO_FEE_BUFFER) {
-          return token;
-        }
-      } else if (token.address && token.abi) {
-        amountInWei = parseUnits(amount, token.decimals);
-        const balance = await getTokenBalance(userAddress, token);
-
-        if (balance >= amountInWei) {
-          return token;
-        }
-      }
-    } catch (error) {
-      console.warn(`Balance check failed for ${token.symbol}:`, error);
+    if (token.symbol === "CELO") {
+      return await publicClient.getBalance({ address: userAddress });
+    } else if (token.address && token.abi) {
+      return await publicClient.readContract({
+        abi: token.abi,
+        address: token.address,
+        functionName: "balanceOf",
+        args: [userAddress],
+      });
     }
-  }
-  throw new Error("Insufficient balance in all supported tokens");
-};
+    throw new Error("Invalid token configuration");
+  };
 
-const sendToken = async (
-  to: `0x${string}`,
-  amount: string
+  const findTokenWithBalance = async (
+    userAddress: `0x${string}`,
+    amount: string,
+    to: `0x${string}`
+  ): Promise<MiniPayToken> => {
+    for (const token of TOKENS) {
+      try {
+        let amountInWei: bigint;
+        if (token.symbol === "CELO") {
+          amountInWei = parseEther(amount);
+          const balance = await getTokenBalance(userAddress, token);
+          
+          if (balance >= amountInWei + CELO_FEE_BUFFER) {
+            return token;
+          }
+        } else if (token.address && token.abi) {
+          amountInWei = parseUnits(amount, token.decimals);
+          const balance = await getTokenBalance(userAddress, token);
+          
+          if (balance >= amountInWei) {
+            return token;
+          }
+        }
+      } catch (error) {
+        console.warn(`Balance check failed for ${token.symbol}:`, error);
+      }
+    }
+    throw new Error("Insufficient balance in all supported tokens");
+  };
+
+  const sendToken = async (
+    to: `0x${string}`,
+    amount: string
   ): Promise<`0x${string}`> => {
     // Fixed TypeScript error using global declaration
-  if (!window.ethereum) throw new Error("No wallet found");
+    if (!window.ethereum) throw new Error("No wallet found");
 
-  const walletClient = createWalletClient({
-    transport: custom(window.ethereum),
-    chain: celoAlfajores,
-  });
+    const walletClient = createWalletClient({
+      transport: custom(window.ethereum),
+      chain: celoAlfajores,
+    });
 
-  const [userAddress] = await walletClient.getAddresses() as [`0x${string}`];
+    const [userAddress] = await walletClient.getAddresses() as [`0x${string}`];
 
-  const token = await findTokenWithBalance(userAddress, amount, to);
+    const token = await findTokenWithBalance(userAddress, amount, to);
+    
+    let amountInWei: bigint;
+    if (token.symbol === "CELO") {
+      amountInWei = parseEther(amount);
+    } else if (token.decimals) {
+      amountInWei = parseUnits(amount, token.decimals);
+    } else {
+      throw new Error("Invalid token decimals");
+    }
 
-  let amountInWei: bigint;
-  if (token.symbol === "CELO") {
-    amountInWei = parseEther(amount);
-  } else if (token.decimals) {
-    amountInWei = parseUnits(amount, token.decimals);
-  } else {
-    throw new Error("Invalid token decimals");
-  }
+    const txRequest = {
+      account: userAddress,
+      feeCurrency: token.symbol === "CELO" ? undefined : token.address!,
+      ...(token.symbol === "CELO"
+        ? {
+            to,
+            value: amountInWei,
+          }
+        : token.address && token.abi
+        ? {
+            to: token.address,
+            data: encodeFunctionData({
+              abi: token.abi,
+              functionName: "transfer",
+              args: [to, amountInWei],
+            }),
+            value: 0n,
+          }
+        : {}),
+    };
 
-  const txRequest = {
-    account: userAddress,
-    feeCurrency: token.symbol === "CELO" ? undefined : token.address!,
-    ...(token.symbol === "CELO"
-      ? {
-        to,
-        value: amountInWei,
-      }
-      : token.address && token.abi
-      ? {
-        to: token.address,
-        data: encodeFunctionData({
-          abi: token.abi,
-          functionName: "transfer",
-          args: [to, amountInWei],
-        }),
-        value: 0n,
-      }
-      : {}),
+    try {
+      const hash = await walletClient.sendTransaction(txRequest);
+      return hash;
+    } catch (error: any) {
+      console.error("Transaction failed:", error);
+      throw new Error(`Transaction failed: ${error.shortMessage || error.message}`);
+    }
   };
 
-  try {
-    const hash = await walletClient.sendTransaction(txRequest);
-    return hash;
-  } catch (error: any) {
-    console.error("Transaction failed:", error);
-    throw new Error(`Transaction failed: ${error.shortMessage || error.message}`);
-  }
-};
-
-const checkBalanceForTx = async (
-  userAddress: `0x${string}`,
-  amount: string,
-  to: `0x${string}`
+  const checkBalanceForTx = async (
+    userAddress: `0x${string}`,
+    amount: string,
+    to: `0x${string}`
   ): Promise<void> => {
-  try {
-    await findTokenWithBalance(userAddress, amount, to);
-  } catch (e: any) {
-    throw new Error(e.message);
-  }
-};
+    try {
+      await findTokenWithBalance(userAddress, amount, to);
+    } catch (e: any) {
+      throw new Error(e.message);
+    }
+  };
 
-return {
-  address,
-  getUserAddress,
-  sendToken,
-  checkBalanceForTx,
-  findTokenWithBalance,
-  getTokenBalance,
-};
+  return {
+    address,
+    getUserAddress,
+    sendToken,
+    checkBalanceForTx,
+    findTokenWithBalance,
+    getTokenBalance,
+  };
 };
