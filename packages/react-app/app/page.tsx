@@ -64,7 +64,7 @@ export default function Home() {
   };
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-4 bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
+    <div className="w-full h-full flex items-center justify-center p-4">
       {!isConnected || !address ? (
         <div className="w-full max-w-3xl">
           <motion.h1 
