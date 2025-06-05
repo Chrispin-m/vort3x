@@ -79,11 +79,11 @@ z-index: 999;
 }
 
 .wheel-container {
-top: 0.3rem;
+top: 0rem;
 display: flex;
 justify-content: center;
 align-items: center;
-height: calc(60vh - 2rem);
+height: calc(52vh - 2rem);
 z-index: 10; /* Ensure this is above the canvas */
 position: relative;
 }
@@ -518,8 +518,8 @@ line-height: 0.1;
   display: flex;
   justify-content: center;
   gap: 1rem;
-  margin-top: 1rem; 
-  margin-bottom: 0.5rem;
+  margin: 1.5rem 0;
+
 }
 
 .ethereal-radio {
