@@ -534,7 +534,12 @@ line-height: 0.1;
   cursor: pointer;
   transition: all 0.3s ease;
   overflow: hidden;
-  margin-bottom: 0.5rem
+  margin-bottom: 0.5rem;
+  color: #7CFC00;
+  text-shadow:
+    0 0 2px #7CFC00,    
+    0 0 6px #00FF00,    
+    0 0 12px #00FA9A;
 }
 
 .ethereal-radio.active {
