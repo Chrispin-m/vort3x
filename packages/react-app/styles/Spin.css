@@ -517,8 +517,9 @@ line-height: 0.1;
 .chain-mode-selector {
   display: flex;
   justify-content: center;
-  gap: 2rem;
-  margin: 1.5rem 0;
+  gap: 1rem;
+  margin-top: 1rem; 
+  margin-bottom: 0.5rem;
 }
 
 .ethereal-radio {
