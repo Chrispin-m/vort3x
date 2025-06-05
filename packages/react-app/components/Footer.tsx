@@ -26,8 +26,7 @@ const navigation = [
 ];
 
 export default function Footer() {
-  // Generate 15 random “cosmic particles.”
-  const particles = Array.from({ length: 15 }).map((_, i) => {
+  const particles = Array.from({ length: 10 }).map((_, i) => {
     const top = `${Math.random() * 100}%`;
     const left = `${Math.random() * 100}%`;
     const size = `${Math.random() * 10 + 2}px`;
@@ -91,7 +90,6 @@ export default function Footer() {
           backdropFilter: "blur(16px)",
           borderTop: "1px solid rgba(34,211,238,0.2)",
           padding: "0.4rem 0",
-          zIndex: 30,
           boxShadow:
             "0 0 30px rgba(100,150,255,0.3), 0 0 60px rgba(180,100,255,0.2), inset 0 0 20px rgba(100,200,255,0.1)",
           overflow: "hidden",
@@ -117,12 +115,25 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
+                  position: "relative",
+                  zIndex: 31,
                   color: "rgba(184,242,254,1)",
                   display: "inline-block",
                   transition: "transform 0.3s",
+                  animation: "float 6s ease-in-out infinite",
                 }}
               >
-                <span style={{ position: "absolute", width: 1, height: 1, padding: 0, overflow: "hidden", clip: "rect(0,0,0,0)", border: 0 }}>
+                <span
+                  style={{
+                    position: "absolute",
+                    width: 1,
+                    height: 1,
+                    padding: 0,
+                    overflow: "hidden",
+                    clip: "rect(0,0,0,0)",
+                    border: 0,
+                  }}
+                >
                   {item.name}
                 </span>
                 <item.icon />
@@ -130,7 +141,16 @@ export default function Footer() {
             ))}
           </div>
 
-          <div style={{ order: 1, width: "100%", textAlign: "center", marginTop: "0.5rem" }}>
+          <div
+            style={{
+              order: 1,
+              width: "100%",
+              textAlign: "center",
+              marginTop: "0.5rem",
+              position: "relative",
+              zIndex: 31,
+            }}
+          >
             <p
               style={{
                 margin: 0,
@@ -163,12 +183,42 @@ export default function Footer() {
       </footer>
 
       <a
-        href="https://t.me/yourchannel"
+        href="https://twitter.com/CeloDevs"
         target="_blank"
         rel="noopener noreferrer"
         style={{
           position: "fixed",
           bottom: "2rem",
+          left: "2rem",
+          zIndex: 40,
+          width: "3rem",
+          height: "3rem",
+          borderRadius: "50%",
+          background: "linear-gradient(to bottom right, #1DA1F2, #0d8bf0)",
+          boxShadow: "0 0 10px rgba(29,161,242,0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          animation: "float 6s ease-in-out infinite",
+        }}
+      >
+        <svg
+          fill="white"
+          viewBox="0 0 24 24"
+          style={{ width: "1.5rem", height: "1.5rem" }}
+        >
+          <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
+        </svg>
+      </a>
+
+      <a
+        href="https://t.me/+gBQvwvV1AUFkMzU0"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          position: "fixed",
+          bottom: "4rem",  
           right: "2rem",
           zIndex: 40,
           width: "3.5rem",
@@ -180,6 +230,7 @@ export default function Footer() {
           alignItems: "center",
           justifyContent: "center",
           cursor: "pointer",
+          animation: "float 6s ease-in-out infinite",
         }}
       >
         <svg
