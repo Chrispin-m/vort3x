@@ -75,15 +75,6 @@ const CELO_FEE_BUFFER = parseEther("0.01");
 
 export const useWeb3 = () => {
   const [address, setAddress] = useState<`0x${string}` | null>(null);
-  const { address: wagmiAddress, isConnected, connector } = useAccount();
-  const { connectAsync } = useConnect();
-  const { disconnect } = useDisconnect();
-
-  useEffect(() => {
-    if (wagmiAddress) setAddress(wagmiAddress);
-    else setAddress(null);
-  }, [wagmiAddress]);
-
 
   const getUserAddress = async (): Promise<`0x${string}`> => {
     // Fixed TypeScript error using global declaration
@@ -229,6 +220,6 @@ export const useWeb3 = () => {
     sendToken,
     checkBalanceForTx,
     findTokenWithBalance,
-    getTokenBalance,
+    getTokenBalance
   };
 };
