@@ -228,10 +228,10 @@ export default function Home() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5, duration: 0.5 }}
             style={{
-              background: "linear-gradient(90deg, #93c5fd, #c7d2fe)",
+              background: "linear-gradient(90deg, #444, #111)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
-              textShadow: "0 0 8px rgba(147, 197, 253, 0.5)"
+              textShadow: "0 0 8px rgba(0, 0, 0, 0.6)"
             }}
           >
             Secure connection powered by blockchain technology
