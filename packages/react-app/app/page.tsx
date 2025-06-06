@@ -102,12 +102,15 @@ export default function Home() {
                   disabled={isConnecting}
                   className={`
                     w-full h-full flex flex-col items-center justify-center
-                    p-6 rounded-2xl backdrop-blur-lg bg-white/5
-                    border border-white/20 shadow-lg
-                    transition-all duration-300
-                    hover:border-white/40
+                    p-6 rounded-2xl backdrop-blur-xl
+                    bg-gradient-to-br from-blue-900/30 via-purple-800/30 to-pink-900/30
+                    border border-white/10 ring-1 ring-white/20
+                    shadow-2xl shadow-purple-800/40
+                    transition-all duration-300 ease-out
+                    hover:scale-105 hover:backdrop-brightness-110 hover:border-white/50
                     ${isConnecting ? "opacity-80 cursor-not-allowed" : ""}
                   `}
+
                   style={{
                     backgroundImage: `
                       radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
@@ -116,7 +119,6 @@ export default function Home() {
                     boxShadow: "0 0 20px rgba(139, 92, 246, 0.1)"
                   }}
                 >
-                  {/* Ethereal icon container */}
                   <div className="p-3 rounded-full mb-4 backdrop-blur-sm"
                     style={{
                       background: "rgba(255, 255, 255, 0.1)",
