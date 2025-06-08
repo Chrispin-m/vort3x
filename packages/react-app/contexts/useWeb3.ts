@@ -12,7 +12,6 @@ import {
 import { celoAlfajores } from "viem/chains";
 import { stableTokenABI } from "@celo/abis";
 
-//ethereum on window interface to fix TypeScript error
 declare global {
   interface Window {
     ethereum?: any;
@@ -21,8 +20,8 @@ declare global {
 
 // Supported tokens for MiniPay (Alfajores addresses)
 type MiniPayToken = {
-  symbol: "cUSD" | "cEUR" | "cREAL" | "CELO" | "USDC" | "CKES";
-  address?: `0x${string}`; // for CELO
+  symbol: "cUSD" | "cEUR" | "cREAL" | "CELO" | "USDC" | "CKES" | "USDT";
+  address?: `0x${string}`;
   decimals: number;
   abi?: typeof stableTokenABI; 
 };
@@ -59,6 +58,12 @@ const TOKENS: MiniPayToken[] = [
     abi: stableTokenABI,
   },
   {
+    symbol: "USDT",
+    address: "0x2E0dAd5E07805F0A6d77dD9b5b0A0D5c24Ca7Fd0",
+    decimals: 6,
+    abi: stableTokenABI,
+  },
+  {
     symbol: "CELO",
     address: undefined, // Native
     decimals: 18,
@@ -77,10 +82,19 @@ export const useWeb3 = () => {
   const [address, setAddress] = useState<`0x${string}` | null>(null);
 
   const getUserAddress = async (): Promise<`0x${string}`> => {
-    // Fixed TypeScript error using global declaration
     if (typeof window !== "undefined" && window.ethereum) {
-      let accounts: `0x${string}`[] = [];
+      // First try to get connected accounts without prompting
+      let accounts: `0x${string}`[] = await window.ethereum.request({
+        method: "eth_accounts",
+      });
       
+      // If accounts are connected, return the first one
+      if (accounts.length > 0) {
+        setAddress(accounts[0]);
+        return accounts[0];
+      }
+      
+      // If no connected accounts, request access
       if (window.ethereum.isMiniPay) {
         accounts = await window.ethereum.request({
           method: "eth_requestAccounts",
