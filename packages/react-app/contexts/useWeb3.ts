@@ -9,7 +9,7 @@ import {
   formatUnits,
   encodeFunctionData,
 } from "viem";
-import { celoAlfajores } from "viem/chains";
+import { celo } from "viem/chains"; // MAINNET import
 import { stableTokenABI } from "@celo/abis";
 
 declare global {
@@ -18,7 +18,7 @@ declare global {
   }
 }
 
-// Supported tokens for MiniPay (Alfajores addresses)
+// Supported tokens for MiniPay (Celo Mainnet addresses)
 type MiniPayToken = {
   symbol: "cUSD" | "cEUR" | "cREAL" | "CELO" | "USDC" | "CKES" | "USDT";
   address?: `0x${string}`;
@@ -29,37 +29,37 @@ type MiniPayToken = {
 const TOKENS: MiniPayToken[] = [
   {
     symbol: "cUSD",
-    address: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1",
+    address: "0x765DE816845861e75A25fCA122bb6898B8B1282a", // cUSD Mainnet
     decimals: 18,
     abi: stableTokenABI,
   },
   {
     symbol: "cEUR",
-    address: "0x10c892A6EC43a53E45D0B916B4b7D383B1b78C0F",
+    address: "0xD8763CBA276a3738e6de85b4B3BF5fdED6d6cA73", // cEUR Mainnet
     decimals: 18,
     abi: stableTokenABI,
   },
   {
     symbol: "cREAL",
-    address: "0xE4D517785D091D3c54818832dB6094bcc2744545",
+    address: "0xE4D517785D091D3c54818832dB6094bcc2744545", // cREAL Mainnet
     decimals: 18,
     abi: stableTokenABI,
   },
   {
     symbol: "USDC",
-    address: "0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B",
+    address: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C", // USDC Mainnet
     decimals: 6,
     abi: stableTokenABI,
   },
   {
     symbol: "CKES",
-    address: "0x1E0433C1769271ECcF4CFF9FDdD515eefE6CdF92",
+    address: "0x1E0433C1769271ECcF4CFF9FDdD515eefE6CdF92", // CKES Mainnet
     decimals: 6,
     abi: stableTokenABI,
   },
   {
     symbol: "USDT",
-    address: "0x2E0dAd5E07805F0A6d77dD9b5b0A0D5c24Ca7Fd0",
+    address: "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e", // USDT Mainnet
     decimals: 6,
     abi: stableTokenABI,
   },
@@ -72,7 +72,7 @@ const TOKENS: MiniPayToken[] = [
 ];
 
 const publicClient = createPublicClient({
-  chain: celoAlfajores,
+  chain: celo, // MAINNET
   transport: http(),
 });
 
@@ -103,7 +103,7 @@ export const useWeb3 = () => {
       } else {
         const walletClient = createWalletClient({
           transport: custom(window.ethereum),
-          chain: celoAlfajores,
+          chain: celo, // MAINNET
         });
         accounts = await walletClient.getAddresses() as `0x${string}`[];
       }
@@ -165,12 +165,11 @@ export const useWeb3 = () => {
     to: `0x${string}`,
     amount: string
   ): Promise<`0x${string}`> => {
-    // Fixed TypeScript error using global declaration
     if (!window.ethereum) throw new Error("No wallet found");
 
     const walletClient = createWalletClient({
       transport: custom(window.ethereum),
-      chain: celoAlfajores,
+      chain: celo, // MAINNET
     });
 
     const [userAddress] = await walletClient.getAddresses() as [`0x${string}`];
