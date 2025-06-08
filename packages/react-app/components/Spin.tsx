@@ -36,7 +36,7 @@ const Spin: React.FC = () => {
 
   const [countdownPrizes, setCountdownPrizes] = useState<Prize[] | null>(null);
   const [userAddress, setUserAddress] = useState<string | null>(null);
-  const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0.2);
+  const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0.02);
   const [chainMode, setChainMode] = useState<"onchain" | "offchain">("onchain");
   
   const [isWaitingSignature, setIsWaitingSignature] = useState(false);
@@ -301,7 +301,7 @@ const Spin: React.FC = () => {
         <div className="dropdown">
           <button
             className="button"
-            onClick={() => setSelectedBetAmount((p) => (p === 3 ? 6 : 3))}
+            onClick={() => setSelectedBetAmount((p) => (p === 0.02? 0.006 : 0.5))}
             disabled={isWaitingSignature || showCountdown || isSpinning}
           >
             Select Bet Amount: {selectedBetAmount}
