@@ -200,7 +200,13 @@ const Spin: React.FC = () => {
       setUserAddress(address);
 
       await checkBalanceForTx(address, betAmount, VortexAddress);
-      const txHash = await sendToken(VortexAddress, betAmount);
+      
+      // Pass selectedToken to sendToken
+      const txHash = await sendToken(
+        VortexAddress, 
+        betAmount, 
+        selectedToken
+        );
 
       const response = await spinEndSignature({
         hash: txHash,

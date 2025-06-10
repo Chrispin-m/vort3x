@@ -117,7 +117,7 @@ export const useWeb3 = () => {
   const getTokenBalance = async (
     userAddress: `0x${string}`,
     token: MiniPayToken
-  ): Promise<bigint> => {
+    ): Promise<bigint> => {
     if (token.symbol === "CELO") {
       return await publicClient.getBalance({ address: userAddress });
     } else if (token.address && token.abi) {
@@ -135,7 +135,7 @@ export const useWeb3 = () => {
     userAddress: `0x${string}`,
     amount: string,
     to: `0x${string}`
-  ): Promise<MiniPayToken> => {
+    ): Promise<MiniPayToken> => {
     for (const token of TOKENS) {
       try {
         let amountInWei: bigint;
@@ -163,19 +163,22 @@ export const useWeb3 = () => {
 
   const sendToken = async (
     to: `0x${string}`,
-    amount: string
-  ): Promise<`0x${string}`> => {
+    amount: string,
+    tokenSymbol: string
+    ): Promise<`0x${string}`> => {
     if (!window.ethereum) throw new Error("No wallet found");
 
     const walletClient = createWalletClient({
       transport: custom(window.ethereum),
-      chain: celo, // MAINNET
+      chain: celo,
     });
 
-    const [userAddress] = await walletClient.getAddresses() as [`0x${string}`];
-
-    const token = await findTokenWithBalance(userAddress, amount, to);
+    const [userAddress] = (await walletClient.getAddresses()) as [`0x${string}`];
     
+    // Find the selected token
+    const token = TOKENS.find(t => t.symbol === tokenSymbol);
+    if (!token) throw new Error(`Token ${tokenSymbol} not supported`);
+
     let amountInWei: bigint;
     if (token.symbol === "CELO") {
       amountInWei = parseEther(amount);
@@ -190,19 +193,19 @@ export const useWeb3 = () => {
       feeCurrency: token.symbol === "CELO" ? undefined : token.address!,
       ...(token.symbol === "CELO"
         ? {
-            to,
-            value: amountInWei,
-          }
+          to,
+          value: amountInWei,
+        }
         : token.address && token.abi
         ? {
-            to: token.address,
-            data: encodeFunctionData({
-              abi: token.abi,
-              functionName: "transfer",
-              args: [to, amountInWei],
-            }),
-            value: 0n,
-          }
+          to: token.address,
+          data: encodeFunctionData({
+            abi: token.abi,
+            functionName: "transfer",
+            args: [to, amountInWei],
+          }),
+          value: 0n,
+        }
         : {}),
     };
 
@@ -211,7 +214,9 @@ export const useWeb3 = () => {
       return hash;
     } catch (error: any) {
       console.error("Transaction failed:", error);
-      throw new Error(`Transaction failed: ${error.shortMessage || error.message}`);
+      throw new Error(
+    `Transaction failed: ${error.shortMessage || error.message}`
+    );
     }
   };
 
@@ -219,7 +224,7 @@ export const useWeb3 = () => {
     userAddress: `0x${string}`,
     amount: string,
     to: `0x${string}`
-  ): Promise<void> => {
+    ): Promise<void> => {
     try {
       await findTokenWithBalance(userAddress, amount, to);
     } catch (e: any) {
