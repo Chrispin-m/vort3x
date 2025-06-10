@@ -304,7 +304,7 @@ const Spin: React.FC = () => {
   };
 
   return (
-    <div className="spin-wrapper">
+    <div className={`spin-wrapper ${showBetSelector || showTokenSelector ? "popup-open" : ""}`}>
       {/* Toast notifications */}
       <div className="toast-container">
         {toasts.map((t) => (
@@ -316,6 +316,11 @@ const Spin: React.FC = () => {
           </div>
           ))}
       </div>
+
+      {/* Popup backdrop */}
+      {(showBetSelector || showTokenSelector) && (
+        <div className="popup-backdrop"></div>
+      )}
 
       <div className="canvas-glow-wrapper">
         <canvas ref={canvasRef} className="three-canvas"></canvas>
@@ -329,7 +334,10 @@ const Spin: React.FC = () => {
           {/* Bet Amount Orb */}
           <div className="relative" ref={betSelectorRef}>
             <button
-              onClick={() => setShowBetSelector(!showBetSelector)}
+              onClick={() => {
+                setShowBetSelector(true);
+                setShowTokenSelector(false);
+              }}
               disabled={isWaitingSignature || showCountdown || isSpinning}
               className="ethereal-select-btn"
             >
@@ -360,7 +368,10 @@ const Spin: React.FC = () => {
           {/* Token Sigil */}
           <div className="relative" ref={tokenSelectorRef}>
             <button
-              onClick={() => setShowTokenSelector(!showTokenSelector)}
+              onClick={() => {
+                setShowTokenSelector(true);
+                setShowBetSelector(false);
+              }}
               disabled={isWaitingSignature || showCountdown || isSpinning}
               className="ethereal-select-btn"
             >
