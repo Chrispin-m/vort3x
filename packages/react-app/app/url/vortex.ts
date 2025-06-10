@@ -29,6 +29,7 @@ export interface DepositWithdrawalRequest {
 export interface SpinOffChainRequest {
   address: string;
   amount: number;
+  token_symbol: string; 
 }
 
 
@@ -101,7 +102,8 @@ export async function spinoffchain(request: SpinOffChainRequest) {
     `${OFFCHAIN_URL}/spin-offchain`,
     {
       address: request.address,
-      betAmount: request.amount
+      betAmount: request.amount,
+      token_symbol: request.token_symbol,
     },
     { headers: { "Content-Type": "application/json" } }
   );

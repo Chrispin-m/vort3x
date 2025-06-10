@@ -37,6 +37,7 @@ const Spin: React.FC = () => {
   const [countdownPrizes, setCountdownPrizes] = useState<Prize[] | null>(null);
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0.02);
+  const [selectedToken, setSelectedToken] = useState<string>("USDT");
   const [chainMode, setChainMode] = useState<"onchain" | "offchain">("onchain");
   
   const [isWaitingSignature, setIsWaitingSignature] = useState(false);
@@ -229,7 +230,7 @@ const Spin: React.FC = () => {
     }
   };
 
-  // off-chain spin
+  // off-chain spin - MODIFIED TO INCLUDE TOKEN SYMBOL
   const handleOffchainSpin = async (betAmount: string) => {
     setIsWaitingSignature(true);
     setParticleSpeed(0.01);
@@ -240,7 +241,8 @@ const Spin: React.FC = () => {
 
       const response = await spinoffchain({
         address: address,
-        amount: parseFloat(betAmount)
+        amount: parseFloat(betAmount),
+        token_symbol: selectedToken,
       });
 
       const formattedPrizes: Prize[] = (response.data as Prize[]).map((prize: Prize) => ({
@@ -265,7 +267,7 @@ const Spin: React.FC = () => {
     }
   };
 
-  // Main spin funct
+  // Main spin function
   const spinWheel = async (betAmount: string) => {
     if (isWaitingSignature || showCountdown || isSpinning) return;
     
@@ -297,15 +299,38 @@ const Spin: React.FC = () => {
       <div className="spin-content">
         <h1 className="title">Spin to Win</h1>
 
-        {/* Bet amount selector */}
-        <div className="dropdown">
-          <button
-            className="button"
-            onClick={() => setSelectedBetAmount((p) => (p === 0.02? 0.006 : 0.5))}
-            disabled={isWaitingSignature || showCountdown || isSpinning}
-          >
-            Select Bet Amount: {selectedBetAmount}
-          </button>
+        {/* Bet amount and token selector */}
+        <div className="selector-container">
+          <div className="custom-select">
+            <select
+              value={selectedBetAmount}
+              onChange={(e) => setSelectedBetAmount(Number(e.target.value))}
+              disabled={isWaitingSignature || showCountdown || isSpinning}
+              className="bet-select"
+            >
+              <option value={0.02}>0.02</option>
+              <option value={0.05}>0.05</option>
+              <option value={0.1}>0.1</option>
+              <option value={0.5}>0.5</option>
+              <option value={1}>1.0</option>
+            </select>
+            <div className="select-arrow"></div>
+          </div>
+          
+          <div className="custom-select token-select">
+            <select
+              value={selectedToken}
+              onChange={(e) => setSelectedToken(e.target.value)}
+              disabled={isWaitingSignature || showCountdown || isSpinning}
+              className="token-select"
+            >
+              <option value="USDT">USDT</option>
+              <option value="ETH">CUSD</option>
+              <option value="BTC">CKES</option>
+              <option value="SOL">USDC</option>
+            </select>
+            <div className="select-arrow"></div>
+          </div>
         </div>
 
         <div className="chain-mode-selector">
