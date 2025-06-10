@@ -5,7 +5,6 @@ import {
   custom,
   http,
   parseUnits,
-  parseEther,
   encodeFunctionData,
 } from "viem";
 import { celo } from "viem/chains";
@@ -28,25 +27,25 @@ type VortexToken = {
 const TOKENS: VortexToken[] = [
   {
     symbol: "CUSD",
-    address: "0x765DE816845861e75A25fCA122bb6898B8B1282a", // cUSD Mainnet
+    address: "0x765DE816845861e75A25fCA122bb6898B8B1282a",
     decimals: 18,
     abi: stableTokenABI,
   },
   {
     symbol: "USDC",
-    address: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C", // USDC Mainnet
+    address: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
     decimals: 6,
     abi: stableTokenABI,
   },
   {
     symbol: "CKES",
-    address: "0x1E0433C1769271ECcF4CFF9FDdD515eefE6CdF92", // CKES Mainnet
+    address: "0x1E0433C1769271ECcF4CFF9FDdD515eefE6CdF92",
     decimals: 6,
     abi: stableTokenABI,
   },
   {
     symbol: "USD₮",
-    address: "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e", // USDT Mainnet (USD₮)
+    address: "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
     decimals: 6,
     abi: stableTokenABI,
   },
@@ -112,7 +111,7 @@ export const useWeb3 = () => {
           return token;
         }
       } catch (error) {
-        // Ignore and try next token
+
       }
     }
     throw new Error("Insufficient balance in all supported tokens");
@@ -132,6 +131,12 @@ export const useWeb3 = () => {
     const token = TOKENS.find(t => t.symbol === tokenSymbol);
     if (!token) throw new Error(`Token ${tokenSymbol} not supported`);
     const amountInWei = parseUnits(amount, token.decimals);
+    const balance = await getTokenBalance(userAddress, token);
+    if (balance < amountInWei) {
+      throw new Error(
+        `Insufficient balance for ${token.symbol}. You have ${balance.toString()} wei, need ${amountInWei.toString()} wei.`
+      );
+    }
     const txRequest = {
       account: userAddress,
       to: token.address,
