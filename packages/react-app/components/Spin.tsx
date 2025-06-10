@@ -54,6 +54,8 @@ const Spin: React.FC = () => {
   const [particleSpeed, setParticleSpeed] = useState<number>(0.001);
   const particleSpeedRef = useRef(particleSpeed);
   const toastIdRef = useRef(0);
+  const betAmountRef = useRef<HTMLDivElement>(null);
+  const tokenRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     particleSpeedRef.current = particleSpeed;
@@ -65,6 +67,20 @@ const Spin: React.FC = () => {
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4000);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (betAmountRef.current && !betAmountRef.current.contains(event.target as Node)) {
+        betAmountRef.current.classList.remove('open');
+      }
+      if (tokenRef.current && !tokenRef.current.contains(event.target as Node)) {
+        tokenRef.current.classList.remove('open');
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -284,6 +300,28 @@ const Spin: React.FC = () => {
     }
   };
 
+  const toggleBetAmountMenu = () => {
+    if (isWaitingSignature || showCountdown || isSpinning) return;
+    betAmountRef.current?.classList.toggle('open');
+    tokenRef.current?.classList.remove('open');
+  };
+
+  const toggleTokenMenu = () => {
+    if (isWaitingSignature || showCountdown || isSpinning) return;
+    tokenRef.current?.classList.toggle('open');
+    betAmountRef.current?.classList.remove('open');
+  };
+
+  const selectBetAmount = (amount: number) => {
+    setSelectedBetAmount(amount);
+    betAmountRef.current?.classList.remove('open');
+  };
+
+  const selectToken = (token: string) => {
+    setSelectedToken(token);
+    tokenRef.current?.classList.remove('open');
+  };
+
   return (
     <div className="spin-wrapper">
       {/* Toast notifications */}
@@ -305,46 +343,64 @@ const Spin: React.FC = () => {
       <div className="spin-content">
         <h1 className="title">Spin to Win</h1>
 
-{/* ✨ Bet & Token Enchanter */}
-        <div className="flex space-x-4 p-4 bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-500 rounded-2xl backdrop-blur-md shadow-2xl animate-fade-in">
-  {/* Bet Amount Orb */}
-          <div className="relative group">
-            <select
-              value={selectedBetAmount}
-              onChange={(e) => setSelectedBetAmount(Number(e.target.value))}
-              disabled={isWaitingSignature || showCountdown || isSpinning}
-              className="appearance-none w-28 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wide backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-pink-400 transition duration-300 group-hover:scale-105"
-            >
-              {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
-                <option key={amt} value={amt}>
-                  {amt.toFixed(2)}
-                </option>
-                ))}
-            </select>
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white text-lg transform group-hover:rotate-180 transition duration-500">
-              ⬇️
-            </span>
-            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-pink-400 rounded-full animate-pulse"></div>
+        {/* ✨ Ethereal Bet & Token Selectors */}
+        <div className="ethereal-selectors">
+          {/* Bet Amount Orb */}
+          <div 
+            ref={betAmountRef}
+            className={`ethereal-orb bet-orb ${isWaitingSignature || showCountdown || isSpinning ? 'disabled' : ''}`}
+            onClick={toggleBetAmountMenu}
+          >
+            <div className="orb-glow"></div>
+            <div className="orb-surface">
+              <div className="crystal-structure"></div>
+              <div className="nebula-effect"></div>
+              <span className="orb-value">{selectedBetAmount.toFixed(2)}</span>
+            </div>
+            <div className="floating-label">BET</div>
+            
+            <div className="ethereal-menu">
+              {[0.02, 0.05, 0.1, 0.5, 1].map(amt => (
+                <div 
+                  key={amt} 
+                  className="menu-option"
+                  onClick={() => selectBetAmount(amt)}
+                >
+                  <div className="option-glow"></div>
+                  <span>{amt.toFixed(2)}</span>
+                  <div className="stardust-trail"></div>
+                </div>
+              ))}
+            </div>
           </div>
-
-  {/* Token Sigil */}
-          <div className="relative group">
-            <select
-              value={selectedToken}
-              onChange={(e) => setSelectedToken(e.target.value)}
-              disabled={isWaitingSignature || showCountdown || isSpinning}
-              className="appearance-none w-24 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wider backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-300 transition duration-300 group-hover:scale-105"
-            >
-              {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
-                <option key={tok} value={tok}>
-                  {tok}
-                </option>
-                ))}
-            </select>
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white text-xl transform group-hover:rotate-180 transition duration-500">
-              🜸
-            </span>
-            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-purple-300 rounded-full animate-ping"></div>
+          
+          {/* Token Sigil */}
+          <div 
+            ref={tokenRef}
+            className={`ethereal-orb token-orb ${isWaitingSignature || showCountdown || isSpinning ? 'disabled' : ''}`}
+            onClick={toggleTokenMenu}
+          >
+            <div className="orb-glow"></div>
+            <div className="orb-surface">
+              <div className="crystal-structure"></div>
+              <div className="nebula-effect"></div>
+              <span className="orb-value">{selectedToken}</span>
+            </div>
+            <div className="floating-label">TOKEN</div>
+            
+            <div className="ethereal-menu">
+              {["USDT", "CUSD", "CKES", "USDC"].map(tok => (
+                <div 
+                  key={tok} 
+                  className="menu-option"
+                  onClick={() => selectToken(tok)}
+                >
+                  <div className="option-glow"></div>
+                  <span>{tok}</span>
+                  <div className="stardust-trail"></div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
