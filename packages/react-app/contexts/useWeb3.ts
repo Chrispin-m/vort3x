@@ -18,7 +18,7 @@ declare global {
 
 // Supported tokens
 type VortexToken = {
-  symbol: "USD₮" | "CUSD" | "CKES" | "USDC";
+  symbol: "USDT" | "CUSD" | "CKES" | "USDC";
   address: `0x${string}`;
   decimals: number;
   abi: typeof stableTokenABI;
@@ -44,7 +44,7 @@ const TOKENS: VortexToken[] = [
     abi: stableTokenABI,
   },
   {
-    symbol: "USD₮",
+    symbol: "USDT",
     address: "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
     decimals: 6,
     abi: stableTokenABI,
@@ -134,7 +134,7 @@ export const useWeb3 = () => {
     const balance = await getTokenBalance(userAddress, token);
     if (balance < amountInWei) {
       throw new Error(
-        `Insufficient balance for ${token.symbol}. You have ${balance.toString()} wei, need ${amountInWei.toString()} wei.`
+        `Insufficient balance for selected token.`
       );
     }
     const txRequest = {
