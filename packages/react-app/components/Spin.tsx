@@ -335,7 +335,7 @@ const Spin: React.FC = () => {
               disabled={isWaitingSignature || showCountdown || isSpinning}
               className="appearance-none w-24 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wider backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-300 transition duration-300 group-hover:scale-105"
             >
-              {["USD₮", "CUSD", "CKES", "USDC"].map((tok) => (
+              {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
                 <option key={tok} value={tok}>
                   {tok}
                 </option>
