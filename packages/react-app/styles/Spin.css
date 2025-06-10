@@ -617,3 +617,119 @@ line-height: 0.1;
   background: linear-gradient(135deg, #2979ff, #2962ff);
   border-left: 4px solid #448aff;
 }
+
+.ethereal-select-btn {
+  appearance: none;
+  width: 112px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 0 15px rgba(159, 122, 234, 0.5);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.ethereal-select-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 25px rgba(159, 122, 234, 0.8);
+  transform: translateY(-2px);
+}
+
+.ethereal-select-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ethereal-popup {
+  position: absolute;
+  top: 120%;
+  left: 0;
+  z-index: 100;
+  width: 100%;
+  background: linear-gradient(135deg, rgba(106, 27, 154, 0.9), rgba(49, 27, 146, 0.9));
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 15px 0;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.3), 
+              0 0 40px rgba(159, 0, 255, 0.6),
+              inset 0 0 20px rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: popup-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  overflow: hidden;
+}
+
+@keyframes popup-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ethereal-option {
+  position: relative;
+  width: 100%;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  color: white;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.ethereal-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.ethereal-option:hover .option-glow {
+  opacity: 1;
+}
+
+.ethereal-option:hover .floating-orb {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 0.6;
+}
+
+.option-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.4) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.floating-orb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle, rgba(255,215,0,0.8) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: -1;
+  filter: blur(8px);
+}

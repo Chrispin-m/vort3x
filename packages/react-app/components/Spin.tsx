@@ -47,19 +47,36 @@ const Spin: React.FC = () => {
   const [showPrizeModal, setShowPrizeModal] = useState(false);
   const [prizeName, setPrizeName] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [showBetSelector, setShowBetSelector] = useState(false);
+  const [showTokenSelector, setShowTokenSelector] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wheelRef = useRef<HTMLDivElement>(null);
+  const betSelectorRef = useRef<HTMLDivElement>(null);
+  const tokenSelectorRef = useRef<HTMLDivElement>(null);
   const particleSystemRef = useRef<THREE.Points | null>(null);
   const [particleSpeed, setParticleSpeed] = useState<number>(0.001);
   const particleSpeedRef = useRef(particleSpeed);
   const toastIdRef = useRef(0);
-  const betAmountRef = useRef<HTMLDivElement>(null);
-  const tokenRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     particleSpeedRef.current = particleSpeed;
   }, [particleSpeed]);
+
+  // Handle click outside to close selectors
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (betSelectorRef.current && !betSelectorRef.current.contains(event.target as Node)) {
+        setShowBetSelector(false);
+      }
+      if (tokenSelectorRef.current && !tokenSelectorRef.current.contains(event.target as Node)) {
+        setShowTokenSelector(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const showToast = useCallback((message: string, type: "success" | "error" | "info" = "info") => {
     const id = toastIdRef.current++;
@@ -67,20 +84,6 @@ const Spin: React.FC = () => {
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4000);
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (betAmountRef.current && !betAmountRef.current.contains(event.target as Node)) {
-        betAmountRef.current.classList.remove('open');
-      }
-      if (tokenRef.current && !tokenRef.current.contains(event.target as Node)) {
-        tokenRef.current.classList.remove('open');
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -300,28 +303,6 @@ const Spin: React.FC = () => {
     }
   };
 
-  const toggleBetAmountMenu = () => {
-    if (isWaitingSignature || showCountdown || isSpinning) return;
-    betAmountRef.current?.classList.toggle('open');
-    tokenRef.current?.classList.remove('open');
-  };
-
-  const toggleTokenMenu = () => {
-    if (isWaitingSignature || showCountdown || isSpinning) return;
-    tokenRef.current?.classList.toggle('open');
-    betAmountRef.current?.classList.remove('open');
-  };
-
-  const selectBetAmount = (amount: number) => {
-    setSelectedBetAmount(amount);
-    betAmountRef.current?.classList.remove('open');
-  };
-
-  const selectToken = (token: string) => {
-    setSelectedToken(token);
-    tokenRef.current?.classList.remove('open');
-  };
-
   return (
     <div className="spin-wrapper">
       {/* Toast notifications */}
@@ -343,64 +324,68 @@ const Spin: React.FC = () => {
       <div className="spin-content">
         <h1 className="title">Spin to Win</h1>
 
-        {/* ✨ Ethereal Bet & Token Selectors */}
-        <div className="ethereal-selectors">
+        {/* Bet & Token Selectors - Transformed to Ethereal Popups */}
+        <div className="flex space-x-4 p-4 bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-500 rounded-2xl backdrop-blur-md shadow-2xl animate-fade-in">
           {/* Bet Amount Orb */}
-          <div 
-            ref={betAmountRef}
-            className={`ethereal-orb bet-orb ${isWaitingSignature || showCountdown || isSpinning ? 'disabled' : ''}`}
-            onClick={toggleBetAmountMenu}
-          >
-            <div className="orb-glow"></div>
-            <div className="orb-surface">
-              <div className="crystal-structure"></div>
-              <div className="nebula-effect"></div>
-              <span className="orb-value">{selectedBetAmount.toFixed(2)}</span>
-            </div>
-            <div className="floating-label">BET</div>
-            
-            <div className="ethereal-menu">
-              {[0.02, 0.05, 0.1, 0.5, 1].map(amt => (
-                <div 
-                  key={amt} 
-                  className="menu-option"
-                  onClick={() => selectBetAmount(amt)}
-                >
-                  <div className="option-glow"></div>
-                  <span>{amt.toFixed(2)}</span>
-                  <div className="stardust-trail"></div>
-                </div>
-              ))}
-            </div>
+          <div className="relative" ref={betSelectorRef}>
+            <button
+              onClick={() => setShowBetSelector(!showBetSelector)}
+              disabled={isWaitingSignature || showCountdown || isSpinning}
+              className="ethereal-select-btn"
+            >
+              <span>{selectedBetAmount.toFixed(2)}</span>
+              <span className="dropdown-arrow">▼</span>
+            </button>
+
+            {showBetSelector && (
+              <div className="ethereal-popup">
+                {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
+                  <button
+                    key={amt}
+                    className="ethereal-option"
+                    onClick={() => {
+                      setSelectedBetAmount(amt);
+                      setShowBetSelector(false);
+                    }}
+                  >
+                    <div className="option-glow"></div>
+                    <div className="floating-orb"></div>
+                    <span>{amt.toFixed(2)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          
+
           {/* Token Sigil */}
-          <div 
-            ref={tokenRef}
-            className={`ethereal-orb token-orb ${isWaitingSignature || showCountdown || isSpinning ? 'disabled' : ''}`}
-            onClick={toggleTokenMenu}
-          >
-            <div className="orb-glow"></div>
-            <div className="orb-surface">
-              <div className="crystal-structure"></div>
-              <div className="nebula-effect"></div>
-              <span className="orb-value">{selectedToken}</span>
-            </div>
-            <div className="floating-label">TOKEN</div>
-            
-            <div className="ethereal-menu">
-              {["USDT", "CUSD", "CKES", "USDC"].map(tok => (
-                <div 
-                  key={tok} 
-                  className="menu-option"
-                  onClick={() => selectToken(tok)}
-                >
-                  <div className="option-glow"></div>
-                  <span>{tok}</span>
-                  <div className="stardust-trail"></div>
-                </div>
-              ))}
-            </div>
+          <div className="relative" ref={tokenSelectorRef}>
+            <button
+              onClick={() => setShowTokenSelector(!showTokenSelector)}
+              disabled={isWaitingSignature || showCountdown || isSpinning}
+              className="ethereal-select-btn"
+            >
+              <span>{selectedToken}</span>
+              <span className="dropdown-arrow">▼</span>
+            </button>
+
+            {showTokenSelector && (
+              <div className="ethereal-popup">
+                {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
+                  <button
+                    key={tok}
+                    className="ethereal-option"
+                    onClick={() => {
+                      setSelectedToken(tok);
+                      setShowTokenSelector(false);
+                    }}
+                  >
+                    <div className="option-glow"></div>
+                    <div className="floating-orb"></div>
+                    <span>{tok}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
