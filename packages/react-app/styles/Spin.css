@@ -618,77 +618,21 @@ line-height: 0.1;
   border-left: 4px solid #448aff;
 }
 
-/* Backdrop effect when popups are open */
-.popup-open .spin-content > *:not(.ethereal-popup) {
-  filter: blur(8px);
-  transition: filter 0.3s ease;
-}
-
-.popup-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  backdrop-filter: blur(10px);
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-}
-
-.ethereal-select-btn {
-  appearance: none;
-  width: 112px;
-  padding: 8px 16px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 0 15px rgba(159, 122, 234, 0.5);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  z-index: 9999;
-}
-
-.ethereal-select-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 0 25px rgba(159, 122, 234, 0.8);
-  transform: translateY(-2px);
-}
-
-.ethereal-select-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 .ethereal-popup {
   position: absolute;
-  top: 120%;
+  top: calc(100% + 10px);
   left: 0;
-  z-index: 1001; /* Above backdrop */
+  z-index: 10000;
   width: 100%;
-  background: linear-gradient(135deg, rgba(106, 27, 154, 0.9), rgba(49, 27, 146, 0.9));
-  backdrop-filter: blur(20px);
-  border-radius: 16px;
-  padding: 15px 0;
-  box-shadow: 0 10px 35px rgba(0,0,0,0.3), 
-              0 0 40px rgba(159, 0, 255, 0.6),
-              inset 0 0 20px rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  animation: popup-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  overflow: hidden;
+  transform-origin: top center;
+  animation: popup-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @keyframes popup-appear {
   0% {
     opacity: 0;
-    transform: translateY(10px) scale(0.95);
+    transform: translateY(20px) scale(0.95);
   }
   100% {
     opacity: 1;
@@ -696,33 +640,87 @@ line-height: 0.1;
   }
 }
 
-.ethereal-option {
+.popup-inner {
   position: relative;
-  width: 100%;
-  padding: 12px 20px;
-  background: transparent;
-  border: none;
-  color: white;
-  font-weight: 500;
+  background: rgba(20, 10, 40, 0.95);
+  border-radius: 20px;
+  padding: 15px;
+  box-shadow: 
+    0 0 30px rgba(180, 100, 255, 0.7),
+    inset 0 0 20px rgba(255, 215, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  z-index: 2;
+}
+
+.popup-header {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.popup-title {
+  color: #ffd700;
+  text-align: center;
+  font-size: 1.1rem;
+  margin: 0;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.popup-aura {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120%;
+  height: 200%;
+  background: radial-gradient(
+    circle at center,
+    rgba(180, 100, 255, 0.4) 0%,
+    transparent 70%
+  );
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  animation: aura-pulse 3s infinite alternate;
+}
+
+@keyframes aura-pulse {
+  0% { opacity: 0.3; }
+  100% { opacity: 0.7; }
+}
+
+.popup-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.popup-option {
+  position: relative;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(50, 30, 80, 0.7);
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  border: 1px solid rgba(255, 215, 0, 0.2);
   overflow: hidden;
-  z-index: 999999;
 }
 
-.ethereal-option:hover {
-  background: rgba(255, 255, 255, 0.1);
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+.popup-option:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(180, 100, 255, 0.4);
 }
 
-.ethereal-option:hover .option-glow {
-  opacity: 1;
+.popup-option.active {
+  background: rgba(90, 50, 140, 0.8);
+  box-shadow: 0 0 15px rgba(180, 100, 255, 0.7);
 }
 
-.ethereal-option:hover .floating-orb {
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 0.6;
+.option-value {
+  position: relative;
+  z-index: 2;
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
 }
 
 .option-glow {
@@ -731,27 +729,58 @@ line-height: 0.1;
   left: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at center, rgba(255,255,255,0.4) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: -1;
+  background: radial-gradient(
+    circle at center,
+    rgba(180, 100, 255, 0.3) 0%,
+    transparent 70%
+  );
+  z-index: 1;
 }
 
-.floating-orb {
+.option-particles {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 40px;
-  height: 40px;
-  background: radial-gradient(circle, rgba(255,215,0,0.8) 0%, transparent 70%);
-  border-radius: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  opacity: 0;
-  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  z-index: -1;
-  filter: blur(8px);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='10' cy='10' r='0.5' fill='%23FFD700' opacity='0.6'/%3E%3Ccircle cx='5' cy='15' r='0.7' fill='%23B464FF' opacity='0.4'/%3E%3Ccircle cx='15' cy='5' r='0.7' fill='%23FF69B4' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  z-index: 0;
+  animation: particles-float 15s infinite linear;
 }
 
-.toast-container {
-  z-index: 1002;
+@keyframes particles-float {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 20px; }
 }
+
+.popup-trail {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 80%;
+  height: 20px;
+  background: linear-gradient(
+    to bottom,
+    rgba(180, 100, 255, 0.5),
+    transparent
+  );
+  transform: translateX(-50%);
+  z-index: 1;
+  filter: blur(5px);
+  animation: trail-fade 1.5s infinite alternate;
+}
+
+@keyframes trail-fade {
+  0% { opacity: 0.3; height: 10px; }
+  100% { opacity: 0.7; height: 25px; }
+}
+
+.token-popup .popup-options {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.bet-amount-popup .popup-options {
+  grid-template-columns: repeat(3, 1fr);
+}
+

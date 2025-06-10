@@ -47,30 +47,30 @@ const Spin: React.FC = () => {
   const [showPrizeModal, setShowPrizeModal] = useState(false);
   const [prizeName, setPrizeName] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [showBetSelector, setShowBetSelector] = useState(false);
-  const [showTokenSelector, setShowTokenSelector] = useState(false);
+  const [showBetAmountPopup, setShowBetAmountPopup] = useState(false);
+  const [showTokenPopup, setShowTokenPopup] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wheelRef = useRef<HTMLDivElement>(null);
-  const betSelectorRef = useRef<HTMLDivElement>(null);
-  const tokenSelectorRef = useRef<HTMLDivElement>(null);
   const particleSystemRef = useRef<THREE.Points | null>(null);
   const [particleSpeed, setParticleSpeed] = useState<number>(0.001);
   const particleSpeedRef = useRef(particleSpeed);
   const toastIdRef = useRef(0);
+  const betAmountRef = useRef<HTMLDivElement>(null);
+  const tokenRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     particleSpeedRef.current = particleSpeed;
   }, [particleSpeed]);
 
-  // Handle click outside to close selectors
+  // Handle clicks outside popups
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (betSelectorRef.current && !betSelectorRef.current.contains(event.target as Node)) {
-        setShowBetSelector(false);
+      if (betAmountRef.current && !betAmountRef.current.contains(event.target as Node)) {
+        setShowBetAmountPopup(false);
       }
-      if (tokenSelectorRef.current && !tokenSelectorRef.current.contains(event.target as Node)) {
-        setShowTokenSelector(false);
+      if (tokenRef.current && !tokenRef.current.contains(event.target as Node)) {
+        setShowTokenPopup(false);
       }
     };
 
@@ -304,7 +304,7 @@ const Spin: React.FC = () => {
   };
 
   return (
-    <div className={`spin-wrapper ${showBetSelector || showTokenSelector ? "popup-open" : ""}`}>
+    <div className="spin-wrapper">
       {/* Toast notifications */}
       <div className="toast-container">
         {toasts.map((t) => (
@@ -317,11 +317,6 @@ const Spin: React.FC = () => {
           ))}
       </div>
 
-      {/* Popup backdrop */}
-      {(showBetSelector || showTokenSelector) && (
-        <div className="popup-backdrop"></div>
-      )}
-
       <div className="canvas-glow-wrapper">
         <canvas ref={canvasRef} className="three-canvas"></canvas>
       </div>
@@ -329,72 +324,90 @@ const Spin: React.FC = () => {
       <div className="spin-content">
         <h1 className="title">Spin to Win</h1>
 
-        {/* Bet & Token Selectors - Transformed to Ethereal Popups */}
+        {/* Bet & Token Selectors - Transformed to ethereal popups */}
         <div className="flex space-x-4 p-4 bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-500 rounded-2xl backdrop-blur-md shadow-2xl animate-fade-in">
-          {/* Bet Amount Orb */}
-          <div className="relative" ref={betSelectorRef}>
-            <button
-              onClick={() => {
-                setShowBetSelector(true);
-                setShowTokenSelector(false);
-              }}
-              disabled={isWaitingSignature || showCountdown || isSpinning}
-              className="ethereal-select-btn"
+          {/* Bet Amount Selector */}
+          <div className="relative group" ref={betAmountRef}>
+            <div
+              onClick={() => setShowBetAmountPopup(!showBetAmountPopup)}
+              className="appearance-none w-28 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wide backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-pink-400 transition duration-300 group-hover:scale-105 cursor-pointer"
             >
-              <span>{selectedBetAmount.toFixed(2)}</span>
-              <span className="dropdown-arrow">▼</span>
-            </button>
-
-            {showBetSelector && (
-              <div className="ethereal-popup">
-                {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
-                  <button
-                    key={amt}
-                    className="ethereal-option"
-                    onClick={() => {
-                      setSelectedBetAmount(amt);
-                      setShowBetSelector(false);
-                    }}
-                  >
-                    <div className="option-glow"></div>
-                    <div className="floating-orb"></div>
-                    <span>{amt.toFixed(2)}</span>
-                  </button>
-                ))}
+              {selectedBetAmount.toFixed(2)}
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white text-lg transform transition duration-500">
+                ⬇️
+              </span>
+            </div>
+            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-pink-400 rounded-full animate-pulse"></div>
+            
+            {/* Ethereal Bet Amount Popup */}
+            {showBetAmountPopup && (
+              <div className="ethereal-popup bet-amount-popup">
+                <div className="popup-inner">
+                  <div className="popup-header">
+                    <h3 className="popup-title">Select Bet Amount</h3>
+                    <div className="popup-aura"></div>
+                  </div>
+                  <div className="popup-options">
+                    {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
+                      <div 
+                        key={amt}
+                        className={`popup-option ${selectedBetAmount === amt ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedBetAmount(amt);
+                          setShowBetAmountPopup(false);
+                        }}
+                      >
+                        <div className="option-glow"></div>
+                        <div className="option-value">{amt.toFixed(2)}</div>
+                        <div className="option-particles"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="popup-trail"></div>
               </div>
             )}
           </div>
 
-          {/* Token Sigil */}
-          <div className="relative" ref={tokenSelectorRef}>
-            <button
-              onClick={() => {
-                setShowTokenSelector(true);
-                setShowBetSelector(false);
-              }}
-              disabled={isWaitingSignature || showCountdown || isSpinning}
-              className="ethereal-select-btn"
+          {/* Token Selector */}
+          <div className="relative group" ref={tokenRef}>
+            <div
+              onClick={() => setShowTokenPopup(!showTokenPopup)}
+              className="appearance-none w-24 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wider backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-300 transition duration-300 group-hover:scale-105 cursor-pointer"
             >
-              <span>{selectedToken}</span>
-              <span className="dropdown-arrow">▼</span>
-            </button>
-
-            {showTokenSelector && (
-              <div className="ethereal-popup">
-                {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
-                  <button
-                    key={tok}
-                    className="ethereal-option"
-                    onClick={() => {
-                      setSelectedToken(tok);
-                      setShowTokenSelector(false);
-                    }}
-                  >
-                    <div className="option-glow"></div>
-                    <div className="floating-orb"></div>
-                    <span>{tok}</span>
-                  </button>
-                ))}
+              {selectedToken}
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white text-xl transform transition duration-500">
+                🜸
+              </span>
+            </div>
+            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-purple-300 rounded-full animate-ping"></div>
+            
+            {/* Ethereal Token Popup */}
+            {showTokenPopup && (
+              <div className="ethereal-popup token-popup">
+                <div className="popup-inner">
+                  <div className="popup-header">
+                    <h3 className="popup-title">Select Token</h3>
+                    <div className="popup-aura"></div>
+                  </div>
+                  <div className="popup-options">
+                    {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
+                      <div 
+                        key={tok}
+                        className={`popup-option ${selectedToken === tok ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedToken(tok);
+                          setShowTokenPopup(false);
+                        }}
+                      >
+                        <div className="option-glow"></div>
+                        <div className="option-value">{tok}</div>
+                        <div className="option-particles"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="popup-trail"></div>
               </div>
             )}
           </div>
