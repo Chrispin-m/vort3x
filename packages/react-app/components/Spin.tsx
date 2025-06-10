@@ -87,7 +87,7 @@ const Spin: React.FC = () => {
       window.innerWidth / (window.innerHeight * 0.9),
       0.1,
       1000
-    );
+      );
     camera.position.z = 5;
 
     const particleCount = 500;
@@ -289,7 +289,7 @@ const Spin: React.FC = () => {
           >
             {t.message}
           </div>
-        ))}
+          ))}
       </div>
 
       <div className="canvas-glow-wrapper">
@@ -299,37 +299,46 @@ const Spin: React.FC = () => {
       <div className="spin-content">
         <h1 className="title">Spin to Win</h1>
 
-        {/* Bet amount and token selector */}
-        <div className="selector-container">
-          <div className="custom-select">
+{/* ✨ Bet & Token Enchanter */}
+        <div className="flex space-x-4 p-4 bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-500 rounded-2xl backdrop-blur-md shadow-2xl animate-fade-in">
+  {/* Bet Amount Orb */}
+          <div className="relative group">
             <select
               value={selectedBetAmount}
               onChange={(e) => setSelectedBetAmount(Number(e.target.value))}
               disabled={isWaitingSignature || showCountdown || isSpinning}
-              className="bet-select"
+              className="appearance-none w-28 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wide backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-pink-400 transition duration-300 group-hover:scale-105"
             >
-              <option value={0.02}>0.02</option>
-              <option value={0.05}>0.05</option>
-              <option value={0.1}>0.1</option>
-              <option value={0.5}>0.5</option>
-              <option value={1}>1.0</option>
+              {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
+                <option key={amt} value={amt}>
+                  {amt.toFixed(2)}
+                </option>
+                ))}
             </select>
-            <div className="select-arrow"></div>
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white text-lg transform group-hover:rotate-180 transition duration-500">
+              ⬇️
+            </span>
+            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-pink-400 rounded-full animate-pulse"></div>
           </div>
-          
-          <div className="custom-select token-select">
+
+  {/* Token Sigil */}
+          <div className="relative group">
             <select
               value={selectedToken}
               onChange={(e) => setSelectedToken(e.target.value)}
               disabled={isWaitingSignature || showCountdown || isSpinning}
-              className="token-select"
+              className="appearance-none w-24 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wider backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-300 transition duration-300 group-hover:scale-105"
             >
-              <option value="USDT">USDT</option>
-              <option value="ETH">CUSD</option>
-              <option value="BTC">CKES</option>
-              <option value="SOL">USDC</option>
+              {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
+                <option key={tok} value={tok}>
+                  {tok}
+                </option>
+                ))}
             </select>
-            <div className="select-arrow"></div>
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white text-xl transform group-hover:rotate-180 transition duration-500">
+              🜸
+            </span>
+            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-purple-300 rounded-full animate-ping"></div>
           </div>
         </div>
 
@@ -369,7 +378,7 @@ const Spin: React.FC = () => {
                 >
                   <span>{prize.name}</span>
                 </div>
-              ))}
+                ))}
             </div>
             <button
               className="spin-button"
@@ -385,10 +394,10 @@ const Spin: React.FC = () => {
         {isWaitingSignature && (
           <div className="signing-banner">
             {chainMode === "onchain" 
-              ? "Signing transaction… Please wait" 
-              : "Processing off-chain spin…"}
+            ? "Signing transaction… Please wait" 
+            : "Processing off-chain spin…"}
           </div>
-        )}
+          )}
 
         <CountdownLoader
           visible={showCountdown}
@@ -415,10 +424,10 @@ const Spin: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+          )}
       </div>
     </div>
-  );
+    );
 };
 
 export default Spin;
