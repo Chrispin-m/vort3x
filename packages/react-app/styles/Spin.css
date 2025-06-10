@@ -653,7 +653,7 @@ line-height: 0.1;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  z-index: 100;
+  z-index: 9999;
 }
 
 .ethereal-select-btn:hover {
@@ -708,7 +708,7 @@ line-height: 0.1;
   cursor: pointer;
   transition: all 0.3s ease;
   overflow: hidden;
-  z-index: 1;
+  z-index: 999999;
 }
 
 .ethereal-option:hover {
