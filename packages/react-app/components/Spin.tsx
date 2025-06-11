@@ -477,3 +477,4 @@ const Spin: React.FC = () => {
     </div>
   </div>
 );
+export default Spin;
