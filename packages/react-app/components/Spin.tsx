@@ -303,222 +303,195 @@ const Spin: React.FC = () => {
     }
   };
 return (
-  <div className="relative">
-    {/* main content: blurs when any dropdown is open */}
-    <div
-      className={`spin-wrapper transition-filter duration-200 ${
-        showBetAmountPopup || showTokenPopup
-          ? "filter blur-sm pointer-events-none"
-          : ""
-      }`}
-    >
-      {/* Toast notifications */}
-      <div className="toast-container">
-        {toasts.map((t) => (
-          <div key={t.id} className={`toast toast-${t.type}`}>
-            {t.message}
-          </div>
-        ))}
-      </div>
-
-      <div className="canvas-glow-wrapper">
-        <canvas ref={canvasRef} className="three-canvas"></canvas>
-      </div>
-
-      <div className="spin-content">
-        <h1 className="title">Spin to Win</h1>
-
-        {/* Bet & Token Selectors */}
-        <div className="flex space-x-4 p-4 bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-500 rounded-2xl backdrop-blur-md shadow-2xl animate-fade-in">
-          {/* Bet Amount Trigger */}
-          <div className="relative" ref={betAmountRef}>
-            <div
-              onClick={() => setShowBetAmountPopup((v) => !v)}
-              className="appearance-none w-64 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wide backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-pink-400 transition duration-300 cursor-pointer"
-            >
-              {selectedBetAmount.toFixed(2)}
-              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white text-lg">
-                ⬇️
-              </span>
-            </div>
-          </div>
-
-          {/* Token Trigger */}
-          <div className="relative" ref={tokenRef}>
-            <div
-              onClick={() => setShowTokenPopup((v) => !v)}
-              className="appearance-none w-48 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wider backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-300 transition duration-300 cursor-pointer"
-            >
-              {selectedToken}
-              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white text-xl">
-                🜸
-              </span>
-            </div>
-          </div>
+  <div className="spin-wrapper">
+    {/* Toast notifications */}
+    <div className="toast-container">
+      {toasts.map((t) => (
+        <div 
+          key={t.id} 
+          className={`toast toast-${t.type}`}
+        >
+          {t.message}
         </div>
-
-        {/* Chain Mode Radios */}
-        <div className="chain-mode-selector">
-          <div
-            className={`ethereal-radio ${chainMode === "onchain" ? "active" : ""}`}
-            onClick={() => setChainMode("onchain")}
-          >
-            <div className="ethereal-glow"></div>
-            <div className="radio-inner"></div>
-            <span>On-Chain</span>
-            <div className="particle-trail"></div>
-          </div>
-
-          <div
-            className={`ethereal-radio ${
-              chainMode === "offchain" ? "active" : ""
-            }`}
-            onClick={() => setChainMode("offchain")}
-          >
-            <div className="ethereal-glow"></div>
-            <div className="radio-inner"></div>
-            <span>Off-Chain</span>
-            <div className="particle-trail"></div>
-          </div>
-        </div>
-
-        {/* Wheel & Spin Button */}
-        <div className="wheel-container">
-          <div className="wheel-wrapper">
-            <div className="wheel" ref={wheelRef}>
-              {prizes.map((prize, idx) => (
-                <div
-                  key={prize.id}
-                  className="segment"
-                  style={{
-                    transform: `rotate(${(360 / prizes.length) * idx}deg) skewY(-30deg)`,
-                    backgroundColor: generateSegmentColors(idx),
-                  }}
-                >
-                  <span>{prize.name}</span>
-                </div>
-              ))}
-            </div>
-            <button
-              className="spin-button"
-              onClick={() => spinWheel(selectedBetAmount.toString())}
-              disabled={isWaitingSignature || showCountdown || isSpinning}
-            >
-              <div className="pointer"></div>
-              SPIN
-            </button>
-          </div>
-        </div>
-
-        {/* Signing Banner */}
-        {isWaitingSignature && (
-          <div className="signing-banner">
-            {chainMode === "onchain"
-              ? "Signing transaction… Please wait"
-              : "Processing off‐chain spin…"}
-          </div>
-        )}
-
-        {/* Countdown Loader */}
-        <CountdownLoader
-          visible={showCountdown}
-          duration={10}
-          startNumber={100}
-          endNumber={90}
-          onComplete={() => {
-            if (countdownPrizes) {
-              onCountdownComplete(countdownPrizes);
-            } else {
-              setShowCountdown(false);
-              setIsSpinning(false);
-              setParticleSpeed(0.001);
-              showToast("Spin failed: No prizes loaded", "error");
-            }
-          }}
-        />
-
-        {/* Prize Modal */}
-        {showPrizeModal && (
-          <div className="modal-backdrop">
-            <div className="modal-content">
-              <div className="box">
-                <h1 className="prize-title">{prizeName}</h1>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      ))}
     </div>
 
-    {/* Bet Amount Popup Overlay */}
-    {showBetAmountPopup && (
-      <div className="absolute inset-0 flex items-start justify-center z-50 pointer-events-auto">
-        <div className="ethereal-popup bet-amount-popup w-80">
-  
-          <div className="popup-inner">
-            <div className="popup-header">
-              <h3 className="popup-title">Select Bet Amount</h3>
-              <div className="popup-aura"></div>
-            </div>
-            <div className="popup-options">
-              {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
-                <div
-                  key={amt}
-                  className={`popup-option ${
-                    selectedBetAmount === amt ? "active" : ""
-                  }`}
-                  onClick={() => {
-                    setSelectedBetAmount(amt);
-                    setShowBetAmountPopup(false);
-                  }}
-                >
-                  <div className="option-glow"></div>
-                  <div className="option-value">{amt.toFixed(2)}</div>
-                  <div className="option-particles"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="popup-trail"></div>
-        </div>
-      </div>
+    <div className="canvas-glow-wrapper">
+      <canvas ref={canvasRef} className="three-canvas"></canvas>
+    </div>
+
+    {/* Overlay for blur effect when dropdowns are open */}
+    {(showBetAmountPopup || showTokenPopup) && (
+      <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-lg z-40"></div>
     )}
 
-    {/* Token Popup Overlay */}
-    {showTokenPopup && (
-      <div className="absolute inset-0 flex items-start justify-center z-50 pointer-events-auto">
-        <div className="ethereal-popup token-popup w-64">
+    <div className={`spin-content ${showBetAmountPopup || showTokenPopup ? 'blur-sm' : ''}`}>
+      <h1 className="title">Spin to Win</h1>
 
-          <div className="popup-inner">
-            <div className="popup-header">
-              <h3 className="popup-title">Select Token</h3>
-              <div className="popup-aura"></div>
-            </div>
-            <div className="popup-options">
-              {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
-                <div
-                  key={tok}
-                  className={`popup-option ${
-                    selectedToken === tok ? "active" : ""
-                  }`}
-                  onClick={() => {
-                    setSelectedToken(tok);
-                    setShowTokenPopup(false);
-                  }}
-                >
-                  <div className="option-glow"></div>
-                  <div className="option-value">{tok}</div>
-                  <div className="option-particles"></div>
-                </div>
-              ))}
+      {/* Elevated dropdown container */}
+      <div className="flex flex-col items-center gap-4 mb-6 z-50">
+        {/* Bet Amount Selector */}
+        <div className="relative w-full max-w-xs" ref={betAmountRef}>
+          <div className="flex justify-between items-center bg-indigo-900/70 backdrop-blur-md border border-indigo-500 rounded-xl p-3 shadow-xl">
+            <span className="text-indigo-200 font-medium">Bet Amount</span>
+            <div 
+              onClick={() => setShowBetAmountPopup(!showBetAmountPopup)}
+              className="flex items-center gap-2 bg-indigo-800/60 px-4 py-2 rounded-lg cursor-pointer hover:bg-indigo-700 transition-colors"
+            >
+              <span className="text-white font-bold">{selectedBetAmount.toFixed(2)}</span>
+              <span className="text-indigo-300 text-lg">▼</span>
             </div>
           </div>
-          <div className="popup-trail"></div>
+          
+          {/* Bet Amount Popup */}
+          {showBetAmountPopup && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-indigo-900 border border-indigo-600 rounded-xl shadow-2xl z-50 overflow-hidden">
+              <div className="p-2 grid grid-cols-2 gap-2">
+                {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
+                  <div 
+                    key={amt}
+                    className={`p-3 text-center rounded-lg cursor-pointer transition-all ${
+                      selectedBetAmount === amt 
+                        ? 'bg-indigo-600 text-white shadow-lg' 
+                        : 'bg-indigo-800/70 text-indigo-200 hover:bg-indigo-700'
+                    }`}
+                    onClick={() => {
+                      setSelectedBetAmount(amt);
+                      setShowBetAmountPopup(false);
+                    }}
+                  >
+                    {amt.toFixed(2)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Token Selector */}
+        <div className="relative w-full max-w-xs" ref={tokenRef}>
+          <div className="flex justify-between items-center bg-indigo-900/70 backdrop-blur-md border border-indigo-500 rounded-xl p-3 shadow-xl">
+            <span className="text-indigo-200 font-medium">Token</span>
+            <div 
+              onClick={() => setShowTokenPopup(!showTokenPopup)}
+              className="flex items-center gap-2 bg-indigo-800/60 px-4 py-2 rounded-lg cursor-pointer hover:bg-indigo-700 transition-colors"
+            >
+              <span className="text-white font-bold">{selectedToken}</span>
+              <span className="text-indigo-300 text-lg">▼</span>
+            </div>
+          </div>
+          
+          {/* Token Popup */}
+          {showTokenPopup && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-indigo-900 border border-indigo-600 rounded-xl shadow-2xl z-50 overflow-hidden">
+              <div className="p-2 grid grid-cols-2 gap-2">
+                {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
+                  <div 
+                    key={tok}
+                    className={`p-3 text-center rounded-lg cursor-pointer transition-all ${
+                      selectedToken === tok 
+                        ? 'bg-indigo-600 text-white shadow-lg' 
+                        : 'bg-indigo-800/70 text-indigo-200 hover:bg-indigo-700'
+                    }`}
+                    onClick={() => {
+                      setSelectedToken(tok);
+                      setShowTokenPopup(false);
+                    }}
+                  >
+                    {tok}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-    )}
+
+      <div className="chain-mode-selector">
+        <div 
+          className={`ethereal-radio ${chainMode === "onchain" ? "active" : ""}`}
+          onClick={() => setChainMode("onchain")}
+        >
+          <div className="ethereal-glow"></div>
+          <div className="radio-inner"></div>
+          <span>On-Chain</span>
+          <div className="particle-trail"></div>
+        </div>
+        
+        <div 
+          className={`ethereal-radio ${chainMode === "offchain" ? "active" : ""}`}
+          onClick={() => setChainMode("offchain")}
+        >
+          <div className="ethereal-glow"></div>
+          <div className="radio-inner"></div>
+          <span>Off-Chain</span>
+          <div className="particle-trail"></div>
+        </div>
+      </div>
+
+      <div className="wheel-container">
+        <div className="wheel-wrapper">
+          <div className="wheel" ref={wheelRef}>
+            {prizes.map((prize, idx) => (
+              <div
+                key={prize.id}
+                className="segment"
+                style={{
+                  transform: `rotate(${(360 / prizes.length) * idx}deg) skewY(-30deg)`,
+                  backgroundColor: generateSegmentColors(idx),
+                }}
+              >
+                <span>{prize.name}</span>
+              </div>
+            ))}
+          </div>
+          <button
+            className="spin-button"
+            onClick={() => spinWheel(selectedBetAmount.toString())}
+            disabled={isWaitingSignature || showCountdown || isSpinning}
+          >
+            <div className="pointer"></div>
+            SPIN
+          </button>
+        </div>
+      </div>
+
+      {isWaitingSignature && (
+        <div className="signing-banner">
+          {chainMode === "onchain" 
+          ? "Signing transaction… Please wait" 
+          : "Processing off-chain spin…"}
+        </div>
+      )}
+
+      <CountdownLoader
+        visible={showCountdown}
+        duration={10}
+        startNumber={100}
+        endNumber={90}
+        onComplete={() => {
+          if (countdownPrizes) {
+            onCountdownComplete(countdownPrizes);
+          } else {
+            setShowCountdown(false);
+            setIsSpinning(false);
+            setParticleSpeed(0.001);
+            showToast("Spin failed: No prizes loaded", "error");
+          }
+        }}
+      />
+
+      {showPrizeModal && (
+        <div className="modal-backdrop">
+          <div className="modal-content">
+            <div className="box">
+              <h1 className="prize-title">{prizeName}</h1>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   </div>
 );
-
 };
 export default Spin;
