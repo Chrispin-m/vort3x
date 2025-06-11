@@ -273,9 +273,8 @@ z-index: 6; /* Ensure above modal and dropdown */
 display: flex;
 align-items: center;
 justify-content: center;
-z-index: 1000; /* Ensure modal is on top */
+z-index: 1001; /* Ensure modal is on top */
 }
-
 .modal {
 z-index: 3000; /* Ensure modal is below dropdown but above particles */
 width: 90vw; /* Use percentage width to allow responsiveness */
@@ -477,7 +476,7 @@ line-height: 0.1;
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.75);
-  z-index: 15000;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -536,6 +535,7 @@ line-height: 0.1;
   overflow: hidden;
   margin-bottom: 0.5rem;
   color: #7CFC00;
+  z-index:999;
   text-shadow:
     0 0 2px #7CFC00,    
     0 0 6px #00FF00,    
@@ -624,15 +624,18 @@ line-height: 0.1;
 }
 
 .ethereal-popup {
-  position: absolute;
-  top: calc(100% + 10px);
-  left: 0;
-  z-index: 2147483647;       /* absolute max */
-  width: 100%;
-  transform-origin: top center;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  width: auto;
+  background: rgba(20, 10, 40, 0.95);
+  border-radius: 20px;
+  padding: 15px;
+  box-shadow: 0 0 30px rgba(180, 100, 255, 0.7);
   animation: popup-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-
 /* Popup entrance */
 @keyframes popup-appear {
   0% {
