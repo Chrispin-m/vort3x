@@ -339,9 +339,9 @@ return (
           </div>
           <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-pink-400 rounded-full animate-pulse"></div>
           
-          {/* Bet Amount Popup */}
+          {/* Elevated Bet Amount Popup */}
           {showBetAmountPopup && (
-            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-64 bg-transparent">
+            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-64 z-[2147483647] scale-105 shadow-[0_10px_30px_rgba(180,100,255,0.8)] transition-transform duration-300">
               <div className="ethereal-popup bet-amount-popup">
                 <div className="popup-inner">
                   <div className="popup-header">
@@ -384,9 +384,9 @@ return (
           </div>
           <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-purple-300 rounded-full animate-ping"></div>
           
-          {/* Token Popup */}
+          {/* Elevated Token Popup */}
           {showTokenPopup && (
-            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-transparent">
+            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-48 z-[2147483647] scale-105 shadow-[0_10px_30px_rgba(180,100,255,0.8)] transition-transform duration-300">
               <div className="ethereal-popup token-popup">
                 <div className="popup-inner">
                   <div className="popup-header">
