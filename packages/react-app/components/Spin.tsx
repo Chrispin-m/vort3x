@@ -302,6 +302,7 @@ const Spin: React.FC = () => {
       await handleOffchainSpin(betAmount);
     }
   };
+
 return (
   <div className="spin-wrapper">
     {/* Toast notifications */}
@@ -320,87 +321,96 @@ return (
       <canvas ref={canvasRef} className="three-canvas"></canvas>
     </div>
 
-    {/* Overlay for blur effect when dropdowns are open */}
-    {(showBetAmountPopup || showTokenPopup) && (
-      <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-lg z-40"></div>
-    )}
-
-    <div className={`spin-content ${showBetAmountPopup || showTokenPopup ? 'blur-sm' : ''}`}>
+    <div className="spin-content">
       <h1 className="title">Spin to Win</h1>
 
-      {/* Elevated dropdown container */}
-      <div className="flex flex-col items-center gap-4 mb-6 z-50">
+      {/* Bet & Token Selectors - popups */}
+      <div className="flex space-x-4 p-4 bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-500 rounded-2xl backdrop-blur-md shadow-2xl animate-fade-in">
         {/* Bet Amount Selector */}
-        <div className="relative w-full max-w-xs" ref={betAmountRef}>
-          <div className="flex justify-between items-center bg-indigo-900/70 backdrop-blur-md border border-indigo-500 rounded-xl p-3 shadow-xl">
-            <span className="text-indigo-200 font-medium">Bet Amount</span>
-            <div 
-              onClick={() => setShowBetAmountPopup(!showBetAmountPopup)}
-              className="flex items-center gap-2 bg-indigo-800/60 px-4 py-2 rounded-lg cursor-pointer hover:bg-indigo-700 transition-colors"
-            >
-              <span className="text-white font-bold">{selectedBetAmount.toFixed(2)}</span>
-              <span className="text-indigo-300 text-lg">▼</span>
-            </div>
+        <div className="relative group" ref={betAmountRef}>
+          <div
+            onClick={() => setShowBetAmountPopup(!showBetAmountPopup)}
+            className="appearance-none w-28 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wide backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-pink-400 transition duration-300 group-hover:scale-105 cursor-pointer"
+          >
+            {selectedBetAmount.toFixed(2)}
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white text-lg transform transition duration-500">
+              ⬇️
+            </span>
           </div>
+          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-pink-400 rounded-full animate-pulse"></div>
           
           {/* Bet Amount Popup */}
           {showBetAmountPopup && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-indigo-900 border border-indigo-600 rounded-xl shadow-2xl z-50 overflow-hidden">
-              <div className="p-2 grid grid-cols-2 gap-2">
-                {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
-                  <div 
-                    key={amt}
-                    className={`p-3 text-center rounded-lg cursor-pointer transition-all ${
-                      selectedBetAmount === amt 
-                        ? 'bg-indigo-600 text-white shadow-lg' 
-                        : 'bg-indigo-800/70 text-indigo-200 hover:bg-indigo-700'
-                    }`}
-                    onClick={() => {
-                      setSelectedBetAmount(amt);
-                      setShowBetAmountPopup(false);
-                    }}
-                  >
-                    {amt.toFixed(2)}
+            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-64 bg-transparent">
+              <div className="ethereal-popup bet-amount-popup">
+                <div className="popup-inner">
+                  <div className="popup-header">
+                    <h3 className="popup-title">Select Bet Amount</h3>
+                    <div className="popup-aura"></div>
                   </div>
-                ))}
+                  <div className="popup-options flex flex-wrap gap-2 justify-center">
+                    {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
+                      <div 
+                        key={amt}
+                        className={`popup-option w-16 ${selectedBetAmount === amt ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedBetAmount(amt);
+                          setShowBetAmountPopup(false);
+                        }}
+                      >
+                        <div className="option-glow"></div>
+                        <div className="option-value">{amt.toFixed(2)}</div>
+                        <div className="option-particles"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="popup-trail"></div>
               </div>
             </div>
           )}
         </div>
 
         {/* Token Selector */}
-        <div className="relative w-full max-w-xs" ref={tokenRef}>
-          <div className="flex justify-between items-center bg-indigo-900/70 backdrop-blur-md border border-indigo-500 rounded-xl p-3 shadow-xl">
-            <span className="text-indigo-200 font-medium">Token</span>
-            <div 
-              onClick={() => setShowTokenPopup(!showTokenPopup)}
-              className="flex items-center gap-2 bg-indigo-800/60 px-4 py-2 rounded-lg cursor-pointer hover:bg-indigo-700 transition-colors"
-            >
-              <span className="text-white font-bold">{selectedToken}</span>
-              <span className="text-indigo-300 text-lg">▼</span>
-            </div>
+        <div className="relative group" ref={tokenRef}>
+          <div
+            onClick={() => setShowTokenPopup(!showTokenPopup)}
+            className="appearance-none w-24 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wider backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-300 transition duration-300 group-hover:scale-105 cursor-pointer"
+          >
+            {selectedToken}
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white text-xl transform transition duration-500">
+              🜸
+            </span>
           </div>
+          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-purple-300 rounded-full animate-ping"></div>
           
           {/* Token Popup */}
           {showTokenPopup && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-indigo-900 border border-indigo-600 rounded-xl shadow-2xl z-50 overflow-hidden">
-              <div className="p-2 grid grid-cols-2 gap-2">
-                {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
-                  <div 
-                    key={tok}
-                    className={`p-3 text-center rounded-lg cursor-pointer transition-all ${
-                      selectedToken === tok 
-                        ? 'bg-indigo-600 text-white shadow-lg' 
-                        : 'bg-indigo-800/70 text-indigo-200 hover:bg-indigo-700'
-                    }`}
-                    onClick={() => {
-                      setSelectedToken(tok);
-                      setShowTokenPopup(false);
-                    }}
-                  >
-                    {tok}
+            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-transparent">
+              <div className="ethereal-popup token-popup">
+                <div className="popup-inner">
+                  <div className="popup-header">
+                    <h3 className="popup-title">Select Token</h3>
+                    <div className="popup-aura"></div>
                   </div>
-                ))}
+                  <div className="popup-options flex flex-wrap gap-2 justify-center">
+                    {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
+                      <div 
+                        key={tok}
+                        className={`popup-option w-20 ${selectedToken === tok ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedToken(tok);
+                          setShowTokenPopup(false);
+                        }}
+                      >
+                        <div className="option-glow"></div>
+                        <div className="option-value">{tok}</div>
+                        <div className="option-particles"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="popup-trail"></div>
               </div>
             </div>
           )}
@@ -493,5 +503,6 @@ return (
     </div>
   </div>
 );
+
 };
 export default Spin;
