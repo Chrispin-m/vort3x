@@ -303,162 +303,191 @@ const Spin: React.FC = () => {
     }
   };
 
-return (
-  <div className="spin-wrapper">
+  return (
+    <div className="spin-wrapper">
     {/* Toast notifications */}
-    <div className="toast-container">
-      {toasts.map((t) => (
-        <div 
-          key={t.id} 
-          className={`toast toast-${t.type}`}
-        >
-          {t.message}
-        </div>
-      ))}
-    </div>
-
-    <div className="canvas-glow-wrapper">
-      <canvas ref={canvasRef} className="three-canvas"></canvas>
-    </div>
-
-    <div className="spin-content">
-      <h1 className="title">Spin to Win</h1>
-
-      {/* Combined selectors row */}
-      <div className="flex flex-wrap justify-center gap-4 z-50 relative mb-6">
-        {/* Bet Amount Selector */}
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <select
-            value={selectedBetAmount}
-            onChange={(e) => setSelectedBetAmount(parseFloat(e.target.value))}
-            className="w-full py-3 px-6 text-lg font-bold text-white bg-gradient-to-r from-purple-700/80 to-indigo-600/80 rounded-xl shadow-lg shadow-purple-500/30 backdrop-blur-lg border-2 border-white/30 focus:ring-4 focus:ring-purple-400 focus:outline-none transition-all transform hover:scale-[1.03] cursor-pointer appearance-none ethereal-glow"
+      <div className="toast-container">
+        {toasts.map((t) => (
+          <div 
+            key={t.id} 
+            className={`toast toast-${t.type}`}
           >
-            {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
-              <option 
-                key={amt} 
-                value={amt}
-                className="bg-[#0f0c29] text-white py-2 group hover:bg-[#302b63] hover:text-cyan-300 transition-all duration-300"
-              >
-                <span className="ethereal-text">{amt.toFixed(2)}</span>
-              </option>
-            ))}
-          </select>
-          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-white/80 text-xl">
-            ⬇️
+            {t.message}
           </div>
-        </div>
-
-        {/* Token Selector */}
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <select
-            value={selectedToken}
-            onChange={(e) => setSelectedToken(e.target.value)}
-            className="w-full py-3 px-6 text-lg font-bold text-white bg-gradient-to-r from-pink-600/80 to-purple-700/80 rounded-xl shadow-lg shadow-pink-500/30 backdrop-blur-lg border-2 border-white/30 focus:ring-4 focus:ring-pink-400 focus:outline-none transition-all transform hover:scale-[1.03] cursor-pointer appearance-none ethereal-glow"
-          >
-            {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
-              <option 
-                key={tok} 
-                value={tok}
-                className="bg-[#0f0c29] text-white py-2 group hover:bg-[#302b63] hover:text-pink-300 transition-all duration-300"
-              >
-                <span className="ethereal-text">{tok}</span>
-              </option>
-            ))}
-          </select>
-          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-white/80 text-xl">
-            🜸
-          </div>
-        </div>
+          ))}
       </div>
 
-      {/* Chain mode selector */}
-      <div className="chain-mode-selector">
-        <div 
-          className={`ethereal-radio ${chainMode === "onchain" ? "active" : ""}`}
-          onClick={() => setChainMode("onchain")}
-        >
-          <div className="ethereal-glow"></div>
-          <div className="radio-inner"></div>
-          <span>On-Chain</span>
-          <div className="particle-trail"></div>
-        </div>
-        
-        <div 
-          className={`ethereal-radio ${chainMode === "offchain" ? "active" : ""}`}
-          onClick={() => setChainMode("offchain")}
-        >
-          <div className="ethereal-glow"></div>
-          <div className="radio-inner"></div>
-          <span>Off-Chain</span>
-          <div className="particle-trail"></div>
-        </div>
+      <div className="canvas-glow-wrapper">
+        <canvas ref={canvasRef} className="three-canvas"></canvas>
       </div>
 
-      {/* Wheel container */}
-      <div className="wheel-container">
-        <div className="wheel-wrapper">
-          <div className="wheel" ref={wheelRef}>
-            {prizes.map((prize, idx) => (
-              <div
-                key={prize.id}
-                className="segment"
-                style={{
-                  transform: `rotate(${(360 / prizes.length) * idx}deg) skewY(-30deg)`,
-                  backgroundColor: generateSegmentColors(idx),
-                }}
-              >
-                <span>{prize.name}</span>
-              </div>
-            ))}
+      <div className="spin-content">
+        <h1 className="title">Spin to Win</h1>
+
+{/* Combined selectors row */}
+        <div className="relative flex justify-center space-x-8 z-50 mb-6">
+  {/* Bet Amount Selector */}
+          <div className="relative">
+            <select
+              value={selectedBetAmount}
+              onChange={(e) => setSelectedBetAmount(parseFloat(e.target.value))}
+              className="
+              block  
+              w-auto  
+              px-6 py-3  
+              text-lg font-semibold text-white  
+              bg-white/10  
+              rounded-2xl  
+              ring-2 ring-white/30  
+              shadow-[0_0_20px_rgba(255,255,255,0.15)]  
+              transition  
+              hover:scale-105  
+              focus:outline-none focus:ring-4 focus:ring-white/50  
+              cursor-pointer
+              appearance-none
+              "
+            >
+              {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
+                <option
+                  key={amt}
+                  value={amt}
+                  className="bg-[#1A1A2E] text-white py-2 hover:bg-[#16213E] hover:text-cyan-200"
+                >
+                  {amt.toFixed(2)}
+                </option>
+                ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/70 text-xl">
+              ⬇️
+            </div>
           </div>
-          <button
-            className="spin-button"
-            onClick={() => spinWheel(selectedBetAmount.toString())}
-            disabled={isWaitingSignature || showCountdown || isSpinning}
-          >
-            <div className="pointer"></div>
-            SPIN
-          </button>
-        </div>
-      </div>
 
-      {isWaitingSignature && (
-        <div className="signing-banner">
-          {chainMode === "onchain" 
-          ? "Signing transaction… Please wait" 
-          : "Processing off-chain spin…"}
-        </div>
-      )}
-
-      <CountdownLoader
-        visible={showCountdown}
-        duration={10}
-        startNumber={100}
-        endNumber={90}
-        onComplete={() => {
-          if (countdownPrizes) {
-            onCountdownComplete(countdownPrizes);
-          } else {
-            setShowCountdown(false);
-            setIsSpinning(false);
-            setParticleSpeed(0.001);
-            showToast("Spin failed: No prizes loaded", "error");
-          }
-        }}
-      />
-
-      {showPrizeModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content">
-            <div className="box">
-              <h1 className="prize-title">{prizeName}</h1>
+  {/* Token Selector */}
+          <div className="relative">
+            <select
+              value={selectedToken}
+              onChange={(e) => setSelectedToken(e.target.value)}
+              className="
+              block  
+              w-auto  
+              px-6 py-3  
+              text-lg font-semibold text-white  
+              bg-white/10  
+              rounded-2xl  
+              ring-2 ring-white/30  
+              shadow-[0_0_20px_rgba(255,255,255,0.15)]  
+              transition  
+              hover:scale-105  
+              focus:outline-none focus:ring-4 focus:ring-white/50  
+              cursor-pointer
+              appearance-none
+              "
+            >
+              {["USDT", "cUSD", "cKES", "USDC"].map((tok) => (
+                <option
+                  key={tok}
+                  value={tok}
+                  className="bg-[#1A1A2E] text-white py-2 hover:bg-[#16213E] hover:text-pink-300"
+                >
+                  {tok}
+                </option>
+                ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white/70 text-xl">
+              🜸
             </div>
           </div>
         </div>
-      )}
+
+
+      {/* Chain mode selector */}
+        <div className="chain-mode-selector">
+          <div 
+            className={`ethereal-radio ${chainMode === "onchain" ? "active" : ""}`}
+            onClick={() => setChainMode("onchain")}
+          >
+            <div className="ethereal-glow"></div>
+            <div className="radio-inner"></div>
+            <span>On-Chain</span>
+            <div className="particle-trail"></div>
+          </div>
+          
+          <div 
+            className={`ethereal-radio ${chainMode === "offchain" ? "active" : ""}`}
+            onClick={() => setChainMode("offchain")}
+          >
+            <div className="ethereal-glow"></div>
+            <div className="radio-inner"></div>
+            <span>Off-Chain</span>
+            <div className="particle-trail"></div>
+          </div>
+        </div>
+
+      {/* Wheel container */}
+        <div className="wheel-container">
+          <div className="wheel-wrapper">
+            <div className="wheel" ref={wheelRef}>
+              {prizes.map((prize, idx) => (
+                <div
+                  key={prize.id}
+                  className="segment"
+                  style={{
+                    transform: `rotate(${(360 / prizes.length) * idx}deg) skewY(-30deg)`,
+                    backgroundColor: generateSegmentColors(idx),
+                  }}
+                >
+                  <span>{prize.name}</span>
+                </div>
+                ))}
+            </div>
+            <button
+              className="spin-button"
+              onClick={() => spinWheel(selectedBetAmount.toString())}
+              disabled={isWaitingSignature || showCountdown || isSpinning}
+            >
+              <div className="pointer"></div>
+              SPIN
+            </button>
+          </div>
+        </div>
+
+        {isWaitingSignature && (
+          <div className="signing-banner">
+            {chainMode === "onchain" 
+            ? "Signing transaction… Please wait" 
+            : "Processing off-chain spin…"}
+          </div>
+          )}
+
+        <CountdownLoader
+          visible={showCountdown}
+          duration={10}
+          startNumber={100}
+          endNumber={90}
+          onComplete={() => {
+            if (countdownPrizes) {
+              onCountdownComplete(countdownPrizes);
+            } else {
+              setShowCountdown(false);
+              setIsSpinning(false);
+              setParticleSpeed(0.001);
+              showToast("Spin failed: No prizes loaded", "error");
+            }
+          }}
+        />
+
+        {showPrizeModal && (
+          <div className="modal-backdrop">
+            <div className="modal-content">
+              <div className="box">
+                <h1 className="prize-title">{prizeName}</h1>
+              </div>
+            </div>
+          </div>
+          )}
+      </div>
     </div>
-  </div>
-);
+    );
 
 };
 export default Spin;
