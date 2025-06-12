@@ -369,7 +369,7 @@ const Spin: React.FC = () => {
         </div>
 
         {/* Chain mode selector */}
-        <div className="chain-mode-selector flex space-x-4 justify-center mb-6">
+        <div className="chain-mode-selector flex space-x-4 justify-center mb-2">
           <div
             className={`ethereal-radio ${chainMode === 'onchain' ? 'active' : ''}`}
             onClick={() => setChainMode('onchain')}
