@@ -324,48 +324,48 @@ return (
     <div className="spin-content">
       <h1 className="title">Spin to Win</h1>
 
-      {/* Elevated container for dropdowns */}
-      <div className="flex flex-col items-center space-y-6 z-50 relative">
+      {/* Combined selectors row */}
+      <div className="flex flex-wrap justify-center gap-4 z-50 relative mb-6">
         {/* Bet Amount Selector */}
-        <div className="relative w-full max-w-xs">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
           <select
             value={selectedBetAmount}
             onChange={(e) => setSelectedBetAmount(parseFloat(e.target.value))}
-            className="w-full py-3 px-6 text-lg font-bold text-white bg-gradient-to-r from-purple-700 to-indigo-600 rounded-xl shadow-xl backdrop-blur-lg border-2 border-white border-opacity-30 focus:ring-4 focus:ring-purple-400 focus:outline-none transition-all transform hover:scale-105 cursor-pointer appearance-none"
+            className="w-full py-3 px-6 text-lg font-bold text-white bg-gradient-to-r from-purple-700/80 to-indigo-600/80 rounded-xl shadow-lg shadow-purple-500/30 backdrop-blur-lg border-2 border-white/30 focus:ring-4 focus:ring-purple-400 focus:outline-none transition-all transform hover:scale-[1.03] cursor-pointer appearance-none ethereal-glow"
           >
             {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
               <option 
                 key={amt} 
                 value={amt}
-                className="bg-gray-800 text-white py-2"
+                className="bg-[#0f0c29] text-white py-2 group hover:bg-[#302b63] hover:text-cyan-300 transition-all duration-300"
               >
-                {amt.toFixed(2)}
+                <span className="ethereal-text">{amt.toFixed(2)}</span>
               </option>
             ))}
           </select>
-          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-white text-xl">
+          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-white/80 text-xl">
             ⬇️
           </div>
         </div>
 
         {/* Token Selector */}
-        <div className="relative w-full max-w-xs">
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
           <select
             value={selectedToken}
             onChange={(e) => setSelectedToken(e.target.value)}
-            className="w-full py-3 px-6 text-lg font-bold text-white bg-gradient-to-r from-pink-600 to-purple-700 rounded-xl shadow-xl backdrop-blur-lg border-2 border-white border-opacity-30 focus:ring-4 focus:ring-pink-400 focus:outline-none transition-all transform hover:scale-105 cursor-pointer appearance-none"
+            className="w-full py-3 px-6 text-lg font-bold text-white bg-gradient-to-r from-pink-600/80 to-purple-700/80 rounded-xl shadow-lg shadow-pink-500/30 backdrop-blur-lg border-2 border-white/30 focus:ring-4 focus:ring-pink-400 focus:outline-none transition-all transform hover:scale-[1.03] cursor-pointer appearance-none ethereal-glow"
           >
             {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
               <option 
                 key={tok} 
                 value={tok}
-                className="bg-gray-800 text-white py-2"
+                className="bg-[#0f0c29] text-white py-2 group hover:bg-[#302b63] hover:text-pink-300 transition-all duration-300"
               >
-                {tok}
+                <span className="ethereal-text">{tok}</span>
               </option>
             ))}
           </select>
-          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-white text-xl">
+          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-white/80 text-xl">
             🜸
           </div>
         </div>
