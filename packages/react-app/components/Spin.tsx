@@ -337,11 +337,7 @@ return (
               <option 
                 key={amt} 
                 value={amt}
-                className="bg-gradient-to-br from-purple-900 via-indigo-800 to-blue-900 text-emerald-300 py-3 px-4 m-1 rounded-lg border border-cyan-400 border-opacity-50 hover:bg-gradient-to-br hover:from-purple-800 hover:via-indigo-700 hover:to-blue-800 hover:text-cyan-200 hover:shadow-[0_0_15px_2px_rgba(110,231,183,0.6)] transition-all duration-300"
-                style={{
-                  textShadow: '0 0 8px rgba(110, 231, 183, 0.7)',
-                  boxShadow: 'inset 0 0 10px rgba(167, 139, 250, 0.5)'
-                }}
+                className="bg-gray-800 text-white py-2"
               >
                 {amt.toFixed(2)}
               </option>
@@ -363,11 +359,7 @@ return (
               <option 
                 key={tok} 
                 value={tok}
-                className="bg-gradient-to-br from-pink-900 via-purple-800 to-indigo-900 text-amber-300 py-3 px-4 m-1 rounded-lg border border-pink-400 border-opacity-50 hover:bg-gradient-to-br hover:from-pink-800 hover:via-purple-700 hover:to-indigo-800 hover:text-amber-200 hover:shadow-[0_0_15px_2px_rgba(251,191,36,0.6)] transition-all duration-300"
-                style={{
-                  textShadow: '0 0 8px rgba(251, 191, 36, 0.7)',
-                  boxShadow: 'inset 0 0 10px rgba(244, 114, 182, 0.5)'
-                }}
+                className="bg-gray-800 text-white py-2"
               >
                 {tok}
               </option>
