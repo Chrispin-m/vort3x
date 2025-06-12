@@ -18,7 +18,7 @@ declare global {
 
 // Supported tokens
 type VortexToken = {
-  symbol: "USDT" | "CUSD" | "CKES" | "USDC";
+  symbol: "USDT" | "cUSD" | "CKES" | "USDC";
   address: `0x${string}`;
   decimals: number;
   abi: typeof stableTokenABI;
@@ -26,7 +26,7 @@ type VortexToken = {
 
 const TOKENS: VortexToken[] = [
   {
-    symbol: "CUSD",
+    symbol: "cUSD",
     address: "0x765DE816845861e75A25fCA122bb6898B8B1282a",
     decimals: 18,
     abi: stableTokenABI,
