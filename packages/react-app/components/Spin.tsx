@@ -324,8 +324,21 @@ const Spin: React.FC = () => {
       <div className="spin-content">
         <h1 className="title">Spin to Win</h1>
 
-{/* Combined selectors row */}
-        <div className="relative flex justify-center space-x-8 z-50 mb-6">
+{/*around selectors */}
+        <div className="
+          inline-flex 
+          items-center 
+          justify-center 
+          space-x-8 
+          p-6 
+          bg-gradient-to-r from-purple-600/30 via-indigo-500/30 to-pink-600/30 
+          rounded-3xl 
+          ring-1 ring-white/40 
+          shadow-[0_0_40px_rgba(255,255,255,0.1)] 
+          z-50 
+          mb-6
+          "
+        >
   {/* Bet Amount Selector */}
           <div className="relative">
             <select
@@ -411,7 +424,7 @@ const Spin: React.FC = () => {
             <span>On-Chain</span>
             <div className="particle-trail"></div>
           </div>
-          
+
           <div 
             className={`ethereal-radio ${chainMode === "offchain" ? "active" : ""}`}
             onClick={() => setChainMode("offchain")}
