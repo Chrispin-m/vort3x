@@ -324,99 +324,62 @@ return (
     <div className="spin-content">
       <h1 className="title">Spin to Win</h1>
 
-      {/* Bet & Token Selectors - popups */}
-      <div className="flex space-x-4 p-4 bg-gradient-to-r from-purple-700 via-pink-600 to-indigo-500 rounded-2xl backdrop-blur-md shadow-2xl animate-fade-in">
+      {/* Elevated container for dropdowns */}
+      <div className="flex flex-col items-center space-y-6 z-50 relative">
         {/* Bet Amount Selector */}
-        <div className="relative group" ref={betAmountRef}>
-          <div
-            onClick={() => setShowBetAmountPopup(!showBetAmountPopup)}
-            className="appearance-none w-28 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wide backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-pink-400 transition duration-300 group-hover:scale-105 cursor-pointer"
+        <div className="relative w-full max-w-xs">
+          <select
+            value={selectedBetAmount}
+            onChange={(e) => setSelectedBetAmount(parseFloat(e.target.value))}
+            className="w-full py-3 px-6 text-lg font-bold text-white bg-gradient-to-r from-purple-700 to-indigo-600 rounded-xl shadow-xl backdrop-blur-lg border-2 border-white border-opacity-30 focus:ring-4 focus:ring-purple-400 focus:outline-none transition-all transform hover:scale-105 cursor-pointer appearance-none"
           >
-            {selectedBetAmount.toFixed(2)}
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white text-lg transform transition duration-500">
-              ⬇️
-            </span>
+            {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
+              <option 
+                key={amt} 
+                value={amt}
+                className="bg-gradient-to-br from-purple-900 via-indigo-800 to-blue-900 text-emerald-300 py-3 px-4 m-1 rounded-lg border border-cyan-400 border-opacity-50 hover:bg-gradient-to-br hover:from-purple-800 hover:via-indigo-700 hover:to-blue-800 hover:text-cyan-200 hover:shadow-[0_0_15px_2px_rgba(110,231,183,0.6)] transition-all duration-300"
+                style={{
+                  textShadow: '0 0 8px rgba(110, 231, 183, 0.7)',
+                  boxShadow: 'inset 0 0 10px rgba(167, 139, 250, 0.5)'
+                }}
+              >
+                {amt.toFixed(2)}
+              </option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-white text-xl">
+            ⬇️
           </div>
-          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-pink-400 rounded-full animate-pulse"></div>
-          
-          {/* Elevated Bet Amount Popup */}
-          {showBetAmountPopup && (
-            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-64 z-[2147483647] scale-105 shadow-[0_10px_30px_rgba(180,100,255,0.8)] transition-transform duration-300">
-              <div className="ethereal-popup bet-amount-popup">
-                <div className="popup-inner">
-                  <div className="popup-header">
-                    <h3 className="popup-title">Select Bet Amount</h3>
-                    <div className="popup-aura"></div>
-                  </div>
-                  <div className="popup-options flex flex-wrap gap-2 justify-center">
-                    {[0.02, 0.05, 0.1, 0.5, 1].map((amt) => (
-                      <div 
-                        key={amt}
-                        className={`popup-option w-16 ${selectedBetAmount === amt ? 'active' : ''}`}
-                        onClick={() => {
-                          setSelectedBetAmount(amt);
-                          setShowBetAmountPopup(false);
-                        }}
-                      >
-                        <div className="option-glow"></div>
-                        <div className="option-value">{amt.toFixed(2)}</div>
-                        <div className="option-particles"></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="popup-trail"></div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Token Selector */}
-        <div className="relative group" ref={tokenRef}>
-          <div
-            onClick={() => setShowTokenPopup(!showTokenPopup)}
-            className="appearance-none w-24 py-2 pl-4 pr-10 rounded-lg bg-white bg-opacity-20 text-white font-semibold tracking-wider backdrop-filter backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-300 transition duration-300 group-hover:scale-105 cursor-pointer"
+        <div className="relative w-full max-w-xs">
+          <select
+            value={selectedToken}
+            onChange={(e) => setSelectedToken(e.target.value)}
+            className="w-full py-3 px-6 text-lg font-bold text-white bg-gradient-to-r from-pink-600 to-purple-700 rounded-xl shadow-xl backdrop-blur-lg border-2 border-white border-opacity-30 focus:ring-4 focus:ring-pink-400 focus:outline-none transition-all transform hover:scale-105 cursor-pointer appearance-none"
           >
-            {selectedToken}
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-white text-xl transform transition duration-500">
-              🜸
-            </span>
+            {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
+              <option 
+                key={tok} 
+                value={tok}
+                className="bg-gradient-to-br from-pink-900 via-purple-800 to-indigo-900 text-amber-300 py-3 px-4 m-1 rounded-lg border border-pink-400 border-opacity-50 hover:bg-gradient-to-br hover:from-pink-800 hover:via-purple-700 hover:to-indigo-800 hover:text-amber-200 hover:shadow-[0_0_15px_2px_rgba(251,191,36,0.6)] transition-all duration-300"
+                style={{
+                  textShadow: '0 0 8px rgba(251, 191, 36, 0.7)',
+                  boxShadow: 'inset 0 0 10px rgba(244, 114, 182, 0.5)'
+                }}
+              >
+                {tok}
+              </option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-white text-xl">
+            🜸
           </div>
-          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-6 h-1 bg-purple-300 rounded-full animate-ping"></div>
-          
-          {/* Elevated Token Popup */}
-          {showTokenPopup && (
-            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-48 z-[2147483647] scale-105 shadow-[0_10px_30px_rgba(180,100,255,0.8)] transition-transform duration-300">
-              <div className="ethereal-popup token-popup">
-                <div className="popup-inner">
-                  <div className="popup-header">
-                    <h3 className="popup-title">Select Token</h3>
-                    <div className="popup-aura"></div>
-                  </div>
-                  <div className="popup-options flex flex-wrap gap-2 justify-center">
-                    {["USDT", "CUSD", "CKES", "USDC"].map((tok) => (
-                      <div 
-                        key={tok}
-                        className={`popup-option w-20 ${selectedToken === tok ? 'active' : ''}`}
-                        onClick={() => {
-                          setSelectedToken(tok);
-                          setShowTokenPopup(false);
-                        }}
-                      >
-                        <div className="option-glow"></div>
-                        <div className="option-value">{tok}</div>
-                        <div className="option-particles"></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="popup-trail"></div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
+      {/* Chain mode selector */}
       <div className="chain-mode-selector">
         <div 
           className={`ethereal-radio ${chainMode === "onchain" ? "active" : ""}`}
@@ -439,6 +402,7 @@ return (
         </div>
       </div>
 
+      {/* Wheel container */}
       <div className="wheel-container">
         <div className="wheel-wrapper">
           <div className="wheel" ref={wheelRef}>
