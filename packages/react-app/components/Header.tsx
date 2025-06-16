@@ -190,7 +190,7 @@ export default function Header() {
       className="w-full py-3 px-4 bg-indigo-800/50 border border-cyan-400/30 rounded-xl text-white text-xl placeholder-cyan-300/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
       />
       <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-cyan-300">
-      CUSD
+      cUSD
       </div>
       </div>
       {modalError && (
