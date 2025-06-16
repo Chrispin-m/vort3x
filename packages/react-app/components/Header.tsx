@@ -113,7 +113,7 @@ export default function Header() {
         setModalError("");
         const user = await getUserAddress();
         await checkBalanceForTx(user, amount, VortexAddress);
-        const hash = await sendToken(VortexAddress, amount);
+        const hash = await sendToken(VortexAddress, amount, "cUSD");
         await depositOffchain({
           userAddress: user,
           value: parseUnits(amount, 18).toString(),
