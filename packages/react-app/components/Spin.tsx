@@ -256,41 +256,44 @@ const Spin: React.FC = () => {
   };
 
   // off-chain spin - MODIFIED TO INCLUDE TOKEN SYMBOL
-  const handleOffchainSpin = async (betAmount: string) => {
-    setIsWaitingSignature(true);
-    setParticleSpeed(0.01);
+const handleOffchainSpin = async (betAmount: string) => {
+  setIsWaitingSignature(true);
+  setParticleSpeed(0.01);
 
-    try {
-      const address = await getUserAddress();
-      setUserAddress(address);
+  try {
+    const address = await getUserAddress();
+    setUserAddress(address);
 
-      const response = await spinoffchain({
-        address: address,
-        amount: parseFloat(betAmount),
-        token_symbol: selectedToken,
-      });
+    const response = await spinoffchain({
+      address: address,
+      amount: parseFloat(betAmount),
+      token_symbol: selectedToken,
+    });
 
-      const formattedPrizes: Prize[] = (response.data as Prize[]).map((prize: Prize) => ({
-        ...prize,
-        name: `X${parseFloat(prize.value).toString().replace(/\.0+$/, "")}`,
-      }));
+    // ← HERE: grab the inner `data` array
+    const { data: prizesArray } = response.data;
 
-      setPrizes(formattedPrizes);
-      setCountdownPrizes(formattedPrizes);
+    const formattedPrizes: Prize[] = prizesArray.map((prize: Prize) => ({
+      ...prize,
+      name: `X${parseFloat(prize.value).toString().replace(/\.0+$/, "")}`,
+    }));
 
-      setIsWaitingSignature(false);
-      setShowCountdown(true);
-      setIsSpinning(true);
-      setParticleSpeed(0.02);
-      showToast("Off-chain spin initiated", "success");
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err?.message || "Off-chain spin failed.";
-      showToast(message, "error");
-      setIsWaitingSignature(false);
-      setIsSpinning(false);
-      setParticleSpeed(0.001);
-    }
-  };
+    setPrizes(formattedPrizes);
+    setCountdownPrizes(formattedPrizes);
+
+    setIsWaitingSignature(false);
+    setShowCountdown(true);
+    setIsSpinning(true);
+    setParticleSpeed(0.02);
+    showToast("Off-chain spin initiated", "success");
+  } catch (err: any) {
+    const message = err?.response?.data?.message || err?.message || "Off-chain spin failed.";
+    showToast(message, "error");
+    setIsWaitingSignature(false);
+    setIsSpinning(false);
+    setParticleSpeed(0.001);
+  }
+};
 
   // Main spin function
   const spinWheel = async (betAmount: string) => {
