@@ -107,5 +107,5 @@ export async function spinoffchain(request: SpinOffChainRequest) {
     },
     { headers: { "Content-Type": "application/json" } }
   );
-  return Array.isArray(data) ? data : []; 
+  return data;
 }
