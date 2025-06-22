@@ -284,6 +284,7 @@ export default function Header() {
         await withdrawOffchain({
           userAddress: user,
           value: parseUnits(amount, TOKEN_DECIMALS[selectedToken]).toString(),
+          token: selectedToken,
           
         });
         await fetchBalances();
