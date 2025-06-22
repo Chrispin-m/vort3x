@@ -284,18 +284,33 @@ export default function Header() {
           amount: amount,
           token: selectedToken,
         });
-        await fetchBalances();
-        setShowWithdrawModal(false);
-        setAmount("");
-        addToast(`Withdrawal of ${amount} ${selectedToken} successful!`, "success");
-      } catch (e: any) {
-        const errorMsg = e.message || "Withdrawal failed";
-        setModalError(errorMsg);
-        addToast(errorMsg, "error");
-      } finally {
-        setIsProcessing(false);
+        // Only show success toast for actual on-chain success
+      if (response.transactionHash) {
+        addToast(`Withdrawal of ${amount} ${selectedToken} successful! TX: ${response.transactionHash}`, "success");
+      } else {
+        addToast(`Withdrawal processed: ${response.message}`, "info");
       }
-    };
+      
+      await fetchBalances();
+      setShowWithdrawModal(false);
+      setAmount("");
+    } catch (e: any) {
+      let errorMsg = "Withdrawal failed";
+      
+      //backend error message if available
+      if (e.response?.data?.message) {
+        errorMsg = e.response.data.message;
+      } else if (e.message) {
+        errorMsg = e.message;
+      }
+      
+      setModalError(errorMsg);
+      addToast(errorMsg, "error");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+};
 
     return (
       <div className="fixed inset-0 z-[2000] flex items-center justify-center">
