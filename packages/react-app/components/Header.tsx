@@ -283,7 +283,7 @@ export default function Header() {
         //const hash = await sendToken(user, amount, selectedToken);
         await withdrawOffchain({
           userAddress: user,
-          value: amount,
+          amount: amount,
           token: selectedToken,
           
         });
