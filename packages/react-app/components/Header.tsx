@@ -40,6 +40,7 @@ export default function Header() {
   
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [amount, setAmount] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [modalError, setModalError] = useState("");
@@ -47,6 +48,7 @@ export default function Header() {
   const [selectedToken, setSelectedToken] = useState('cUSD'); // Default token
 
   const [toasts, setToasts] = useState<{id: number, message: string, type: 'success' | 'error' | 'info'}[]>([]);
+  const [fetchedBalances, setFetchedBalances] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined" && (window as any).ethereum?.isMiniPay) {
@@ -55,19 +57,19 @@ export default function Header() {
   }, [connect]);
 
   useEffect(() => {
-    if ((showDepositModal || showWithdrawModal) && inputRef.current) {
+    if ((showDepositModal || showWithdrawModal || showHelpModal) && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [showDepositModal, showWithdrawModal]);
+  }, [showDepositModal, showWithdrawModal, showHelpModal]);
 
   const fetchBalances = async () => {
-    if (!address) return;
+    if (!address || fetchedBalances) return;
     
     setLoadingBalance(true);
     try {
       const user = await getUserAddress();
       
-      // Fetch offchain balance
+      // Fetch offchain balance (only once)
       const resp = await getOffchainBalance(user);
       const rawCusdString = formatUnits(resp.balance, 18);
       const cusdTwoDecimals = Number(rawCusdString).toFixed(2);
@@ -84,6 +86,7 @@ export default function Header() {
       const [intPart, decPart] = formatted.split('.');
       setOnchainBalance(`${intPart}.${decPart.slice(0, 2)}`);
       
+      setFetchedBalances(true);
     } catch (err) {
       setOffchainBalance("_");
       setOnchainBalance("0.0");
@@ -94,10 +97,10 @@ export default function Header() {
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !fetchedBalances) {
       fetchBalances();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchedBalances]);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Date.now();
@@ -148,115 +151,111 @@ export default function Header() {
 
     return (
       <div className="fixed inset-0 z-[2000] flex items-center justify-center">
-      {/* Backdrop without click handler */}
-      <div 
-        className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 to-purple-900/90 backdrop-blur-xl"
-      />
-
-      <div className="relative z-[2001] w-full max-w-md p-8 bg-gradient-to-br from-indigo-900/95 to-purple-900/95 backdrop-blur-3xl rounded-2xl border border-cyan-500/30 shadow-[0_0_60px_-15px_rgba(192,132,252,0.7)]">
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(10)].map((_, i) => (
-            <div 
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                width: `${Math.random() * 8 + 2}px`,
-                height: `${Math.random() * 8 + 2}px`,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                backgroundColor: `hsl(${Math.random() * 60 + 240}, 70%, 60%)`,
-                opacity: Math.random() * 0.4 + 0.1,
-                filter: 'blur(2px)',
-                animation: `float ${Math.random() * 15 + 5}s infinite ${i * 0.3}s`,
-                boxShadow: '0 0 10px 2px currentColor'
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="relative z-10">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">
-              Deposit Token
-            </h2>
-            <button
-              onClick={() => setShowDepositModal(false)}
-              className="p-2 text-cyan-300 hover:text-white transition-all"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 to-purple-900/90 backdrop-blur-xl" />
+        <div className="relative z-[2001] w-full max-w-md p-8 bg-gradient-to-br from-indigo-900/95 to-purple-900/95 backdrop-blur-3xl rounded-2xl border border-cyan-500/30 shadow-[0_0_60px_-15px_rgba(192,132,252,0.7)]">
+          <div className="absolute inset-0 overflow-hidden">
+            {[...Array(10)].map((_, i) => (
+              <div 
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  width: `${Math.random() * 8 + 2}px`,
+                  height: `${Math.random() * 8 + 2}px`,
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  backgroundColor: `hsl(${Math.random() * 60 + 240}, 70%, 60%)`,
+                  opacity: Math.random() * 0.4 + 0.1,
+                  filter: 'blur(2px)',
+                  animation: `float ${Math.random() * 15 + 5}s infinite ${i * 0.3}s`,
+                  boxShadow: '0 0 10px 2px currentColor'
+                }}
+              />
+            ))}
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-cyan-300 mb-2 text-sm">
-                Select Token
-              </label>
-              <div className="flex space-x-2">
-                {TOKENS.map(token => (
-                  <button
-                    key={token}
-                    type="button"
-                    className={`flex-1 py-2 px-3 rounded-lg ${
-                      selectedToken === token
-                        ? 'bg-cyan-600 text-white'
-                        : 'bg-indigo-800/50 text-cyan-300 hover:bg-indigo-800/70'
-                    } transition-all`}
-                    onClick={() => setSelectedToken(token)}
-                  >
-                    {token}
-                  </button>
-                ))}
-              </div>
+          <div className="relative z-10">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">
+                Deposit Token
+              </h2>
+              <button
+                onClick={() => setShowDepositModal(false)}
+                className="p-2 text-cyan-300 hover:text-white transition-all"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-cyan-300 mb-2 text-sm">
-                Enter amount to deposit
-              </label>
-              <div className="relative">
-                <input
-                  ref={inputRef}
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0"
-                  className="w-full py-3 px-4 bg-indigo-800/50 border border-cyan-400/30 rounded-xl text-white text-xl placeholder-cyan-300/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-cyan-300">
-                  {selectedToken}
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="block text-cyan-300 mb-2 text-sm">
+                  Select Token
+                </label>
+                <div className="flex space-x-2">
+                  {TOKENS.map(token => (
+                    <button
+                      key={token}
+                      type="button"
+                      className={`flex-1 py-2 px-3 rounded-lg ${
+                        selectedToken === token
+                          ? 'bg-cyan-600 text-white'
+                          : 'bg-indigo-800/50 text-cyan-300 hover:bg-indigo-800/70'
+                      } transition-all`}
+                      onClick={() => setSelectedToken(token)}
+                    >
+                      {token}
+                    </button>
+                  ))}
                 </div>
               </div>
-              {modalError && (
-                <p className="mt-2 text-red-400 text-sm">{modalError}</p>
-              )}
-            </div>
 
-            <div className="flex space-x-4">
-              <button
-                type="button"
-                onClick={() => setShowDepositModal(false)}
-                className="flex-1 py-3 px-4 bg-gradient-to-r from-indigo-800/40 to-purple-800/40 border border-cyan-400/30 rounded-xl text-white hover:shadow-[0_0_15px_-3px_rgba(192,132,252,0.5)] transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isProcessing}
-                className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-600/70 to-emerald-600/70 rounded-xl text-white hover:shadow-[0_0_15px_-3px_rgba(56,189,248,0.5)] transition-all flex items-center justify-center"
-              >
-                {isProcessing ? (
-                  <div className="w-6 h-6 border-t-2 border-white rounded-full animate-spin"></div>
-                ) : (
-                  "Deposit"
+              <div className="mb-6">
+                <label className="block text-cyan-300 mb-2 text-sm">
+                  Enter amount to deposit
+                </label>
+                <div className="relative">
+                  <input
+                    ref={inputRef}
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    className="w-full py-3 px-4 bg-indigo-800/50 border border-cyan-400/30 rounded-xl text-white text-xl placeholder-cyan-300/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-cyan-300">
+                    {selectedToken}
+                  </div>
+                </div>
+                {modalError && (
+                  <p className="mt-2 text-red-400 text-sm">{modalError}</p>
                 )}
-              </button>
-            </div>
-          </form>
+              </div>
+
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setShowDepositModal(false)}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-indigo-800/40 to-purple-800/40 border border-cyan-400/30 rounded-xl text-white hover:shadow-[0_0_15px_-3px_rgba(192,132,252,0.5)] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-600/70 to-emerald-600/70 rounded-xl text-white hover:shadow-[0_0_15px_-3px_rgba(56,189,248,0.5)] transition-all flex items-center justify-center"
+                >
+                  {isProcessing ? (
+                    <div className="w-6 h-6 border-t-2 border-white rounded-full animate-spin"></div>
+                  ) : (
+                    "Deposit"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
       </div>
     );
   };
@@ -279,149 +278,292 @@ export default function Header() {
         setIsProcessing(true);
         setModalError("");
         const user = await getUserAddress();
-        await withdrawOffchain({
+        const response = await withdrawOffchain({
           userAddress: user,
           amount: amount,
           token: selectedToken,
         });
+        
         // Only show success toast for actual on-chain success
-      if (response.transactionHash) {
-        addToast(`Withdrawal of ${amount} ${selectedToken} successful! TX: ${response.transactionHash}`, "success");
-      } else {
-        addToast(`Withdrawal processed: ${response.message}`, "info");
+        if (response.transactionHash) {
+          addToast(`Withdrawal of ${amount} ${selectedToken} successful! TX: ${response.transactionHash}`, "success");
+        } else {
+          addToast(`Withdrawal processed: ${response.message}`, "info");
+        }
+        
+        await fetchBalances();
+        setShowWithdrawModal(false);
+        setAmount("");
+      } catch (e: any) {
+        let errorMsg = "Withdrawal failed";
+        
+        // Use backend error message if available
+        if (e.response?.data?.message) {
+          errorMsg = e.response.data.message;
+        } else if (e.message) {
+          errorMsg = e.message;
+        }
+        
+        setModalError(errorMsg);
+        addToast(errorMsg, "error");
+      } finally {
+        setIsProcessing(false);
       }
-      
-      await fetchBalances();
-      setShowWithdrawModal(false);
-      setAmount("");
-    } catch (e: any) {
-      let errorMsg = "Withdrawal failed";
-      
-      //backend error message if available
-      if (e.response?.data?.message) {
-        errorMsg = e.response.data.message;
-      } else if (e.message) {
-        errorMsg = e.message;
-      }
-      
-      setModalError(errorMsg);
-      addToast(errorMsg, "error");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+    };
 
     return (
       <div className="fixed inset-0 z-[2000] flex items-center justify-center">
-      {/* Backdrop without click handler */}
-      <div 
-        className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 to-purple-900/90 backdrop-blur-xl"
-      />
-
-      <div className="relative z-[2001] w-full max-w-md p-8 bg-gradient-to-br from-indigo-900/95 to-purple-900/95 backdrop-blur-3xl rounded-2xl border border-amber-500/30 shadow-[0_0_60px_-15px_rgba(245,158,11,0.4)]">
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(10)].map((_, i) => (
-            <div 
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                width: `${Math.random() * 8 + 2}px`,
-                height: `${Math.random() * 8 + 2}px`,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                backgroundColor: `hsl(${Math.random() * 30 + 30}, 70%, 60%)`,
-                opacity: Math.random() * 0.4 + 0.1,
-                filter: 'blur(2px)',
-                animation: `float ${Math.random() * 15 + 5}s infinite ${i * 0.3}s`,
-                boxShadow: '0 0 10px 2px currentColor'
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="relative z-10">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-400">
-              Withdraw Token
-            </h2>
-            <button
-              onClick={() => setShowWithdrawModal(false)}
-              className="p-2 text-amber-300 hover:text-white transition-all"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 to-purple-900/90 backdrop-blur-xl" />
+        <div className="relative z-[2001] w-full max-w-md p-8 bg-gradient-to-br from-indigo-900/95 to-purple-900/95 backdrop-blur-3xl rounded-2xl border border-amber-500/30 shadow-[0_0_60px_-15px_rgba(245,158,11,0.4)]">
+          <div className="absolute inset-0 overflow-hidden">
+            {[...Array(10)].map((_, i) => (
+              <div 
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  width: `${Math.random() * 8 + 2}px`,
+                  height: `${Math.random() * 8 + 2}px`,
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  backgroundColor: `hsl(${Math.random() * 30 + 30}, 70%, 60%)`,
+                  opacity: Math.random() * 0.4 + 0.1,
+                  filter: 'blur(2px)',
+                  animation: `float ${Math.random() * 15 + 5}s infinite ${i * 0.3}s`,
+                  boxShadow: '0 0 10px 2px currentColor'
+                }}
+              />
+            ))}
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label className="block text-amber-300 mb-2 text-sm">
-                Select Token
-              </label>
-              <div className="flex space-x-2">
-                {TOKENS.map(token => (
-                  <button
-                    key={token}
-                    type="button"
-                    className={`flex-1 py-2 px-3 rounded-lg ${
-                      selectedToken === token
-                        ? 'bg-amber-600 text-white'
-                        : 'bg-indigo-800/50 text-amber-300 hover:bg-indigo-800/70'
-                    } transition-all`}
-                    onClick={() => setSelectedToken(token)}
-                  >
-                    {token}
-                  </button>
-                ))}
-              </div>
+          <div className="relative z-10">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-400">
+                Withdraw Token
+              </h2>
+              <button
+                onClick={() => setShowWithdrawModal(false)}
+                className="p-2 text-amber-300 hover:text-white transition-all"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-amber-300 mb-2 text-sm">
-                Enter amount to withdraw
-              </label>
-              <div className="relative">
-                <input
-                  ref={inputRef}
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0"
-                  className="w-full py-3 px-4 bg-indigo-800/50 border border-amber-400/30 rounded-xl text-white text-xl placeholder-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-amber-300">
-                  {selectedToken}
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="block text-amber-300 mb-2 text-sm">
+                  Select Token
+                </label>
+                <div className="flex space-x-2">
+                  {TOKENS.map(token => (
+                    <button
+                      key={token}
+                      type="button"
+                      className={`flex-1 py-2 px-3 rounded-lg ${
+                        selectedToken === token
+                          ? 'bg-amber-600 text-white'
+                          : 'bg-indigo-800/50 text-amber-300 hover:bg-indigo-800/70'
+                      } transition-all`}
+                      onClick={() => setSelectedToken(token)}
+                    >
+                      {token}
+                    </button>
+                  ))}
                 </div>
               </div>
-              {modalError && (
-                <p className="mt-2 text-red-400 text-sm">{modalError}</p>
-              )}
-            </div>
 
-            <div className="flex space-x-4">
-              <button
-                type="button"
-                onClick={() => setShowWithdrawModal(false)}
-                className="flex-1 py-3 px-4 bg-gradient-to-r from-indigo-800/40 to-purple-800/40 border border-amber-400/30 rounded-xl text-white hover:shadow-[0_0_15px_-3px_rgba(245,158,11,0.3)] transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isProcessing}
-                className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-600/70 to-orange-600/70 rounded-xl text-white hover:shadow-[0_0_15px_-3px_rgba(245,158,11,0.5)] transition-all flex items-center justify-center"
-              >
-                {isProcessing ? (
-                  <div className="w-6 h-6 border-t-2 border-white rounded-full animate-spin"></div>
-                ) : (
-                  "Withdraw"
+              <div className="mb-6">
+                <label className="block text-amber-300 mb-2 text-sm">
+                  Enter amount to withdraw
+                </label>
+                <div className="relative">
+                  <input
+                    ref={inputRef}
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    className="w-full py-3 px-4 bg-indigo-800/50 border border-amber-400/30 rounded-xl text-white text-xl placeholder-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-amber-300">
+                    {selectedToken}
+                  </div>
+                </div>
+                {modalError && (
+                  <p className="mt-2 text-red-400 text-sm">{modalError}</p>
                 )}
-              </button>
-            </div>
-          </form>
+              </div>
+
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setShowWithdrawModal(false)}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-indigo-800/40 to-purple-800/40 border border-amber-400/30 rounded-xl text-white hover:shadow-[0_0_15px_-3px_rgba(245,158,11,0.3)] transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-600/70 to-orange-600/70 rounded-xl text-white hover:shadow-[0_0_15px_-3px_rgba(245,158,11,0.5)] transition-all flex items-center justify-center"
+                >
+                  {isProcessing ? (
+                    <div className="w-6 h-6 border-t-2 border-white rounded-full animate-spin"></div>
+                  ) : (
+                    "Withdraw"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
+    );
+  };
+
+  const renderHelpModal = () => {
+    return (
+      <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 to-purple-900/90 backdrop-blur-xl" />
+        <div className="relative z-[2001] w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 bg-gradient-to-br from-indigo-900/95 to-purple-900/95 backdrop-blur-3xl rounded-2xl border border-violet-500/30 shadow-[0_0_60px_-15px_rgba(167,139,250,0.7)]">
+          <div className="absolute inset-0 overflow-hidden">
+            {[...Array(20)].map((_, i) => (
+              <div 
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  width: `${Math.random() * 10 + 5}px`,
+                  height: `${Math.random() * 10 + 5}px`,
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  backgroundColor: `hsl(${Math.random() * 60 + 270}, 70%, 60%)`,
+                  opacity: Math.random() * 0.3 + 0.1,
+                  filter: 'blur(3px)',
+                  animation: `float ${Math.random() * 20 + 10}s infinite ${i * 0.5}s`,
+                  boxShadow: '0 0 15px 3px currentColor'
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="relative z-10">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-pink-400">
+                Cosmic Vortex Guide
+              </h2>
+              <button
+                onClick={() => setShowHelpModal(false)}
+                className="p-2 text-violet-300 hover:text-white transition-all"
+              >
+                <XMarkIcon className="h-8 w-8" />
+              </button>
+            </div>
+
+            <div className="space-y-8">
+              <div className="p-6 bg-gradient-to-r from-indigo-800/40 to-purple-800/40 rounded-xl border border-violet-400/30 backdrop-blur-sm">
+                <h3 className="text-xl font-bold text-violet-300 mb-4">Welcome to VORT3X</h3>
+                <p className="text-cyan-200 mb-4">
+                  Embark on a cosmic journey through the Vortex, where fortunes shift like nebulae and luck flows like stardust.
+                  Choose your path through the cosmic realms of chance:
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  {/* On-Chain Mode */}
+                  <div className="p-5 bg-gradient-to-br from-cyan-900/30 to-emerald-900/30 rounded-xl border border-cyan-500/30">
+                    <div className="flex items-center mb-4">
+                      <div className="w-4 h-4 rounded-full bg-cyan-400 mr-3 shadow-[0_0_10px_3px_rgba(56,189,248,0.8)]"></div>
+                      <h4 className="text-lg font-bold text-cyan-300">Stellar On-Chain Mode</h4>
+                    </div>
+                    <ul className="space-y-3 text-cyan-200">
+                      <li className="flex items-start">
+                        <span className="text-cyan-400 mr-2">✦</span>
+                        Spin using tokens from your MiniPay wallet
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-cyan-400 mr-2">✦</span>
+                        Select your cosmic token and wager amount
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-cyan-400 mr-2">✦</span>
+                        If the cosmic forces interfere (transaction fails), your tokens are safely credited to your off-chain nebula
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-cyan-400 mr-2">✦</span>
+                        Direct interaction with the blockchain cosmos
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  {/* Off-Chain Mode */}
+                  <div className="p-5 bg-gradient-to-br from-amber-900/30 to-orange-900/30 rounded-xl border border-amber-500/30">
+                    <div className="flex items-center mb-4">
+                      <div className="w-4 h-4 rounded-full bg-amber-400 mr-3 shadow-[0_0_10px_3px_rgba(245,158,11,0.8)]"></div>
+                      <h4 className="text-lg font-bold text-amber-300">Nebula Off-Chain Mode</h4>
+                    </div>
+                    <ul className="space-y-3 text-amber-200">
+                      <li className="flex items-start">
+                        <span className="text-amber-400 mr-2">✦</span>
+                        First, deposit tokens into your cosmic off-chain nebula
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-amber-400 mr-2">✦</span>
+                        Use your nebula balance to spin through the cosmos
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-amber-400 mr-2">✦</span>
+                        Spin as many times as your cosmic balance allows
+                      </li>
+                      <li className="flex items-start">
+                        <span className="text-amber-400 mr-2">✦</span>
+                        Lightning-fast cosmic spins without blockchain delays
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 bg-gradient-to-r from-indigo-800/40 to-purple-800/40 rounded-xl border border-violet-400/30 backdrop-blur-sm">
+                <h3 className="text-xl font-bold text-violet-300 mb-4">Cosmic Withdrawals</h3>
+                <p className="text-cyan-200 mb-4">
+                  Retrieve your cosmic winnings from the nebula back to your wallet galaxy:
+                </p>
+                <ul className="space-y-3 text-cyan-200">
+                  <li className="flex items-start">
+                    <span className="text-emerald-400 mr-2">✦</span>
+                    Withdraw tokens from your off-chain nebula at any time
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-400 mr-2">✦</span>
+                    On-chain withdrawals may fall back to off-chain if cosmic interference occurs
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-emerald-400 mr-2">✦</span>
+                    Failed on-chain spins automatically credit your off-chain nebula
+                  </li>
+                </ul>
+              </div>
+
+              <div className="p-6 bg-gradient-to-r from-indigo-800/40 to-purple-800/40 rounded-xl border border-violet-400/30 backdrop-blur-sm">
+                <h3 className="text-xl font-bold text-violet-300 mb-4">Cosmic Support</h3>
+                <p className="text-pink-200 mb-4">
+                  Need guidance through the cosmic vortex? Join our celestial community:
+                </p>
+                <a 
+                  href="https://t.me/+gBQvwvV1AUFkMzU0" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pink-600/70 to-purple-600/70 rounded-xl text-white hover:shadow-[0_0_20px_-5px_rgba(236,72,153,0.5)] transition-all"
+                >
+                  <span>Join Our Cosmic Telegram</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.14.141-.259.259-.374.261l.213-3.053 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.136-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
@@ -571,12 +713,16 @@ export default function Header() {
                 Withdraw
               </button>
 
-              <Link href="/help" onClick={() => setIsOpen(false)}>
-                <div className="px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group">
-                  <div className="w-3 h-3 rounded-full bg-violet-400 mr-3 shadow-[0_0_10px_3px_rgba(167,139,250,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(167,139,250,0.9)] transition-all"></div>
-                  Help/Support
-                </div>
-              </Link>
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  setTimeout(() => setShowHelpModal(true), 300);
+                }}
+                className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group"
+              >
+                <div className="w-3 h-3 rounded-full bg-violet-400 mr-3 shadow-[0_0_10px_3px_rgba(167,139,250,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(167,139,250,0.9)] transition-all"></div>
+                Help/Support
+              </button>
             </nav>
 
             <div className="relative z-10 mt-auto pt-8">
@@ -599,6 +745,7 @@ export default function Header() {
 
       {showDepositModal && renderDepositModal()}
       {showWithdrawModal && renderWithdrawModal()}
+      {showHelpModal && renderHelpModal()}
 
       <style jsx>{`
         @keyframes float {
