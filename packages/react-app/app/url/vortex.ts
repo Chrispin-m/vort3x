@@ -29,6 +29,8 @@ export interface DepositRequest {
 export interface WithdrawalRequest {
   userAddress: string;
   value: string;
+  token: string;
+
 }
 
 
@@ -98,6 +100,8 @@ export async function withdrawOffchain(request: WithdrawalRequest) {
   const { data } = await axios.post(`${OFFCHAIN_URL}/withdraw`, {
     address: request.userAddress,
     amount: request.value,
+    token: request.token
+
   });
   return data;
 }
