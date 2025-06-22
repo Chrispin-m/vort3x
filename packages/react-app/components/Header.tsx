@@ -15,6 +15,21 @@ import { injected } from "wagmi/connectors";
 import { VortexAddress } from "@/app/config/addresses";
 import { BigNumber } from "ethers";
 
+// Supported tokens
+const TOKENS = ['USDT', 'cUSD', 'cKES', 'USDC'];
+const TOKEN_DECIMALS: Record<string, number> = {
+  USDT: 6,
+  cUSD: 18,
+  cKES: 6,
+  USDC: 6,
+};
+const TOKEN_ADDRESSES: Record<string, string> = {
+  USDT: "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
+  cUSD: "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+  cKES: "0x1E0433C1769271ECcF4CFF9FDdD515eefE6CdF92",
+  USDC: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+};
+
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [offchainBalance, setOffchainBalance] = useState<string>("_");
@@ -29,6 +44,7 @@ export default function Header() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [modalError, setModalError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const [selectedToken, setSelectedToken] = useState('cUSD'); // Default token
 
   const [toasts, setToasts] = useState<{id: number, message: string, type: 'success' | 'error' | 'info'}[]>([]);
 
@@ -54,18 +70,16 @@ export default function Header() {
       // Fetch offchain balance
       const resp = await getOffchainBalance(user);
       const rawCusdString = formatUnits(resp.balance, 18);
-        prompt(`_____:${rawCusdString}`);
       const cusdTwoDecimals = Number(rawCusdString).toFixed(2);
       setOffchainBalance(cusdTwoDecimals);
       
-      // Fetch onchain balance
-      const token = {
+      // Fetch onchain balance - default to cUSD for now
+      const balance = await getTokenBalance(user, {
         symbol: "cUSD",
         address: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1",
         decimals: 18,
         abi: null
-      };
-      const balance = await getTokenBalance(user, token);
+      });
       const formatted = formatUnits(balance, 18);
       const [intPart, decPart] = formatted.split('.');
       setOnchainBalance(`${intPart}.${decPart.slice(0, 2)}`);
@@ -113,16 +127,16 @@ export default function Header() {
         setModalError("");
         const user = await getUserAddress();
         await checkBalanceForTx(user, amount, VortexAddress);
-        const hash = await sendToken(VortexAddress, amount, "cUSD");
+        const hash = await sendToken(VortexAddress, amount, selectedToken);
         await depositOffchain({
           userAddress: user,
-          value: parseUnits(amount, 18).toString(),
+          value: parseUnits(amount, TOKEN_DECIMALS[selectedToken]).toString(),
           hash,
         });
         await fetchBalances();
         setShowDepositModal(false);
         setAmount("");
-        addToast("Deposit successful!", "success");
+        addToast(`Deposit of ${amount} ${selectedToken} successful!`, "success");
       } catch (e: any) {
         const errorMsg = e.message || "Deposit failed";
         setModalError(errorMsg);
@@ -163,7 +177,7 @@ export default function Header() {
       <div className="relative z-10">
       <div className="flex justify-between items-center mb-6">
       <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">
-      Deposit CUSD
+      Deposit Token
       </h2>
       <button
       onClick={() => setShowDepositModal(false)}
@@ -174,6 +188,28 @@ export default function Header() {
       </div>
 
       <form onSubmit={handleSubmit}>
+      <div className="mb-4">
+        <label className="block text-cyan-300 mb-2 text-sm">
+          Select Token
+        </label>
+        <div className="flex space-x-2">
+          {TOKENS.map(token => (
+            <button
+              key={token}
+              type="button"
+              className={`flex-1 py-2 px-3 rounded-lg ${
+                selectedToken === token
+                  ? 'bg-cyan-600 text-white'
+                  : 'bg-indigo-800/50 text-cyan-300 hover:bg-indigo-800/70'
+              } transition-all`}
+              onClick={() => setSelectedToken(token)}
+            >
+              {token}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="mb-6">
       <label className="block text-cyan-300 mb-2 text-sm">
       Enter amount to deposit
@@ -190,7 +226,7 @@ export default function Header() {
       className="w-full py-3 px-4 bg-indigo-800/50 border border-cyan-400/30 rounded-xl text-white text-xl placeholder-cyan-300/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
       />
       <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-cyan-300">
-      cUSD
+      {selectedToken}
       </div>
       </div>
       {modalError && (
@@ -244,16 +280,16 @@ export default function Header() {
         setModalError("");
         const user = await getUserAddress();
         await checkBalanceForTx(user, amount, VortexAddress);
-        const hash = await sendToken(user, amount);
+        const hash = await sendToken(user, amount, selectedToken);
         await withdrawOffchain({
           userAddress: user,
-          value: parseUnits(amount, 18).toString(),
+          value: parseUnits(amount, TOKEN_DECIMALS[selectedToken]).toString(),
           hash,
         });
         await fetchBalances();
         setShowWithdrawModal(false);
         setAmount("");
-        addToast("Withdrawal successful!", "success");
+        addToast(`Withdrawal of ${amount} ${selectedToken} successful!`, "success");
       } catch (e: any) {
         const errorMsg = e.message || "Withdrawal failed";
         setModalError(errorMsg);
@@ -294,7 +330,7 @@ export default function Header() {
       <div className="relative z-10">
       <div className="flex justify-between items-center mb-6">
       <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-400">
-      Withdraw CUSD
+      Withdraw Token
       </h2>
       <button
       onClick={() => setShowWithdrawModal(false)}
@@ -305,6 +341,28 @@ export default function Header() {
       </div>
 
       <form onSubmit={handleSubmit}>
+      <div className="mb-4">
+        <label className="block text-amber-300 mb-2 text-sm">
+          Select Token
+        </label>
+        <div className="flex space-x-2">
+          {TOKENS.map(token => (
+            <button
+              key={token}
+              type="button"
+              className={`flex-1 py-2 px-3 rounded-lg ${
+                selectedToken === token
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-indigo-800/50 text-amber-300 hover:bg-indigo-800/70'
+              } transition-all`}
+              onClick={() => setSelectedToken(token)}
+            >
+              {token}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="mb-6">
       <label className="block text-amber-300 mb-2 text-sm">
       Enter amount to withdraw
@@ -321,7 +379,7 @@ export default function Header() {
       className="w-full py-3 px-4 bg-indigo-800/50 border border-amber-400/30 rounded-xl text-white text-xl placeholder-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
       />
       <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-amber-300">
-      CUSD
+      {selectedToken}
       </div>
       </div>
       {modalError && (
@@ -548,4 +606,4 @@ export default function Header() {
 `}</style>
 </>
 );
-}
+        }
