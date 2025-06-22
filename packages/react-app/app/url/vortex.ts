@@ -20,11 +20,17 @@ export interface SignedSpinRequest {
   userAddress: string;
 }
 
-export interface DepositWithdrawalRequest {
+export interface DepositRequest {
   userAddress: string;
   value: string;
   hash: string;
 }
+
+export interface WithdrawalRequest {
+  userAddress: string;
+  value: string;
+}
+
 
 export interface SpinOffChainRequest {
   address: string;
@@ -78,7 +84,7 @@ export async function getOffchainBalance(userAddress: string) {
 }
 
 
-export async function depositOffchain(request: DepositWithdrawalRequest) {
+export async function depositOffchain(request: DepositRequest) {
   const { data } = await axios.post(`${OFFCHAIN_URL}/deposit`, {
     address: request.userAddress,
     amount: request.value,
@@ -88,11 +94,10 @@ export async function depositOffchain(request: DepositWithdrawalRequest) {
 }
 
 
-export async function withdrawOffchain(request: DepositWithdrawalRequest) {
+export async function withdrawOffchain(request: WithdrawalRequest) {
   const { data } = await axios.post(`${OFFCHAIN_URL}/withdraw`, {
     address: request.userAddress,
     amount: request.value,
-    tx_hash_input: request.hash
   });
   return data;
 }
