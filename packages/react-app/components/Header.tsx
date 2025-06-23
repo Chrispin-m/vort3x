@@ -141,7 +141,7 @@ export default function Header() {
         setAmount("");
         addToast(`Deposit of ${amount} ${selectedToken} successful!`, "success");
       } catch (e: any) {
-        const errorMsg = e.message || "Deposit failed";
+        const errorMsg = e.response.data.message || "Deposit failed";
         setModalError(errorMsg);
         addToast(errorMsg, "error");
       } finally {
