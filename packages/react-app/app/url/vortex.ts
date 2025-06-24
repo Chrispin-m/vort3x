@@ -39,7 +39,24 @@ export interface SpinOffChainRequest {
   amount: number;
   token_symbol: string; 
 }
+export interface OffchainBalance {
+  symbol: string;
+  balance: string;
+  decimals: number;
+  contractAddress: string;
+}
 
+export interface BalanceResponse {
+  userAddress: string;
+  balances: OffchainBalance[];
+}
+
+export async function getOffchainBalance(userAddress: string): Promise<BalanceResponse> {
+  const { data } = await axios.get<BalanceResponse>(
+    `${OFFCHAIN_URL}/balance/${encodeURIComponent(userAddress)}`
+  );
+  return data;
+}
 
 export async function spinEndpoint(transaction: SpinTransaction) {
   const { data } = await axios.post(
@@ -77,14 +94,6 @@ export async function spinEndSignature(request: SignedSpinRequest) {
   );
   return data;
 }
-
-export async function getOffchainBalance(userAddress: string) {
-  const { data } = await axios.get(
-    `${OFFCHAIN_URL}/balance/${encodeURIComponent(userAddress)}`
-  );
-  return data;
-}
-
 
 export async function depositOffchain(request: DepositRequest) {
   const { data } = await axios.post(`${OFFCHAIN_URL}/deposit`, {
