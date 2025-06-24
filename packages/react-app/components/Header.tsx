@@ -13,7 +13,6 @@ import { formatUnits, parseUnits } from "viem";
 import { useConnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { VortexAddress } from "@/app/config/addresses";
-import { BigNumber } from "ethers";
 
 // Supported tokens
 const TOKENS = ['USDT', 'cUSD', 'cKES', 'USDC'];
@@ -32,10 +31,10 @@ const TOKEN_ADDRESSES: Record<string, string> = {
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
-  const [offchainBalance, setOffchainBalance] = useState<string>("_");
-  const [onchainBalance, setOnchainBalance] = useState<string>("0.0");
+  const [offchainBalances, setOffchainBalances] = useState<OffchainBalance[]>([]);
+  const [selectedToken, setSelectedToken] = useState<OffchainBalance | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(false);
-  const { address, getUserAddress, sendToken, checkBalanceForTx, getTokenBalance } = useWeb3();
+  const { address, getUserAddress, sendToken, checkBalanceForTx } = useWeb3();
   const { connect } = useConnect();
   
   const [showDepositModal, setShowDepositModal] = useState(false);
@@ -45,10 +44,10 @@ export default function Header() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [modalError, setModalError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const [selectedToken, setSelectedToken] = useState('cUSD'); // Default token
+  const [modalToken, setModalToken] = useState('cUSD');
 
   const [toasts, setToasts] = useState<{id: number, message: string, type: 'success' | 'error' | 'info'}[]>([]);
-  const [fetchedBalances, setFetchedBalances] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<number>(0);
 
   useEffect(() => {
     if (typeof window !== "undefined" && (window as any).ethereum?.isMiniPay) {
@@ -63,33 +62,27 @@ export default function Header() {
   }, [showDepositModal, showWithdrawModal, showHelpModal]);
 
   const fetchBalances = async () => {
-    if (!address || fetchedBalances) return;
+    if (!address) return;
     
     setLoadingBalance(true);
     try {
       const user = await getUserAddress();
-      
-      // Fetch offchain balance (only once)
       const resp = await getOffchainBalance(user);
-      const rawCusdString = formatUnits(resp.balance, 18);
-      const cusdTwoDecimals = Number(rawCusdString).toFixed(2);
-      setOffchainBalance(cusdTwoDecimals);
+      setOffchainBalances(resp.balances);
       
-      // Fetch onchain balance - default to cUSD for now
-      const balance = await getTokenBalance(user, {
-        symbol: "cUSD",
-        address: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1",
-        decimals: 18,
-        abi: null
-      });
-      const formatted = formatUnits(balance, 18);
-      const [intPart, decPart] = formatted.split('.');
-      setOnchainBalance(`${intPart}.${decPart.slice(0, 2)}`);
+      // Set highest balance token as default
+      if (resp.balances.length > 0) {
+        // Find token with highest balance
+        const highestToken = resp.balances.reduce((max, current) => 
+          parseFloat(max.balance) > parseFloat(current.balance) ? max : current
+        );
+        setSelectedToken(highestToken);
+      }
       
-      setFetchedBalances(true);
+      setLastRefresh(Date.now());
     } catch (err) {
-      setOffchainBalance("_");
-      setOnchainBalance("0.0");
+      setOffchainBalances([]);
+      setSelectedToken(null);
       addToast("Failed to fetch balances", "error");
     } finally {
       setLoadingBalance(false);
@@ -97,10 +90,10 @@ export default function Header() {
   };
 
   useEffect(() => {
-    if (isOpen && !fetchedBalances) {
+    if (isOpen) {
       fetchBalances();
     }
-  }, [isOpen, fetchedBalances]);
+  }, [isOpen]);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Date.now();
@@ -109,6 +102,32 @@ export default function Header() {
     setTimeout(() => {
       setToasts(current => current.filter(t => t.id !== id));
     }, 3000);
+  };
+
+  const formatBalance = (balance: string, decimals: number) => {
+    const num = parseFloat(balance);
+    if (isNaN(num)) return "0.00";
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  const handleTokenChange = (direction: 'next' | 'prev') => {
+    if (offchainBalances.length < 2) return;
+    
+    const currentIndex = offchainBalances.findIndex(
+      t => t.symbol === selectedToken?.symbol
+    );
+    
+    let newIndex;
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % offchainBalances.length;
+    } else {
+      newIndex = (currentIndex - 1 + offchainBalances.length) % offchainBalances.length;
+    }
+    
+    setSelectedToken(offchainBalances[newIndex]);
   };
 
   const renderDepositModal = () => {
@@ -130,18 +149,18 @@ export default function Header() {
         setModalError("");
         const user = await getUserAddress();
         await checkBalanceForTx(user, amount, VortexAddress);
-        const hash = await sendToken(VortexAddress, amount, selectedToken);
+        const hash = await sendToken(VortexAddress, amount, modalToken);
         await depositOffchain({
           userAddress: user,
-          value: parseUnits(amount, TOKEN_DECIMALS[selectedToken]).toString(),
+          value: parseUnits(amount, TOKEN_DECIMALS[modalToken]).toString(),
           hash,
         });
         await fetchBalances();
         setShowDepositModal(false);
         setAmount("");
-        addToast(`Deposit of ${amount} ${selectedToken} successful!`, "success");
+        addToast(`Deposit of ${amount} ${modalToken} successful!`, "success");
       } catch (e: any) {
-        const errorMsg = e.response.data.message || "Deposit failed";
+        const errorMsg = e.response?.data?.message || "Deposit failed";
         setModalError(errorMsg);
         addToast(errorMsg, "error");
       } finally {
@@ -197,11 +216,11 @@ export default function Header() {
                       key={token}
                       type="button"
                       className={`flex-1 py-2 px-3 rounded-lg ${
-                        selectedToken === token
+                        modalToken === token
                           ? 'bg-cyan-600 text-white'
                           : 'bg-indigo-800/50 text-cyan-300 hover:bg-indigo-800/70'
                       } transition-all`}
-                      onClick={() => setSelectedToken(token)}
+                      onClick={() => setModalToken(token)}
                     >
                       {token}
                     </button>
@@ -225,7 +244,7 @@ export default function Header() {
                     className="w-full py-3 px-4 bg-indigo-800/50 border border-cyan-400/30 rounded-xl text-white text-xl placeholder-cyan-300/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-cyan-300">
-                    {selectedToken}
+                    {modalToken}
                   </div>
                 </div>
                 {modalError && (
@@ -281,12 +300,11 @@ export default function Header() {
         const response = await withdrawOffchain({
           userAddress: user,
           amount: amount,
-          token: selectedToken,
+          token: modalToken,
         });
         
-        // Only show success toast for actual on-chain success
         if (response.transactionHash) {
-          addToast(`Withdrawal of ${amount} ${selectedToken} successful! TX: ${response.transactionHash}`, "success");
+          addToast(`Withdrawal of ${amount} ${modalToken} successful! TX: ${response.transactionHash}`, "success");
         } else {
           addToast(`Withdrawal processed: ${response.message}`, "info");
         }
@@ -297,7 +315,6 @@ export default function Header() {
       } catch (e: any) {
         let errorMsg = "Withdrawal failed";
         
-        // Use backend error message if available
         if (e.response?.data?.message) {
           errorMsg = e.response.data.message;
         } else if (e.message) {
@@ -359,11 +376,11 @@ export default function Header() {
                       key={token}
                       type="button"
                       className={`flex-1 py-2 px-3 rounded-lg ${
-                        selectedToken === token
+                        modalToken === token
                           ? 'bg-amber-600 text-white'
                           : 'bg-indigo-800/50 text-amber-300 hover:bg-indigo-800/70'
                       } transition-all`}
-                      onClick={() => setSelectedToken(token)}
+                      onClick={() => setModalToken(token)}
                     >
                       {token}
                     </button>
@@ -387,7 +404,7 @@ export default function Header() {
                     className="w-full py-3 px-4 bg-indigo-800/50 border border-amber-400/30 rounded-xl text-white text-xl placeholder-amber-300/50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-4 text-amber-300">
-                    {selectedToken}
+                    {modalToken}
                   </div>
                 </div>
                 {modalError && (
@@ -422,7 +439,7 @@ export default function Header() {
     );
   };
 
-  const renderHelpModal = () => {
+const renderHelpModal = () => {
     return (
       <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 to-purple-900/90 backdrop-blur-xl" />
@@ -667,21 +684,69 @@ export default function Header() {
                 <div className="flex justify-center items-center">
                   <div className="w-8 h-8 border-t-2 border-cyan-400 rounded-full animate-spin"></div>
                 </div>
-              ) : (
+              ) : offchainBalances.length === 0 ? (
+                <div className="text-cyan-300 group-hover:text-white transition-colors">
+                  No offchain balances
+                  <div className="text-sm mt-2">Click to refresh</div>
+                </div>
+              ) : selectedToken ? (
                 <>
-                  <div className="text-sm text-cyan-300 mb-1 group-hover:text-white transition-colors">
-                    Offchain Balance
+                  <div className="flex items-center justify-between mb-3">
+                    <button 
+                      className="w-8 h-8 rounded-full bg-indigo-800/50 flex items-center justify-center text-cyan-300 hover:text-white transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTokenChange('prev');
+                      }}
+                      disabled={offchainBalances.length < 2}
+                    >
+                      &larr;
+                    </button>
+                    <div className="text-sm text-cyan-300 group-hover:text-white transition-colors">
+                      Offchain Balance
+                    </div>
+                    <button 
+                      className="w-8 h-8 rounded-full bg-indigo-800/50 flex items-center justify-center text-cyan-300 hover:text-white transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTokenChange('next');
+                      }}
+                      disabled={offchainBalances.length < 2}
+                    >
+                      &rarr;
+                    </button>
                   </div>
+                  
                   <div className="text-3xl font-bold text-white tracking-wide drop-shadow-[0_0_15px_rgba(56,189,248,0.8)] group-hover:drop-shadow-[0_0_20px_rgba(56,189,248,0.9)] transition-all">
-                    {offchainBalance} CUSD
+                    {formatBalance(selectedToken.balance, selectedToken.decimals)}
                   </div>
-                  <div className="mt-2 text-sm text-cyan-200 opacity-80">
-                    Onchain: {onchainBalance} CUSD
+                  <div className="mt-2 text-lg text-cyan-400 font-medium">
+                    {selectedToken.symbol}
+                  </div>
+                  <div className="mt-1 text-xs text-cyan-300 opacity-80">
+                    Click to refresh • {new Date(lastRefresh).toLocaleTimeString()}
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
                 </>
-              )}
+              ) : null}
             </div>
+
+            {/* Token selector bubbles */}
+            {offchainBalances.length > 1 && (
+              <div className="relative z-10 mb-6 flex justify-center space-x-3">
+                {offchainBalances.map((token, index) => (
+                  <button
+                    key={token.symbol}
+                    onClick={() => setSelectedToken(token)}
+                    className={`w-3 h-3 rounded-full transition-all ${
+                      selectedToken?.symbol === token.symbol
+                        ? 'bg-cyan-400 scale-125 shadow-[0_0_10px_3px_rgba(56,189,248,0.7)]'
+                        : 'bg-cyan-800 opacity-60'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
 
             <nav className="relative z-10 flex-1 space-y-5">
               <Link href="/" onClick={() => setIsOpen(false)}>
