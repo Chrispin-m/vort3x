@@ -70,13 +70,13 @@ export default function Header() {
       const resp = await getOffchainBalance(user);
       setOffchainBalances(resp.balances);
       
-      // Set highest balance token as default
       if (resp.balances.length > 0) {
-        // Find token with highest balance
         const highestToken = resp.balances.reduce((max, current) => 
           parseFloat(max.balance) > parseFloat(current.balance) ? max : current
         );
         setSelectedToken(highestToken);
+      } else {
+        setSelectedToken(null);
       }
       
       setLastRefresh(Date.now());
@@ -130,7 +130,99 @@ export default function Header() {
     setSelectedToken(offchainBalances[newIndex]);
   };
 
-  const renderDepositModal = () => {
+  const renderBalanceDisplay = () => {
+    return (
+      <div 
+        onClick={fetchBalances}
+        className="relative z-10 mt-6 mb-8 text-center p-6 bg-gradient-to-r from-indigo-800/50 to-purple-800/50 rounded-xl border border-cyan-400/30 backdrop-blur-sm overflow-hidden cursor-pointer hover:shadow-[0_0_20px_-5px_rgba(56,189,248,0.5)] transition-all group cosmic-balance-card"
+      >
+        {/* Cosmic background elements */}
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[3%]"></div>
+        <div className="absolute -inset-4 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent animate-pulse-slow"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-violet-900/10 to-transparent"></div>
+        
+        {/* Floating particles */}
+        {[...Array(15)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute cosmic-particle"
+            style={{
+              width: `${Math.random() * 8 + 2}px`,
+              height: `${Math.random() * 8 + 2}px`,
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              backgroundColor: `hsl(${Math.random() * 60 + 240}, 70%, 60%)`,
+              opacity: Math.random() * 0.3 + 0.05,
+              filter: 'blur(1px)',
+              animation: `float ${Math.random() * 15 + 10}s infinite ${i * 0.5}s`,
+              boxShadow: '0 0 10px 2px currentColor'
+            }}
+          />
+        ))}
+
+        {loadingBalance ? (
+          <div className="flex flex-col items-center justify-center min-h-[120px]">
+            <div className="w-12 h-12 border-t-2 border-b-2 border-cyan-400 rounded-full animate-spin mb-3"></div>
+            <div className="text-cyan-300 text-sm">Connecting to cosmic network</div>
+          </div>
+        ) : offchainBalances.length === 0 ? (
+          <div className="flex flex-col items-center justify-center min-h-[120px]">
+            <div className="text-2xl text-cyan-300/80 mb-2">🌌</div>
+            <div className="text-xl font-light text-cyan-300/80 tracking-wider mb-1">
+              Cosmic Balance
+            </div>
+            <div className="text-cyan-300/60 text-sm max-w-[80%]">
+              No tokens found in your cosmic nebula
+            </div>
+            <div className="mt-3 text-xs text-cyan-400/50 group-hover:text-cyan-400/70 transition-colors">
+              Tap to refresh stellar connections
+            </div>
+          </div>
+        ) : selectedToken ? (
+          <>
+            <div className="flex items-center justify-between mb-3">
+              <button 
+                className="w-8 h-8 rounded-full bg-indigo-800/50 flex items-center justify-center text-cyan-300 hover:text-white transition-all cosmic-nav-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTokenChange('prev');
+                }}
+                disabled={offchainBalances.length < 2}
+              >
+                <span className="text-lg">◂</span>
+              </button>
+              <div className="text-sm text-cyan-300 group-hover:text-cyan-100 transition-colors tracking-widest uppercase">
+                Stellar Balance
+              </div>
+              <button 
+                className="w-8 h-8 rounded-full bg-indigo-800/50 flex items-center justify-center text-cyan-300 hover:text-white transition-all cosmic-nav-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTokenChange('next');
+                }}
+                disabled={offchainBalances.length < 2}
+              >
+                <span className="text-lg">▸</span>
+              </button>
+            </div>
+            
+            <div className="text-4xl font-light text-white tracking-wide mb-2 cosmic-balance-value">
+              {formatBalance(selectedToken.balance, selectedToken.decimals)}
+            </div>
+            <div className="text-lg text-cyan-400 font-medium tracking-wider cosmic-token-symbol">
+              {selectedToken.symbol}
+            </div>
+            <div className="mt-3 text-xs text-cyan-300/60 group-hover:text-cyan-300/80 transition-colors">
+              Last refresh: {new Date(lastRefresh).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+          </>
+        ) : null}
+      </div>
+    );
+  };
+
+    const renderDepositModal = () => {
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       
@@ -438,7 +530,6 @@ export default function Header() {
       </div>
     );
   };
-
 const renderHelpModal = () => {
     return (
       <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
@@ -587,6 +678,7 @@ const renderHelpModal = () => {
 
   return (
     <>
+      {/* Toast container */}
       <div className="fixed top-4 right-4 z-[300] space-y-2">
         {toasts.map(toast => {
           let bgColor, borderColor;
@@ -607,7 +699,7 @@ const renderHelpModal = () => {
           return (
             <div 
               key={toast.id}
-              className={`px-4 py-3 bg-gradient-to-r ${bgColor} backdrop-blur-sm rounded-xl border ${borderColor} text-white shadow-lg animate-fadeIn`}
+              className={`px-4 py-3 bg-gradient-to-r ${bgColor} backdrop-blur-sm rounded-xl border ${borderColor} text-white shadow-lg animate-fadeIn cosmic-toast`}
             >
               {toast.message}
             </div>
@@ -615,47 +707,46 @@ const renderHelpModal = () => {
         })}
       </div>
 
-      <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-indigo-900/70 to-purple-900/70 backdrop-blur-xl shadow-2xl border-b border-indigo-500/30">
+      {/* Main header */}
+      <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-indigo-900/70 to-purple-900/70 backdrop-blur-xl shadow-2xl border-b border-indigo-500/30 cosmic-header">
         <div className="flex items-center justify-between h-16 px-6">
           <button
             onClick={() => setIsOpen(true)}
             className="p-2 text-cyan-300 hover:text-white transition-all transform hover:scale-110"
           >
-            <Bars3Icon className="h-6 w-6" />
+            <Bars3Icon className="h-6 w-6 cosmic-menu-icon" />
           </button>
-          <div className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 tracking-wider">
+          <div className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 tracking-wider cosmic-logo">
             VORT3X
           </div>
-          <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-purple-500 rounded-full animate-pulse"></div>
+          <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-purple-500 rounded-full animate-pulse cosmic-pulse"></div>
         </div>
       </div>
 
+      {/* Sidebar navigation */}
       {isOpen && (
-        <div className="fixed inset-0 z-[1000] flex">
+        <div className="fixed inset-0 z-[1000] flex cosmic-sidebar-container">
           <div 
-            className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 to-purple-900/90 backdrop-blur-2xl"
+            className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 to-purple-900/90 backdrop-blur-2xl cosmic-overlay"
             onClick={() => setIsOpen(false)}
           />
 
           <div 
-            className="relative z-[1001] w-80 bg-gradient-to-br from-indigo-900/95 to-purple-900/95 backdrop-blur-3xl shadow-[0_0_80px_-20px_rgba(192,132,252,0.7)] border-r border-cyan-500/30 p-6 flex flex-col transform transition-all duration-500"
-            style={{
-              clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
-              boxShadow: '0 0 80px -20px rgba(139, 92, 246, 0.9), 0 0 60px -15px rgba(192, 132, 252, 0.6) inset'
-            }}
+            className="relative z-[1001] w-80 bg-gradient-to-br from-indigo-900/95 to-purple-900/95 backdrop-blur-3xl shadow-[0_0_80px_-20px_rgba(192,132,252,0.7)] border-r border-cyan-500/30 p-6 flex flex-col transform transition-all duration-500 cosmic-sidebar"
           >
-            <div className="absolute inset-0 overflow-hidden">
-              {[...Array(15)].map((_, i) => (
+            {/* Background particles */}
+            <div className="absolute inset-0 overflow-hidden cosmic-bg-particles">
+              {[...Array(25)].map((_, i) => (
                 <div 
                   key={i}
-                  className="absolute rounded-full"
+                  className="absolute rounded-full cosmic-particle"
                   style={{
                     width: `${Math.random() * 10 + 2}px`,
                     height: `${Math.random() * 10 + 2}px`,
                     top: `${Math.random() * 100}%`,
                     left: `${Math.random() * 100}%`,
                     backgroundColor: `hsl(${Math.random() * 60 + 240}, 70%, 60%)`,
-                    opacity: Math.random() * 0.4 + 0.1,
+                    opacity: Math.random() * 0.3 + 0.05,
                     filter: 'blur(2px)',
                     animation: `float ${Math.random() * 20 + 10}s infinite ${i * 0.5}s`,
                     boxShadow: '0 0 10px 2px currentColor'
@@ -667,78 +758,23 @@ const renderHelpModal = () => {
             <div className="relative z-10">
               <button
                 onClick={() => setIsOpen(false)}
-                className="self-end p-2 text-cyan-300 hover:text-white transition-all transform hover:scale-110 bg-indigo-800/30 rounded-full border border-cyan-400/30 backdrop-blur-sm"
+                className="self-end p-2 text-cyan-300 hover:text-white transition-all transform hover:scale-110 bg-indigo-800/30 rounded-full border border-cyan-400/30 backdrop-blur-sm cosmic-close-btn"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
 
-            <div 
-              onClick={fetchBalances}
-              className="relative z-10 mt-6 mb-8 text-center p-6 bg-gradient-to-r from-indigo-800/50 to-purple-800/50 rounded-xl border border-cyan-400/30 backdrop-blur-sm overflow-hidden cursor-pointer hover:shadow-[0_0_20px_-5px_rgba(56,189,248,0.5)] transition-all group"
-            >
-              <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-              <div className="absolute -inset-4 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent animate-pulse-slow"></div>
-
-              {loadingBalance ? (
-                <div className="flex justify-center items-center">
-                  <div className="w-8 h-8 border-t-2 border-cyan-400 rounded-full animate-spin"></div>
-                </div>
-              ) : offchainBalances.length === 0 ? (
-                <div className="text-cyan-300 group-hover:text-white transition-colors">
-                  No offchain balances
-                  <div className="text-sm mt-2">Click to refresh</div>
-                </div>
-              ) : selectedToken ? (
-                <>
-                  <div className="flex items-center justify-between mb-3">
-                    <button 
-                      className="w-8 h-8 rounded-full bg-indigo-800/50 flex items-center justify-center text-cyan-300 hover:text-white transition-all"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleTokenChange('prev');
-                      }}
-                      disabled={offchainBalances.length < 2}
-                    >
-                      &larr;
-                    </button>
-                    <div className="text-sm text-cyan-300 group-hover:text-white transition-colors">
-                      Offchain Balance
-                    </div>
-                    <button 
-                      className="w-8 h-8 rounded-full bg-indigo-800/50 flex items-center justify-center text-cyan-300 hover:text-white transition-all"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleTokenChange('next');
-                      }}
-                      disabled={offchainBalances.length < 2}
-                    >
-                      &rarr;
-                    </button>
-                  </div>
-                  
-                  <div className="text-3xl font-bold text-white tracking-wide drop-shadow-[0_0_15px_rgba(56,189,248,0.8)] group-hover:drop-shadow-[0_0_20px_rgba(56,189,248,0.9)] transition-all">
-                    {formatBalance(selectedToken.balance, selectedToken.decimals)}
-                  </div>
-                  <div className="mt-2 text-lg text-cyan-400 font-medium">
-                    {selectedToken.symbol}
-                  </div>
-                  <div className="mt-1 text-xs text-cyan-300 opacity-80">
-                    Click to refresh • {new Date(lastRefresh).toLocaleTimeString()}
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
-                </>
-              ) : null}
-            </div>
+            {/* Balance display */}
+            {renderBalanceDisplay()}
 
             {/* Token selector bubbles */}
             {offchainBalances.length > 1 && (
-              <div className="relative z-10 mb-6 flex justify-center space-x-3">
-                {offchainBalances.map((token, index) => (
+              <div className="relative z-10 mb-6 flex justify-center space-x-3 cosmic-token-selector">
+                {offchainBalances.map((token) => (
                   <button
                     key={token.symbol}
                     onClick={() => setSelectedToken(token)}
-                    className={`w-3 h-3 rounded-full transition-all ${
+                    className={`w-3 h-3 rounded-full transition-all cosmic-token-bubble ${
                       selectedToken?.symbol === token.symbol
                         ? 'bg-cyan-400 scale-125 shadow-[0_0_10px_3px_rgba(56,189,248,0.7)]'
                         : 'bg-cyan-800 opacity-60'
@@ -748,10 +784,11 @@ const renderHelpModal = () => {
               </div>
             )}
 
-            <nav className="relative z-10 flex-1 space-y-5">
+            {/* Navigation menu */}
+            <nav className="relative z-10 flex-1 space-y-5 cosmic-nav">
               <Link href="/" onClick={() => setIsOpen(false)}>
-                <div className="px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group">
-                  <div className="w-3 h-3 rounded-full bg-cyan-400 mr-3 shadow-[0_0_10px_3px_rgba(56,189,248,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(56,189,248,0.9)] transition-all"></div>
+                <div className="px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group cosmic-nav-item">
+                  <div className="w-3 h-3 rounded-full bg-cyan-400 mr-3 shadow-[0_0_10px_3px_rgba(56,189,248,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(56,189,248,0.9)] transition-all cosmic-nav-icon"></div>
                   Home
                 </div>
               </Link>
@@ -761,9 +798,9 @@ const renderHelpModal = () => {
                   setIsOpen(false);
                   setTimeout(() => setShowDepositModal(true), 300);
                 }}
-                className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group"
+                className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group cosmic-nav-item"
               >
-                <div className="w-3 h-3 rounded-full bg-emerald-400 mr-3 shadow-[0_0_10px_3px_rgba(52,211,153,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(52,211,153,0.9)] transition-all"></div>
+                <div className="w-3 h-3 rounded-full bg-emerald-400 mr-3 shadow-[0_0_10px_3px_rgba(52,211,153,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(52,211,153,0.9)] transition-all cosmic-nav-icon"></div>
                 Deposit
               </button>
 
@@ -772,9 +809,9 @@ const renderHelpModal = () => {
                   setIsOpen(false);
                   setTimeout(() => setShowWithdrawModal(true), 300);
                 }}
-                className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group"
+                className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group cosmic-nav-item"
               >
-                <div className="w-3 h-3 rounded-full bg-amber-400 mr-3 shadow-[0_0_10px_3px_rgba(245,158,11,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(245,158,11,0.9)] transition-all"></div>
+                <div className="w-3 h-3 rounded-full bg-amber-400 mr-3 shadow-[0_0_10px_3px_rgba(245,158,11,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(245,158,11,0.9)] transition-all cosmic-nav-icon"></div>
                 Withdraw
               </button>
 
@@ -783,19 +820,20 @@ const renderHelpModal = () => {
                   setIsOpen(false);
                   setTimeout(() => setShowHelpModal(true), 300);
                 }}
-                className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group"
+                className="w-full text-left px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-800/40 to-purple-800/40 backdrop-blur-sm border border-cyan-400/20 text-white hover:shadow-[0_0_20px_-5px_rgba(192,132,252,0.5)] hover:border-cyan-400/50 transition-all transform hover:-translate-y-1 duration-300 flex items-center group cosmic-nav-item"
               >
-                <div className="w-3 h-3 rounded-full bg-violet-400 mr-3 shadow-[0_0_10px_3px_rgba(167,139,250,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(167,139,250,0.9)] transition-all"></div>
+                <div className="w-3 h-3 rounded-full bg-violet-400 mr-3 shadow-[0_0_10px_3px_rgba(167,139,250,0.8)] group-hover:shadow-[0_0_15px_5px_rgba(167,139,250,0.9)] transition-all cosmic-nav-icon"></div>
                 Help/Support
               </button>
             </nav>
 
-            <div className="relative z-10 mt-auto pt-8">
+            {/* Footer particles */}
+            <div className="relative z-10 mt-auto pt-8 cosmic-footer">
               <div className="flex justify-center space-x-1">
                 {[...Array(7)].map((_, i) => (
                   <div 
                     key={i}
-                    className="w-3 h-3 rounded-full bg-cyan-400 opacity-80"
+                    className="w-3 h-3 rounded-full bg-cyan-400 opacity-80 cosmic-footer-particle"
                     style={{
                       animation: `float ${Math.random() * 6 + 4}s infinite ${i * 0.3}s`,
                       boxShadow: '0 0 12px 3px rgba(56, 189, 248, 0.9)'
@@ -808,24 +846,119 @@ const renderHelpModal = () => {
         </div>
       )}
 
+      {/* Modals */}
       {showDepositModal && renderDepositModal()}
       {showWithdrawModal && renderWithdrawModal()}
       {showHelpModal && renderHelpModal()}
 
-      <style jsx>{`
+      <style jsx global>{`
         @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-15px) rotate(10deg); }
+          0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+          25% { transform: translateY(-8px) translateX(5px) rotate(5deg); }
+          50% { transform: translateY(-15px) translateX(-5px) rotate(-5deg); }
+          75% { transform: translateY(-8px) translateX(5px) rotate(5deg); }
         }
-
+        
         @keyframes pulse-slow {
           0%, 100% { opacity: 0.1; }
           50% { opacity: 0.3; }
         }
-
+        
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keybalance-glow {
+          0%, 100% { text-shadow: 0 0 5px rgba(56, 189, 248, 0.3); }
+          50% { text-shadow: 0 0 15px rgba(56, 189, 248, 0.7); }
+        }
+        
+        .cosmic-balance-card {
+          position: relative;
+          overflow: hidden;
+          min-height: 180px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        
+        .cosmic-balance-value {
+          font-weight: 300;
+          letter-spacing: 1px;
+          animation: balance-glow 3s infinite;
+          text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        
+        .cosmic-token-symbol {
+          text-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+          letter-spacing: 2px;
+        }
+        
+        .cosmic-nav-btn {
+          transition: all 0.3s ease;
+          box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+        }
+        
+        .cosmic-nav-btn:hover {
+          box-shadow: 0 0 15px rgba(56, 189, 248, 0.7);
+          transform: scale(1.1);
+        }
+        
+        .cosmic-nav-btn:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+        }
+        
+        .cosmic-nav-item {
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          backdrop-filter: blur(10px);
+        }
+        
+        .cosmic-nav-icon {
+          transition: all 0.3s ease;
+        }
+        
+        .cosmic-toast {
+          animation: fadeIn 0.5s ease-out;
+          backdrop-filter: blur(12px);
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .cosmic-pulse {
+          animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+          0% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7); }
+          70% { box-shadow: 0 0 0 12px rgba(56, 189, 248, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+        }
+        
+        .cosmic-sidebar {
+          box-shadow: 
+            0 0 80px -20px rgba(139, 92, 246, 0.9), 
+            0 0 60px -15px rgba(192, 132, 252, 0.6) inset,
+            0 0 40px rgba(167, 139, 250, 0.3);
+        }
+        
+        .cosmic-overlay {
+          background: radial-gradient(
+            ellipse at center,
+            rgba(67, 56, 202, 0.7) 0%,
+            rgba(79, 70, 229, 0.5) 30%,
+            rgba(99, 102, 241, 0.3) 60%,
+            rgba(129, 140, 248, 0.1) 100%
+          );
+        }
+        
+        .cosmic-header {
+          box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .cosmic-logo {
+          text-shadow: 0 0 10px rgba(139, 92, 246, 0.7);
+          letter-spacing: 3px;
         }
       `}</style>
     </>
