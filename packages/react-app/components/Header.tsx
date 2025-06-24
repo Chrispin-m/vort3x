@@ -76,13 +76,24 @@ export default function Header() {
         );
         setSelectedToken(highestToken);
       } else {
-        setSelectedToken(null);
+        // Set default token when no balances exist
+        setSelectedToken({ 
+          symbol: 'cUSD', 
+          balance: '_', 
+          decimals: 18,
+          contractAddress: TOKEN_ADDRESSES.cUSD
+        });
       }
       
       setLastRefresh(Date.now());
     } catch (err) {
-      setOffchainBalances([]);
-      setSelectedToken(null);
+      // Set default token on error
+      setSelectedToken({ 
+        symbol: 'cUSD', 
+        balance: '_', 
+        decimals: 18,
+        contractAddress: TOKEN_ADDRESSES.cUSD
+      });
       addToast("Failed to fetch balances", "error");
     } finally {
       setLoadingBalance(false);
@@ -105,8 +116,11 @@ export default function Header() {
   };
 
   const formatBalance = (balance: string, decimals: number) => {
+    if (balance === '_') return '_';
+    
     const num = parseFloat(balance);
     if (isNaN(num)) return "0.00";
+    
     return num.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
@@ -165,19 +179,6 @@ export default function Header() {
             <div className="w-12 h-12 border-t-2 border-b-2 border-cyan-400 rounded-full animate-spin mb-3"></div>
             <div className="text-cyan-300 text-sm">Connecting to cosmic network</div>
           </div>
-        ) : offchainBalances.length === 0 ? (
-          <div className="flex flex-col items-center justify-center min-h-[120px]">
-            <div className="text-2xl text-cyan-300/80 mb-2">🌌</div>
-            <div className="text-xl font-light text-cyan-300/80 tracking-wider mb-1">
-              Cosmic Balance
-            </div>
-            <div className="text-cyan-300/60 text-sm max-w-[80%]">
-              No tokens found in your cosmic nebula
-            </div>
-            <div className="mt-3 text-xs text-cyan-400/50 group-hover:text-cyan-400/70 transition-colors">
-              Tap to refresh stellar connections
-            </div>
-          </div>
         ) : selectedToken ? (
           <>
             <div className="flex items-center justify-between mb-3">
@@ -192,7 +193,7 @@ export default function Header() {
                 <span className="text-lg">◂</span>
               </button>
               <div className="text-sm text-cyan-300 group-hover:text-cyan-100 transition-colors tracking-widest uppercase">
-                Stellar Balance
+                Offchain Balance
               </div>
               <button 
                 className="w-8 h-8 rounded-full bg-indigo-800/50 flex items-center justify-center text-cyan-300 hover:text-white transition-all cosmic-nav-btn"
@@ -222,7 +223,7 @@ export default function Header() {
     );
   };
 
-    const renderDepositModal = () => {
+  const renderDepositModal = () => {
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       
@@ -530,7 +531,8 @@ export default function Header() {
       </div>
     );
   };
-const renderHelpModal = () => {
+
+  const renderHelpModal = () => {
     return (
       <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 to-purple-900/90 backdrop-blur-xl" />
@@ -607,16 +609,16 @@ const renderHelpModal = () => {
                   <div className="p-5 bg-gradient-to-br from-amber-900/30 to-orange-900/30 rounded-xl border border-amber-500/30">
                     <div className="flex items-center mb-4">
                       <div className="w-4 h-4 rounded-full bg-amber-400 mr-3 shadow-[0_0_10px_3px_rgba(245,158,11,0.8)]"></div>
-                      <h4 className="text-lg font-bold text-amber-300">Nebula Off-Chain Mode</h4>
+                      <h4 className="text-lg font-bold text-amber-300">Off-Chain Mode</h4>
                     </div>
                     <ul className="space-y-3 text-amber-200">
                       <li className="flex items-start">
                         <span className="text-amber-400 mr-2">✦</span>
-                        First, deposit tokens into your cosmic off-chain nebula
+                        First, deposit tokens into your off-chain mode
                       </li>
                       <li className="flex items-start">
                         <span className="text-amber-400 mr-2">✦</span>
-                        Use your nebula balance to spin through the cosmos
+                        Use your offchain balance to spin through the cosmos
                       </li>
                       <li className="flex items-start">
                         <span className="text-amber-400 mr-2">✦</span>
@@ -869,7 +871,7 @@ const renderHelpModal = () => {
           to { opacity: 1; transform: translateY(0); }
         }
         
-        @keybalance-glow {
+        @keyframes balance-glow {
           0%, 100% { text-shadow: 0 0 5px rgba(56, 189, 248, 0.3); }
           50% { text-shadow: 0 0 15px rgba(56, 189, 248, 0.7); }
         }
