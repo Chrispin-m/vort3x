@@ -57,7 +57,7 @@ const connectors = connectorsForWallets(
   {
   appName: 'Vort3x',
   projectId: PROJECT_ID,
-  description: 'AppKit Example',
+  appDescription: 'AppKit Example',
   appUrl: 'https://vort3x.xyz/appkit', // origin must match your domain & subdomain
   appIcon: 'https://assets.reown.com/reown-profile-pic.png',
   }
