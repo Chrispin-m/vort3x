@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAccount, useSwitchChain } from "wagmi";
 import { celo } from "wagmi/chains";
 import dynamic from "next/dynamic";
@@ -32,12 +32,25 @@ const celoTokens = [
   },
 ];
 
+const generateStars = () => {
+  return Array.from({ length: 100 }).map((_, i) => ({
+    id: i,
+    top: `${Math.random() * 100}%`,
+    left: `${Math.random() * 100}%`,
+    size: `${Math.random() * 3 + 1}px`,
+    opacity: Math.random() * 0.7 + 0.3,
+    delay: Math.random() * 5,
+  }));
+};
+
 export default function Home() {
   const { switchChainAsync } = useSwitchChain();
   const { address, isConnected, chain } = useAccount();
   const [needsNetworkSwitch, setNeedsNetworkSwitch] = useState(false);
   const [addingToken, setAddingToken] = useState<string | null>(null);
   const [isRainbowLoading, setIsRainbowLoading] = useState(false);
+  
+  const stars = useMemo(() => generateStars(), []);
 
   useEffect(() => {
     if (isConnected && chain?.id !== celo.id) {
@@ -84,44 +97,68 @@ export default function Home() {
   };
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-4">
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-indigo-900/10 to-purple-900/5"></div>
-        <div className="absolute top-[10%] left-[10%] w-[300px] h-[300px] bg-teal-400/10 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-[15%] right-[20%] w-[250px] h-[250px] bg-pink-500/15 rounded-full blur-[80px]"></div>
+    <div className="w-full h-full flex items-center justify-center p-4 overflow-hidden">
+      {/* Cosmic Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0a0e2a] via-[#13183a] to-[#0a0e2a]">
+        {/* Nebula Effects */}
+        <div className="absolute top-[15%] left-[15%] w-[400px] h-[400px] bg-[#6d28d9]/10 rounded-full blur-[150px] animate-pulse-slow" />
+        <div className="absolute bottom-[20%] right-[20%] w-[350px] h-[350px] bg-[#0ea5e9]/15 rounded-full blur-[120px] animate-pulse-slower" />
+        <div className="absolute top-[40%] left-[50%] w-[300px] h-[300px] bg-[#ec4899]/10 rounded-full blur-[100px] animate-pulse-medium" />
+        
+        {/* Stars */}
+        {stars.map(star => (
+          <motion.div
+            key={star.id}
+            className="absolute rounded-full bg-white"
+            style={{
+              top: star.top,
+              left: star.left,
+              width: star.size,
+              height: star.size,
+              opacity: star.opacity,
+            }}
+            animate={{ opacity: [star.opacity, star.opacity * 0.5, star.opacity] }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              delay: star.delay,
+              ease: "easeInOut"
+            }}
+          />
+        ))}
       </div>
       
       {!isConnected || !address ? (
         <div className="w-full max-w-3xl relative z-10">
           <motion.h1 
-            className="text-3xl md:text-4xl font-bold text-center mb-8"
+            className="text-3xl md:text-4xl font-bold text-center mb-10"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
             style={{
-              background: "linear-gradient(90deg, #c084fc, #60a5fa, #8b5cf6)",
+              background: "linear-gradient(90deg, #a5b4fc, #c7d2fe, #e0e7ff)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
-              textShadow: "0 0 12px rgba(139, 92, 246, 0.4)"
+              textShadow: "0 0 20px rgba(165, 180, 252, 0.5)"
             }}
           >
-            Connect Your Wallet
+            Connect to Wallet
           </motion.h1>
           
           <div className="flex justify-center">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
               whileHover={{ 
                 scale: 1.03,
-                boxShadow: "0 0 15px rgba(59, 130, 246, 0.4)"
+                boxShadow: "0 0 30px rgba(139, 92, 246, 0.4)"
               }}
               whileTap={{ scale: 0.98 }}
             >
               <ConnectButton.Custom>
                 {({ openConnectModal }) => (
-                  <button
+                  <motion.button
                     onClick={() => {
                       setIsRainbowLoading(true);
                       openConnectModal();
@@ -129,42 +166,82 @@ export default function Home() {
                     disabled={isRainbowLoading}
                     className={`
                       w-full flex flex-col items-center justify-center
-                      p-8 rounded-2xl backdrop-blur-lg
+                      p-10 rounded-2xl backdrop-blur-2xl
                       border border-white/20
-                      transition-all duration-300
+                      transition-all duration-500
                       hover:border-white/40
                       ${isRainbowLoading ? "opacity-80 cursor-not-allowed" : ""}
                     `}
                     style={{
-                      backgroundImage: `
-                        radial-gradient(circle at 20% 30%, #3b82f620 0%, transparent 40%),
-                        radial-gradient(circle at 80% 70%, #60a5fa20 0%, transparent 40%)
-                      `,
-                      boxShadow: "0 0 15px rgba(59, 130, 246, 0.4)"
+                      background: "radial-gradient(circle at center, rgba(55, 48, 107, 0.3) 0%, rgba(30, 27, 75, 0.3) 100%)",
+                      boxShadow: "0 0 30px rgba(99, 102, 241, 0.3), inset 0 0 20px rgba(199, 210, 254, 0.1)"
+                    }}
+                    animate={{ 
+                      boxShadow: [
+                        "0 0 30px rgba(99, 102, 241, 0.3), inset 0 0 20px rgba(199, 210, 254, 0.1)",
+                        "0 0 40px rgba(139, 92, 246, 0.4), inset 0 0 25px rgba(165, 180, 252, 0.2)",
+                        "0 0 30px rgba(99, 102, 241, 0.3), inset 0 0 20px rgba(199, 210, 254, 0.1)"
+                      ]
+                    }}
+                    transition={{
+                      duration: 6,
+                      repeat: Infinity,
+                      ease: "easeInOut"
                     }}
                   >
                     <div 
-                      className="p-4 rounded-full mb-4 backdrop-blur-sm relative"
+                      className="p-6 rounded-full mb-6 backdrop-blur-md relative"
                       style={{
-                        background: `radial-gradient(circle, #3b82f630, transparent 70%)`,
+                        background: "radial-gradient(circle, rgba(139, 92, 246, 0.2), transparent 70%)",
                         boxShadow: `
-                          inset 0 0 12px #3b82f680,
-                          0 0 15px #60a5fa50
+                          inset 0 0 20px rgba(199, 210, 254, 0.3),
+                          0 0 30px rgba(99, 102, 241, 0.4)
                         `
                       }}
                     >
                       <div className="relative z-10">
-                        <div className="w-12 h-12 relative">
-                          <div className="absolute inset-0 rounded-full blur-sm opacity-60 bg-gradient-to-r from-[#FF0018] via-[#FFA52C] to-[#FFFF41]"/>
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" className="w-12 h-12">
-                            <path d="M20 5C10 5 5 10 5 20C5 30 10 35 20 35C30 35 35 30 35 20C35 10 30 5 20 5Z" fill="url(#rainbow)" />
+                        <div className="w-16 h-16 relative">
+                          <motion.div 
+                            className="absolute inset-0 rounded-full blur-md opacity-50"
+                            animate={{ 
+                              scale: [1, 1.1, 1],
+                              opacity: [0.5, 0.7, 0.5]
+                            }}
+                            transition={{
+                              duration: 4,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                            style={{
+                              background: "radial-gradient(circle, #a5b4fc, #818cf8, #6366f1)"
+                            }}
+                          />
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            viewBox="0 0 24 24" 
+                            className="w-16 h-16"
+                            fill="none"
+                          >
+                            <motion.path 
+                              d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" 
+                              stroke="url(#ethereal-gradient)"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              animate={{ 
+                                rotate: [0, 5, 0, -5, 0],
+                                scale: [1, 1.05, 1]
+                              }}
+                              transition={{
+                                duration: 8,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                              }}
+                            />
                             <defs>
-                              <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#FF0018" />
-                                <stop offset="25%" stopColor="#FFA52C" />
-                                <stop offset="50%" stopColor="#FFFF41" />
-                                <stop offset="75%" stopColor="#008018" />
-                                <stop offset="100%" stopColor="#0000F9" />
+                              <linearGradient id="ethereal-gradient" x1="12" y1="2" x2="12" y2="21" gradientUnits="userSpaceOnUse">
+                                <stop stopColor="#a5b4fc" />
+                                <stop offset="1" stopColor="#c7d2fe" />
                               </linearGradient>
                             </defs>
                           </svg>
@@ -172,150 +249,192 @@ export default function Home() {
                       </div>
                     </div>
                     
-                    <h3 
-                      className="text-lg font-semibold mb-1"
+                    <motion.h3 
+                      className="text-xl font-semibold mb-2"
                       style={{
-                        background: "linear-gradient(90deg, #FF0018, #FFA52C, #FFFF41, #008018, #0000F9)",
+                        background: "linear-gradient(90deg, #c7d2fe, #e0e7ff)",
                         WebkitBackgroundClip: "text",
                         WebkitTextFillColor: "transparent",
-                        textShadow: "0 0 8px rgba(59, 130, 246, 0.8)"
+                      }}
+                      animate={{ 
+                        textShadow: [
+                          "0 0 10px rgba(165, 180, 252, 0.5)",
+                          "0 0 15px rgba(199, 210, 254, 0.7)",
+                          "0 0 10px rgba(165, 180, 252, 0.5)"
+                        ]
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut"
                       }}
                     >
-                      RainbowKit
-                    </h3>
+                      Portal Access
+                    </motion.h3>
                     
                     {isRainbowLoading ? (
-                      <div className="flex items-center mt-2">
+                      <div className="flex items-center mt-3">
                         <svg 
-                          className="animate-spin h-5 w-5 mr-2" 
+                          className="animate-spin h-6 w-6 mr-2" 
                           xmlns="http://www.w3.org/2000/svg" 
                           fill="none" 
                           viewBox="0 0 24 24"
-                          style={{ color: "#3b82f6" }}
+                          style={{ color: "#a5b4fc" }}
                         >
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span 
-                          className="text-sm"
+                        <motion.span 
+                          className="text-sm font-light"
                           style={{ 
-                            color: "#3b82f6",
-                            textShadow: "0 0 4px #60a5fa"
+                            color: "#e0e7ff",
+                          }}
+                          animate={{ opacity: [0.7, 1, 0.7] }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut"
                           }}
                         >
-                          Connecting...
-                        </span>
+                          Opening Stargate...
+                        </motion.span>
                       </div>
                     ) : (
-                      <p 
-                        className="text-sm mt-1 font-light"
+                      <motion.p 
+                        className="text-sm mt-2 font-light"
                         style={{ 
-                          color: "#60a5fa",
-                          textShadow: "0 0 6px #3b82f680"
+                          color: "#c7d2fe",
+                        }}
+                        animate={{ 
+                          opacity: [0.7, 1, 0.7],
+                          y: [0, -2, 0]
+                        }}
+                        transition={{
+                          duration: 3,
+                          repeat: Infinity,
+                          ease: "easeInOut"
                         }}
                       >
-                        Recommended multi-wallet solution
-                      </p>
+                        Multi-dimensional wallet connection
+                      </motion.p>
                     )}
-                  </button>
+                  </motion.button>
                 )}
               </ConnectButton.Custom>
             </motion.div>
           </div>
           
           <motion.p 
-            className="text-center mt-8 text-sm font-light"
+            className="text-center mt-10 text-sm font-light max-w-md mx-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
+            transition={{ delay: 1.2, duration: 1 }}
             style={{
-              background: "linear-gradient(90deg, #444, #111)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              textShadow: "0 0 8px rgba(0, 0, 0, 0.6)"
+              color: "#a5b4fc",
             }}
           >
-            Secure connection supporting 150+ wallets
+            Secure connection through gateways to 150+ wallets
           </motion.p>
         </div>
       ) : needsNetworkSwitch ? (
         <div className="w-full max-w-3xl relative z-10">
           <motion.h1 
-            className="text-3xl md:text-4xl font-bold text-center mb-8"
+            className="text-3xl md:text-4xl font-bold text-center mb-10"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.8 }}
             style={{
-              background: "linear-gradient(90deg, #f97316, #f59e0b, #eab308)",
+              background: "linear-gradient(90deg, #67e8f9, #22d3ee, #06b6d4)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
-              textShadow: "0 0 12px rgba(249, 115, 22, 0.4)"
+              textShadow: "0 0 20px rgba(103, 232, 249, 0.5)"
             }}
           >
-            Switch to Celo Network
+            Align with Celo Constellation
           </motion.h1>
           
           <motion.div
-            className="bg-gradient-to-br from-amber-900/20 to-amber-800/10 backdrop-blur-lg
-                      rounded-2xl border border-amber-500/30 p-8 mb-10"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            className="bg-gradient-to-br from-cyan-900/20 to-teal-800/10 backdrop-blur-xl
+                      rounded-2xl border border-cyan-500/30 p-8 mb-10"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.7 }}
+            style={{
+              boxShadow: "0 0 30px rgba(6, 182, 212, 0.3), inset 0 0 20px rgba(103, 232, 249, 0.1)"
+            }}
           >
             <div className="flex items-center justify-center mb-6">
-              <div className="bg-gradient-to-r from-amber-500 to-yellow-300 p-4 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-amber-900" viewBox="0 0 20 20" fill="currentColor">
+              <motion.div 
+                className="bg-gradient-to-r from-cyan-500 to-teal-400 p-4 rounded-full"
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{
+                  duration: 8,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-cyan-900" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
-              </div>
+              </motion.div>
             </div>
             
-            <p className="text-center text-amber-100/90 mb-2">
-              You're connected to <span className="font-bold">{chain?.name}</span>
+            <p className="text-center text-cyan-100/90 mb-2 font-light">
+              You're connected to <span className="font-medium text-cyan-50">{chain?.name}</span>
             </p>
-            <p className="text-center text-amber-200 font-medium mb-6">
-              Please switch to Celo Mainnet to continue
+            <p className="text-center text-cyan-200 font-medium mb-8">
+              Please align with the Celo Mainnet constellation
             </p>
             
             <motion.button
               onClick={addCeloNetwork}
-              className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400
-                        rounded-xl text-amber-900 font-bold flex items-center justify-center
-                        hover:from-amber-400 hover:to-yellow-300 transition-all"
-              whileHover={{ scale: 1.02 }}
+              className="w-full py-4 bg-gradient-to-r from-cyan-500 to-teal-400
+                        rounded-xl text-cyan-900 font-bold flex items-center justify-center
+                        hover:from-cyan-400 hover:to-teal-300 transition-all"
+              whileHover={{ 
+                scale: 1.02,
+                boxShadow: "0 0 20px rgba(6, 182, 212, 0.5)"
+              }}
               whileTap={{ scale: 0.98 }}
+              style={{
+                boxShadow: "0 0 15px rgba(6, 182, 212, 0.3)"
+              }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
               </svg>
-              Switch to Celo Mainnet
+              Align with Celo Constellation
             </motion.button>
           </motion.div>
           
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.6 }}
           >
-            <h2 className="text-xl font-bold text-center mb-6 text-amber-50">
-              Add Celo Tokens to Wallet
+            <h2 className="text-xl font-bold text-center mb-8 text-cyan-50">
+              Cosmic Assets
             </h2>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {celoTokens.map(token => (
                 <motion.div
                   key={token.symbol}
-                  className="bg-amber-900/20 backdrop-blur-sm rounded-xl p-4
-                            border border-amber-500/30 flex items-center"
-                  whileHover={{ y: -5 }}
+                  className="bg-cyan-900/20 backdrop-blur-md rounded-xl p-5
+                            border border-cyan-500/30 flex items-center"
+                  whileHover={{ 
+                    y: -5,
+                    boxShadow: "0 5px 15px rgba(6, 182, 212, 0.2)"
+                  }}
+                  transition={{ type: "spring", stiffness: 300 }}
                 >
-                  <div className="bg-gradient-to-br from-amber-600 to-yellow-500 w-10 h-10 rounded-full flex items-center justify-center mr-3">
-                    <span className="font-bold text-amber-900">{token.symbol[0]}</span>
+                  <div className="bg-gradient-to-br from-cyan-600 to-teal-500 w-12 h-12 rounded-full flex items-center justify-center mr-4">
+                    <span className="font-bold text-cyan-900">{token.symbol[0]}</span>
                   </div>
                   
                   <div className="flex-1">
-                    <h3 className="font-bold text-amber-100">{token.symbol}</h3>
-                    <p className="text-xs text-amber-200/70 truncate">
+                    <h3 className="font-bold text-cyan-100">{token.symbol}</h3>
+                    <p className="text-xs text-cyan-200/70 truncate font-mono">
                       {token.address.substring(0, 6)}...{token.address.slice(-4)}
                     </p>
                   </div>
@@ -323,20 +442,23 @@ export default function Home() {
                   <button
                     onClick={() => addTokenToWallet(token)}
                     disabled={!!addingToken}
-                    className="bg-amber-700/50 hover:bg-amber-600/60 px-4 py-2 rounded-lg
-                              text-amber-100 text-sm font-medium transition-colors
+                    className="bg-cyan-700/50 hover:bg-cyan-600/60 px-4 py-2 rounded-lg
+                              text-cyan-100 text-sm font-medium transition-colors
                               disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      boxShadow: "0 0 10px rgba(6, 182, 212, 0.2)"
+                    }}
                   >
                     {addingToken === token.symbol ? (
                       <div className="flex items-center">
-                        <svg className="animate-spin h-4 w-4 mr-1 text-amber-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-4 w-4 mr-1 text-cyan-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Adding...
+                        Manifesting...
                       </div>
                     ) : (
-                      "Add Token"
+                      "Add to Wallet"
                     )}
                   </button>
                 </motion.div>
@@ -349,4 +471,4 @@ export default function Home() {
       )}
     </div>
   );
-                    }
+                        }
