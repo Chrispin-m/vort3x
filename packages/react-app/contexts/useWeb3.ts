@@ -10,11 +10,15 @@ import {
 import { celo } from "viem/chains";
 import { stableTokenABI } from "@celo/abis";
 
+import { getAccount, connectAsync } from "wagmi";        // ← new
+import type { Connector } from "wagmi";
+
 declare global {
   interface Window {
     ethereum?: any;
   }
 }
+
 
 // Supported tokens
 type VortexToken = {
@@ -57,34 +61,47 @@ const publicClient = createPublicClient({
 });
 
 export const useWeb3 = () => {
-  const [address, setAddress] = useState<`0x${string}` | null>(null);
+  const [address, setAddress] = useState<`0x${string}` | null>(null);
 
-  const getUserAddress = async (): Promise<`0x${string}`> => {
-    if (typeof window !== "undefined" && window.ethereum) {
-      let accounts: `0x${string}`[] = await window.ethereum.request({
-        method: "eth_accounts",
-      });
-      if (accounts.length > 0) {
-        setAddress(accounts[0]);
-        return accounts[0];
-      }
-      if (window.ethereum.isMiniPay) {
-        accounts = await window.ethereum.request({
-          method: "eth_requestAccounts",
-          params: [],
-        });
-      } else {
-        const walletClient = createWalletClient({
-          transport: custom(window.ethereum),
-          chain: celo,
-        });
-        accounts = await walletClient.getAddresses() as `0x${string}`[];
-      }
-      setAddress(accounts[0]);
-      return accounts[0];
-    }
-    throw new Error("No injected wallet found");
-  };
+  const getUserAddress = async (): Promise<`0x${string}`> => {
+    if (typeof window !== "undefined" && window.ethereum) {
+      let accounts: `0x${string}`[] = await window.ethereum.request({
+        method: "eth_accounts",
+      });
+      if (accounts.length > 0) {
+        setAddress(accounts[0]);
+        return accounts[0];
+      }
+      if (window.ethereum.isMiniPay) {
+        accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+          params: [],
+        });
+      } else {
+        const walletClient = createWalletClient({
+          transport: custom(window.ethereum),
+          chain: celo,
+        });
+        accounts = (await walletClient.getAddresses()) as `0x${string}`[];
+      }
+      setAddress(accounts[0]);
+      return accounts[0];
+    }
+
+    const wagmi = getAccount();
+    if (wagmi.address) {
+      setAddress(wagmi.address as `0x${string}`);
+      return wagmi.address as `0x${string}`;
+    }
+
+    const allConnectors = (await import("wagmi")).connectors as Connector[]; 
+    // ppreferred fallback connector
+    const fallback: Connector = allConnectors[0];
+
+    const { account } = await connectAsync({ connector: fallback });
+    setAddress(account as `0x${string}`);
+    return account as `0x${string}`;
+  };
 
   const getTokenBalance = async (
     userAddress: `0x${string}`,
