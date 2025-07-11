@@ -37,7 +37,7 @@ import { SwitchChainError } from "viem";
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
 // Configuration
-const PROJECT_ID = NEXT_PUBLIC_WC_PROJECT_ID || "default-project-id";
+const PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "default-project-id";
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://forno.celo.org";
 
 const connectors = connectorsForWallets(
