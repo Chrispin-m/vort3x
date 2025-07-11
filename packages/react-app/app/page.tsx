@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useAccount, useSwitchChain, useConnect } from "wagmi";
-import { celo } from "wagmi/chains";
-import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
+import { getWalletClient } from "@wagmi/core";
+import { config } from "@/wagmi/config";
+import { celo } from "@wagmi/core/chains";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { createWalletClient, custom } from "viem";
-import { injected } from "wagmi/connectors";
+import dynamic from "next/dynamic";
 
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
@@ -45,10 +44,26 @@ const generateStars = () => {
   }));
 };
 
+/**
+ * Safely gets a wallet client with error handling
+ */
+const safeGetWalletClient = async (chainId: number) => {
+  try {
+    const walletClient = await getWalletClient(config, { chainId });
+    if (!walletClient) throw new Error("Wallet client not available");
+    return { walletClient, error: null };
+  } catch (error: any) {
+    console.error("Wallet client error:", error);
+    return {
+      walletClient: null,
+      error: error.message || "Failed to connect to wallet",
+    };
+  }
+};
+
 export default function Home() {
-  const { switchChainAsync } = useSwitchChain();
-  const { address, isConnected, chain } = useAccount();
-  const { connectAsync, connectors } = useConnect();
+  const [address, setAddress] = useState<string | null>(null);
+  const [chain, setChain] = useState<any>(null);
   const [needsNetworkSwitch, setNeedsNetworkSwitch] = useState(false);
   const [addingToken, setAddingToken] = useState<string | null>(null);
   const [isRainbowLoading, setIsRainbowLoading] = useState(false);
@@ -57,51 +72,94 @@ export default function Home() {
   
   const stars = useMemo(() => generateStars(), []);
 
+  // Check wallet connection status
   useEffect(() => {
-    if (isConnected && chain?.id !== celo.id) {
-      setNeedsNetworkSwitch(true);
-    } else {
-      setNeedsNetworkSwitch(false);
+    const checkConnection = async () => {
+      try {
+        const { walletClient } = await safeGetWalletClient(celo.id);
+        if (walletClient) {
+          const [address] = await walletClient.getAddresses();
+          setAddress(address);
+          setChain(walletClient.chain);
+          
+          if (walletClient.chain.id !== celo.id) {
+            setNeedsNetworkSwitch(true);
+          }
+        }
+      } catch (error) {
+        console.log("No wallet connected");
+      }
+    };
+
+    checkConnection();
+
+    // Listen for account changes
+    const handleAccountsChanged = (accounts: string[]) => {
+      if (accounts.length > 0) {
+        setAddress(accounts[0]);
+      } else {
+        setAddress(null);
+      }
+    };
+
+    // Listen for chain changes
+    const handleChainChanged = (chainId: string) => {
+      setChain({ id: parseInt(chainId, 16) });
+      setNeedsNetworkSwitch(parseInt(chainId, 16) !== celo.id);
+    };
+
+    if (window.ethereum) {
+      window.ethereum.on("accountsChanged", handleAccountsChanged);
+      window.ethereum.on("chainChanged", handleChainChanged);
     }
-  }, [isConnected, chain]);
+
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+        window.ethereum.removeListener("chainChanged", handleChainChanged);
+      }
+    };
+  }, []);
 
   const addCeloNetwork = async () => {
     try {
-      await switchChainAsync({
-        chainId: celo.id
-      });
+      const { walletClient, error } = await safeGetWalletClient(celo.id);
+      if (error || !walletClient) {
+        throw new Error(error || "Wallet client not available");
+      }
+
+      await walletClient.switchChain({ id: celo.id });
       setNeedsNetworkSwitch(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to switch network:", error);
+      setConnectionError(`Network switch failed: ${error.message || "Unknown error"}`);
+      setTimeout(() => setConnectionError(null), 5000);
     }
   };
 
   const addTokenToWallet = async (token: typeof celoTokens[0]) => {
     setAddingToken(token.symbol);
     try {
-      if (!window.ethereum) {
-        throw new Error("Ethereum provider not found");
+      const { walletClient, error } = await safeGetWalletClient(celo.id);
+      if (error || !walletClient) {
+        throw new Error(error || "Wallet client not available");
       }
-      
-      const walletClient = createWalletClient({
-        transport: custom(window.ethereum)
-      });
-      
+
       await walletClient.watchAsset({
         type: "ERC20",
         options: {
           address: token.address as `0x${string}`,
           symbol: token.symbol,
           decimals: token.decimals,
-          image: ""
-        }
+          image: "",
+        },
       });
     } catch (error: any) {
       console.error(`Error adding ${token.symbol}:`, error);
-      setConnectionError(`Failed to add token: ${error.message || "Unknown error"}`);
+      setConnectionError(`Token add failed: ${error.message || "Unknown error"}`);
+      setTimeout(() => setConnectionError(null), 5000);
     } finally {
       setAddingToken(null);
-      setTimeout(() => setConnectionError(null), 5000);
     }
   };
 
@@ -116,13 +174,8 @@ export default function Home() {
         return;
       }
       
-      // If RainbowKit modal trigger fails, try direct connection
-      const injectedConnector = connectors.find(c => c.id === "injected" && c.ready);
-      
-      if (injectedConnector) {
-        await connectAsync({ connector: injectedConnector });
-      } else if (window.ethereum) {
-        // Fallback to direct ethereum request
+      // Fallback to direct connection
+      if (window.ethereum) {
         await window.ethereum.request({ method: "eth_requestAccounts" });
       } else {
         throw new Error("No wallet connection method available");
@@ -131,7 +184,6 @@ export default function Home() {
       console.error("Connection error:", error);
       setConnectionError(`Connection failed: ${error.message || "Unknown error"}`);
     } finally {
-      // Reset loading state after a short delay
       setTimeout(() => setIsRainbowLoading(false), 3000);
     }
   };
@@ -145,7 +197,7 @@ export default function Home() {
         <div className="absolute bottom-[20%] right-[20%] w-[350px] h-[350px] bg-[#0ea5e9]/15 rounded-full blur-[120px] animate-pulse-slower" />
         <div className="absolute top-[40%] left-[50%] w-[300px] h-[300px] bg-[#ec4899]/10 rounded-full blur-[100px] animate-pulse-medium" />
         
-        {/*  */}
+        {/* Stars */}
         {stars.map(star => (
           <motion.div
             key={star.id}
@@ -168,7 +220,7 @@ export default function Home() {
         ))}
       </div>
       
-      {!isConnected || !address ? (
+      {!address ? (
         <div className="w-full max-w-3xl relative z-10">
           <motion.h1 
             className="text-3xl md:text-4xl font-bold text-center mb-10"
@@ -182,7 +234,7 @@ export default function Home() {
               textShadow: "0 0 20px rgba(165, 180, 252, 0.5)"
             }}
           >
-            Connect to Wallet 
+            Connect to Wallet
           </motion.h1>
           
           <div className="flex flex-col items-center">
@@ -305,7 +357,7 @@ export default function Home() {
                     ease: "easeInOut"
                   }}
                 >
-                  Vort3x Access
+                  Portal Access
                 </motion.h3>
                 
                 {isRainbowLoading ? (
@@ -332,7 +384,7 @@ export default function Home() {
                         ease: "easeInOut"
                       }}
                     >
-                      Connecting...
+                      Opening Connection...
                     </motion.span>
                   </div>
                 ) : (
@@ -426,7 +478,7 @@ export default function Home() {
               color: "#a5b4fc",
             }}
           >
-            Secure connection through cosmic gateways to 150+ celestial wallets
+            Secure connection through gateways to 150+ celestial wallets
           </motion.p>
         </div>
       ) : needsNetworkSwitch ? (
@@ -443,7 +495,7 @@ export default function Home() {
               textShadow: "0 0 20px rgba(103, 232, 249, 0.5)"
             }}
           >
-            Align with Celo Constellation
+            Align with Celo Net
           </motion.h1>
           
           <motion.div
@@ -476,7 +528,7 @@ export default function Home() {
               You're connected to <span className="font-medium text-cyan-50">{chain?.name}</span>
             </p>
             <p className="text-center text-cyan-200 font-medium mb-8">
-              Please align with the Celo Mainnet constellation
+              Please align with the Celo Mainnet
             </p>
             
             <motion.button
@@ -496,7 +548,7 @@ export default function Home() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
               </svg>
-              Align with Celo Constellation
+              Align with Celo Net
             </motion.button>
           </motion.div>
           
@@ -564,4 +616,4 @@ export default function Home() {
       )}
     </div>
   );
-        }
+  }
