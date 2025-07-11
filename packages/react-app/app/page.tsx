@@ -116,7 +116,7 @@ export default function Home() {
         return;
       }
       
-      // If RainbowKit fails, try direct connection
+      // If RainbowKit modal trigger fails, try direct connection
       const injectedConnector = connectors.find(c => c.id === "injected" && c.ready);
       
       if (injectedConnector) {
@@ -131,7 +131,7 @@ export default function Home() {
       console.error("Connection error:", error);
       setConnectionError(`Connection failed: ${error.message || "Unknown error"}`);
     } finally {
-      // loading state after a short delay
+      // Reset loading state after a short delay
       setTimeout(() => setIsRainbowLoading(false), 3000);
     }
   };
@@ -145,7 +145,7 @@ export default function Home() {
         <div className="absolute bottom-[20%] right-[20%] w-[350px] h-[350px] bg-[#0ea5e9]/15 rounded-full blur-[120px] animate-pulse-slower" />
         <div className="absolute top-[40%] left-[50%] w-[300px] h-[300px] bg-[#ec4899]/10 rounded-full blur-[100px] animate-pulse-medium" />
         
-        {/* Stars */}
+        {/*  */}
         {stars.map(star => (
           <motion.div
             key={star.id}
@@ -182,7 +182,7 @@ export default function Home() {
               textShadow: "0 0 20px rgba(165, 180, 252, 0.5)"
             }}
           >
-            Connect to the Blockchain
+            Connect to Wallet 
           </motion.h1>
           
           <div className="flex flex-col items-center">
@@ -332,7 +332,7 @@ export default function Home() {
                         ease: "easeInOut"
                       }}
                     >
-                      Opening Modal...
+                      Connecting...
                     </motion.span>
                   </div>
                 ) : (
@@ -359,7 +359,7 @@ export default function Home() {
 
             {/* Hidden RainbowKit button for reliable modal triggering */}
             <div className="absolute opacity-0 h-0 overflow-hidden">
-              <ConnectButton>
+              <ConnectButton.Custom>
                 {({ openConnectModal }) => (
                   <button
                     ref={connectModalRef}
@@ -367,7 +367,7 @@ export default function Home() {
                     aria-hidden="true"
                   />
                 )}
-              </ConnectButton>
+              </ConnectButton.Custom>
             </div>
 
             {/* Error message */}
@@ -426,7 +426,7 @@ export default function Home() {
               color: "#a5b4fc",
             }}
           >
-            Secure connection through gateways to 150+ celestial wallets
+            Secure connection through cosmic gateways to 150+ celestial wallets
           </motion.p>
         </div>
       ) : needsNetworkSwitch ? (
@@ -443,7 +443,7 @@ export default function Home() {
               textShadow: "0 0 20px rgba(103, 232, 249, 0.5)"
             }}
           >
-            Align with Celo Net
+            Align with Celo Constellation
           </motion.h1>
           
           <motion.div
@@ -476,7 +476,7 @@ export default function Home() {
               You're connected to <span className="font-medium text-cyan-50">{chain?.name}</span>
             </p>
             <p className="text-center text-cyan-200 font-medium mb-8">
-              Please align with the Celo Mainnet
+              Please align with the Celo Mainnet constellation
             </p>
             
             <motion.button
@@ -496,7 +496,7 @@ export default function Home() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
               </svg>
-              Align with Celo Network
+              Align with Celo Constellation
             </motion.button>
           </motion.div>
           
@@ -564,4 +564,4 @@ export default function Home() {
       )}
     </div>
   );
-      }
+        }
