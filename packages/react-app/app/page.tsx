@@ -58,7 +58,7 @@ const connectors = connectorsForWallets(
     appName: "Vort3x",
     projectId: PROJECT_ID,
     appDescription: "Vort3x Connection",
-    appUrl: "https://vort3x.xyz",
+    appUrl: "https://www.vort3x.xyz/",
     appIcon: "https://vort3x.xyz/favicon.ico",
   }
 );
