@@ -9,9 +9,8 @@ import {
   createConfig, 
   createStorage, 
   cookieStorage,
-  getWalletClient,
+  getWalletClient
 } from "@wagmi/core";
-import SwitchChainError from 'viem';
 import { 
   celo,
   optimism,
@@ -33,6 +32,7 @@ import {
 } from "@rainbow-me/rainbowkit/wallets";
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import dynamic from "next/dynamic";
+import { SwitchChainError } from "viem";
 
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
@@ -57,9 +57,9 @@ const connectors = connectorsForWallets(
   {
     appName: "Cosmic Wallet",
     projectId: PROJECT_ID,
-    appDescription: "Cosmic Wallet Connection",
-    appUrl: "https://your-app.com",
-    appIcon: "https://your-app.com/favicon.ico",
+    appDescription: "Vort3x Connection",
+    appUrl: "https://vort3x.xyz",
+    appIcon: "https://vort3x.xyz/favicon.ico",
   }
 );
 
@@ -129,11 +129,15 @@ const safeGetWalletClient = async (chainId: number) => {
     return { walletClient, error: null };
   } catch (error: any) {
     errorManager("Wallet client error", error, { chainId });
+    
+    // Handle switch chain error specifically
+    const errorMsg = error instanceof SwitchChainError
+      ? "Failed to switch network. Please check your wallet." 
+      : "Failed to connect to wallet. Please try again.";
+    
     return {
       walletClient: null,
-      error: error instanceof SwitchChainError 
-        ? "Failed to switch network. Please check your wallet." 
-        : "Failed to connect to wallet. Please try again."
+      error: errorMsg
     };
   }
 };
@@ -663,5 +667,4 @@ export default function Home() {
       )}
     </div>
   );
-  
-    }
+  }
