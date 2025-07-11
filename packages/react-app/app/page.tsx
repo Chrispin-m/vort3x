@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount, useConnect, useSwitchChain } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
 import { celo } from "wagmi/chains";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
@@ -31,86 +32,12 @@ const celoTokens = [
   },
 ];
 
-const getConnectorColors = (connectorName: string) => {
-  switch (connectorName.toLowerCase()) {
-    case "metamask":
-      return {
-        primary: "#E2761B",
-        secondary: "#F6851B",
-        gradient: "linear-gradient(90deg, #E2761B, #F6851B, #FF9E4A)",
-        glow: "0 0 15px rgba(226, 118, 27, 0.4)"
-      };
-    case "walletconnect":
-      return {
-        primary: "#3B99FC",
-        secondary: "#5D8BF4",
-        gradient: "linear-gradient(90deg, #3B99FC, #5D8BF4, #8BB3F9)",
-        glow: "0 0 15px rgba(59, 153, 252, 0.4)"
-      };
-    default:
-      return {
-        primary: "#8B5CF6",
-        secondary: "#C084FC",
-        gradient: "linear-gradient(90deg, #8B5CF6, #C084FC, #D8B4FE)",
-        glow: "0 0 15px rgba(139, 92, 246, 0.4)"
-      };
-  }
-};
-
-const WalletIcon = ({ connectorName }: { connectorName: string }) => {
-  const iconClass = "w-6 h-6";
-  const colors = getConnectorColors(connectorName);
-  
-  return (
-    <div className="relative">
-      <div 
-        className="absolute inset-0 rounded-full blur-sm opacity-60"
-        style={{ background: colors.primary }}
-      />
-      {connectorName.toLowerCase() === "metamask" ? (
-        <svg viewBox="0 0 40 37" className={iconClass}>
-          <path d="M36.5 0.5L22.1 13.4L24.9 4.9L36.5 0.5Z" fill={colors.primary} />
-          <path d="M3.5 0.5L17.7 13.5L15.1 4.9L3.5 0.5Z" fill={colors.primary} />
-          <path d="M31.2 26.5L28 31.5L35.4 33L37.5 26.6L31.2 26.5Z" fill={colors.primary} />
-          <path d="M2.5 26.6L4.6 33L12 31.5L8.8 26.5L2.5 26.6Z" fill={colors.primary} />
-          <path d="M12.9 16.5L11 20.1L18.2 20.5L18 12.1L12.9 16.5Z" fill={colors.primary} />
-          <path d="M27.1 16.5L21.8 12L21.8 20.5L29 20.1L27.1 16.5Z" fill={colors.primary} />
-          <path d="M14.7 24.5L18.3 26.5L15.2 28.8L14.7 24.5Z" fill={colors.secondary} />
-          <path d="M25.3 24.5L24.8 28.8L21.7 26.5L25.3 24.5Z" fill={colors.secondary} />
-        </svg>
-      ) : connectorName.toLowerCase() === "walletconnect" ? (
-        <svg viewBox="0 0 40 40" className={iconClass}>
-          <path d="M12 15C15.9 11.1 24.1 11.1 28 15L31 12C25.8 6.8 14.2 6.8 9 12L12 15Z" fill={colors.primary} />
-          <path d="M32 20C29.8 17.8 26.4 17.8 24.2 20C22 22.2 22 25.6 24.2 27.8L26.8 30.4C23.3 33.9 16.7 33.9 13.2 30.4L8 25.2L10.8 22.4L16 27.6C17.6 29.2 20.4 29.2 22 27.6C23.6 26 23.6 23.2 22 21.6C20.4 20 17.6 20 16 21.6L13.2 24.4C15.4 26.6 18.8 26.6 21 24.4C23.2 22.2 23.2 18.8 21 16.6C18.8 14.4 15.4 14.4 13.2 16.6L10.6 19.2C14.1 15.7 20.7 15.7 24.2 19.2L27 16.4L32 20Z" fill={colors.secondary} />
-        </svg>
-      ) : (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className={iconClass}>
-          <path 
-            stroke={colors.primary} 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth="2" 
-            d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" 
-          />
-        </svg>
-      )}
-    </div>
-  );
-};
-
 export default function Home() {
-  const { connectAsync, connectors } = useConnect();
   const { switchChainAsync } = useSwitchChain();
   const { address, isConnected, chain } = useAccount();
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [connectingId, setConnectingId] = useState<string | null>(null);
   const [needsNetworkSwitch, setNeedsNetworkSwitch] = useState(false);
   const [addingToken, setAddingToken] = useState<string | null>(null);
-
-  // Group connectors by name
-  const uniqueConnectors = Array.from(
-    new Map(connectors.map(conn => [conn.name, conn])).values()
-  );
+  const [isRainbowLoading, setIsRainbowLoading] = useState(false);
 
   useEffect(() => {
     if (isConnected && chain?.id !== celo.id) {
@@ -119,17 +46,6 @@ export default function Home() {
       setNeedsNetworkSwitch(false);
     }
   }, [isConnected, chain]);
-
-  const handleConnect = async (connector: (typeof connectors)[number]) => {
-    setIsConnecting(true);
-    setConnectingId(connector.id);
-    try {
-      await connectAsync({ connector });
-    } finally {
-      setIsConnecting(false);
-      setConnectingId(null);
-    }
-  };
 
   const addCeloNetwork = async () => {
     try {
@@ -192,76 +108,90 @@ export default function Home() {
             Connect Your Wallet
           </motion.h1>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {uniqueConnectors.map((connector) => {
-              const colors = getConnectorColors(connector.name);
-              
-              return (
-                <motion.div
-                  key={connector.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  whileHover={{ 
-                    scale: 1.03,
-                    boxShadow: colors.glow
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                >
+          <div className="flex justify-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              whileHover={{ 
+                scale: 1.03,
+                boxShadow: "0 0 15px rgba(59, 130, 246, 0.4)"
+              }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <ConnectButton.Custom>
+                {({ openConnectModal }) => (
                   <button
-                    onClick={() => handleConnect(connector)}
-                    disabled={isConnecting}
+                    onClick={() => {
+                      setIsRainbowLoading(true);
+                      openConnectModal();
+                    }}
+                    disabled={isRainbowLoading}
                     className={`
-                      w-full h-full flex flex-col items-center justify-center
-                      p-6 rounded-2xl backdrop-blur-lg
+                      w-full flex flex-col items-center justify-center
+                      p-8 rounded-2xl backdrop-blur-lg
                       border border-white/20
                       transition-all duration-300
                       hover:border-white/40
-                      ${isConnecting ? "opacity-80 cursor-not-allowed" : ""}
+                      ${isRainbowLoading ? "opacity-80 cursor-not-allowed" : ""}
                     `}
                     style={{
                       backgroundImage: `
-                        radial-gradient(circle at 20% 30%, ${colors.primary}20 0%, transparent 40%),
-                        radial-gradient(circle at 80% 70%, ${colors.secondary}20 0%, transparent 40%)
+                        radial-gradient(circle at 20% 30%, #3b82f620 0%, transparent 40%),
+                        radial-gradient(circle at 80% 70%, #60a5fa20 0%, transparent 40%)
                       `,
-                      boxShadow: colors.glow
+                      boxShadow: "0 0 15px rgba(59, 130, 246, 0.4)"
                     }}
                   >
                     <div 
                       className="p-4 rounded-full mb-4 backdrop-blur-sm relative"
                       style={{
-                        background: `radial-gradient(circle, ${colors.primary}30, transparent 70%)`,
+                        background: `radial-gradient(circle, #3b82f630, transparent 70%)`,
                         boxShadow: `
-                          inset 0 0 12px ${colors.primary}80,
-                          0 0 15px ${colors.secondary}50
+                          inset 0 0 12px #3b82f680,
+                          0 0 15px #60a5fa50
                         `
                       }}
                     >
                       <div className="relative z-10">
-                        <WalletIcon connectorName={connector.name} />
+                        <div className="w-12 h-12 relative">
+                          <div className="absolute inset-0 rounded-full blur-sm opacity-60 bg-gradient-to-r from-[#FF0018] via-[#FFA52C] to-[#FFFF41]"/>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" className="w-12 h-12">
+                            <path d="M20 5C10 5 5 10 5 20C5 30 10 35 20 35C30 35 35 30 35 20C35 10 30 5 20 5Z" fill="url(#rainbow)" />
+                            <defs>
+                              <linearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#FF0018" />
+                                <stop offset="25%" stopColor="#FFA52C" />
+                                <stop offset="50%" stopColor="#FFFF41" />
+                                <stop offset="75%" stopColor="#008018" />
+                                <stop offset="100%" stopColor="#0000F9" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                        </div>
                       </div>
                     </div>
                     
                     <h3 
                       className="text-lg font-semibold mb-1"
                       style={{
-                        background: colors.gradient,
+                        background: "linear-gradient(90deg, #FF0018, #FFA52C, #FFFF41, #008018, #0000F9)",
                         WebkitBackgroundClip: "text",
                         WebkitTextFillColor: "transparent",
-                        textShadow: `0 0 8px ${colors.primary}80`
+                        textShadow: "0 0 8px rgba(59, 130, 246, 0.8)"
                       }}
                     >
-                      {connector.name}
+                      RainbowKit
                     </h3>
                     
-                    {connectingId === connector.id ? (
+                    {isRainbowLoading ? (
                       <div className="flex items-center mt-2">
                         <svg 
                           className="animate-spin h-5 w-5 mr-2" 
                           xmlns="http://www.w3.org/2000/svg" 
                           fill="none" 
                           viewBox="0 0 24 24"
-                          style={{ color: colors.primary }}
+                          style={{ color: "#3b82f6" }}
                         >
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -269,8 +199,8 @@ export default function Home() {
                         <span 
                           className="text-sm"
                           style={{ 
-                            color: colors.primary,
-                            textShadow: `0 0 4px ${colors.secondary}`
+                            color: "#3b82f6",
+                            textShadow: "0 0 4px #60a5fa"
                           }}
                         >
                           Connecting...
@@ -280,17 +210,17 @@ export default function Home() {
                       <p 
                         className="text-sm mt-1 font-light"
                         style={{ 
-                          color: colors.secondary,
-                          textShadow: `0 0 6px ${colors.primary}80`
+                          color: "#60a5fa",
+                          textShadow: "0 0 6px #3b82f680"
                         }}
                       >
-                        Click to connect
+                        Recommended multi-wallet solution
                       </p>
                     )}
                   </button>
-                </motion.div>
-              );
-            })}
+                )}
+              </ConnectButton.Custom>
+            </motion.div>
           </div>
           
           <motion.p 
@@ -305,7 +235,7 @@ export default function Home() {
               textShadow: "0 0 8px rgba(0, 0, 0, 0.6)"
             }}
           >
-            Secure connection powered by blockchain technology
+            Secure connection supporting 150+ wallets
           </motion.p>
         </div>
       ) : needsNetworkSwitch ? (
@@ -419,4 +349,4 @@ export default function Home() {
       )}
     </div>
   );
-        }
+                    }
