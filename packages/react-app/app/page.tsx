@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useAccount, useSwitchChain, useConnect } from "wagmi";
 import { celo } from "wagmi/chains";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { createWalletClient, custom } from "viem";
+import { injected } from "wagmi/connectors";
 
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
@@ -47,11 +48,12 @@ const generateStars = () => {
 export default function Home() {
   const { switchChainAsync } = useSwitchChain();
   const { address, isConnected, chain } = useAccount();
-  const { connectAsync } = useConnect();
+  const { connectAsync, connectors } = useConnect();
   const [needsNetworkSwitch, setNeedsNetworkSwitch] = useState(false);
   const [addingToken, setAddingToken] = useState<string | null>(null);
   const [isRainbowLoading, setIsRainbowLoading] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const connectModalRef = useRef<HTMLButtonElement>(null);
   
   const stars = useMemo(() => generateStars(), []);
 
@@ -108,30 +110,29 @@ export default function Home() {
     setConnectionError(null);
     
     try {
-      // Fallback connection if RainbowKit fails
-      if (window.ethereum) {
-        await connectAsync({
-          connector: {
-            id: "injected",
-            name: "Browser Wallet",
-            type: "injected",
-          } as any
-        });
+      // First, try to trigger RainbowKit modal
+      if (connectModalRef.current) {
+        connectModalRef.current.click();
+        return;
+      }
+      
+      // If RainbowKit fails, try direct connection
+      const injectedConnector = connectors.find(c => c.id === "injected" && c.ready);
+      
+      if (injectedConnector) {
+        await connectAsync({ connector: injectedConnector });
+      } else if (window.ethereum) {
+        // Fallback to direct ethereum request
+        await window.ethereum.request({ method: "eth_requestAccounts" });
       } else {
-        // RainbowKit modal as fallback
-        const connectButton = document.querySelector('button[data-testid="connect-button"]');
-        if (connectButton) {
-          (connectButton as HTMLButtonElement).click();
-        } else {
-          throw new Error("No wallet connection method available");
-        }
+        throw new Error("No wallet connection method available");
       }
     } catch (error: any) {
       console.error("Connection error:", error);
       setConnectionError(`Connection failed: ${error.message || "Unknown error"}`);
     } finally {
-      setIsRainbowLoading(false);
-      setTimeout(() => setConnectionError(null), 5000);
+      // loading state after a short delay
+      setTimeout(() => setIsRainbowLoading(false), 3000);
     }
   };
 
@@ -144,7 +145,7 @@ export default function Home() {
         <div className="absolute bottom-[20%] right-[20%] w-[350px] h-[350px] bg-[#0ea5e9]/15 rounded-full blur-[120px] animate-pulse-slower" />
         <div className="absolute top-[40%] left-[50%] w-[300px] h-[300px] bg-[#ec4899]/10 rounded-full blur-[100px] animate-pulse-medium" />
         
-        {/*  */}
+        {/* Stars */}
         {stars.map(star => (
           <motion.div
             key={star.id}
@@ -181,7 +182,7 @@ export default function Home() {
               textShadow: "0 0 20px rgba(165, 180, 252, 0.5)"
             }}
           >
-            Connect to the Cosmos
+            Connect to the Blockchain
           </motion.h1>
           
           <div className="flex flex-col items-center">
@@ -304,7 +305,7 @@ export default function Home() {
                     ease: "easeInOut"
                   }}
                 >
-                  Portal Access
+                  Vort3x Access
                 </motion.h3>
                 
                 {isRainbowLoading ? (
@@ -331,7 +332,7 @@ export default function Home() {
                         ease: "easeInOut"
                       }}
                     >
-                      Opening Stargate...
+                      Opening Modal...
                     </motion.span>
                   </div>
                 ) : (
@@ -356,21 +357,64 @@ export default function Home() {
               </motion.button>
             </motion.div>
 
-            {/* Hidden RainbowKit button for fallback */}
-            <div className="opacity-0 h-0 overflow-hidden">
-              <ConnectButton />
+            {/* Hidden RainbowKit button for reliable modal triggering */}
+            <div className="absolute opacity-0 h-0 overflow-hidden">
+              <ConnectButton>
+                {({ openConnectModal }) => (
+                  <button
+                    ref={connectModalRef}
+                    onClick={openConnectModal}
+                    aria-hidden="true"
+                  />
+                )}
+              </ConnectButton>
             </div>
 
             {/* Error message */}
             {connectionError && (
               <motion.div
-                className="mt-4 p-3 rounded-lg bg-red-500/20 backdrop-blur-sm border border-red-500/30 text-red-100 text-center"
+                className="mt-4 p-3 rounded-lg bg-red-500/20 backdrop-blur-sm border border-red-500/30 text-red-100 text-center max-w-md"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
                 {connectionError}
               </motion.div>
             )}
+
+            {/* Mobile wallet options */}
+            <div className="mt-6 text-center">
+              <p className="text-sm text-indigo-200 mb-2">
+                Recommended for mobile:
+              </p>
+              <div className="flex justify-center gap-3">
+                <a 
+                  href="https://rainbow.me" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-300 hover:text-indigo-100 transition-colors"
+                >
+                  Rainbow Wallet
+                </a>
+                <span className="text-indigo-400">•</span>
+                <a 
+                  href="https://metamask.io" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-300 hover:text-indigo-100 transition-colors"
+                >
+                  MetaMask
+                </a>
+                <span className="text-indigo-400">•</span>
+                <a 
+                  href="https://walletconnect.com" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-300 hover:text-indigo-100 transition-colors"
+                >
+                  WalletConnect
+                </a>
+              </div>
+            </div>
           </div>
           
           <motion.p 
@@ -382,7 +426,7 @@ export default function Home() {
               color: "#a5b4fc",
             }}
           >
-            Secure connection through wallet gateways to 150+  wallets
+            Secure connection through gateways to 150+ celestial wallets
           </motion.p>
         </div>
       ) : needsNetworkSwitch ? (
@@ -432,7 +476,7 @@ export default function Home() {
               You're connected to <span className="font-medium text-cyan-50">{chain?.name}</span>
             </p>
             <p className="text-center text-cyan-200 font-medium mb-8">
-              Please align with the Celo Mainnet constellation
+              Please align with the Celo Mainnet
             </p>
             
             <motion.button
@@ -452,7 +496,7 @@ export default function Home() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
               </svg>
-              Align with Celo Net
+              Align with Celo Network
             </motion.button>
           </motion.div>
           
@@ -520,4 +564,4 @@ export default function Home() {
       )}
     </div>
   );
-                              }
+      }
