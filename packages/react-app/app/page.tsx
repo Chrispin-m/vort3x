@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useAccount, useSwitchChain } from "wagmi";
+import { useAccount, useSwitchChain, useConnect, useDisconnect } from "wagmi";
 import { celo } from "wagmi/chains";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
@@ -46,11 +46,21 @@ const generateStars = () => {
 export default function Home() {
   const { switchChainAsync } = useSwitchChain();
   const { address, isConnected, chain } = useAccount();
+  const { connect, connectors, error: connectError } = useConnect();
+  const { disconnect } = useDisconnect();
   const [needsNetworkSwitch, setNeedsNetworkSwitch] = useState(false);
   const [addingToken, setAddingToken] = useState<string | null>(null);
-  const [isRainbowLoading, setIsRainbowLoading] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [activeConnector, setActiveConnector] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   
   const stars = useMemo(() => generateStars(), []);
+
+  // Detect mobile devices
+  useEffect(() => {
+    setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+  }, []);
 
   useEffect(() => {
     if (isConnected && chain?.id !== celo.id) {
@@ -59,6 +69,14 @@ export default function Home() {
       setNeedsNetworkSwitch(false);
     }
   }, [isConnected, chain]);
+
+  useEffect(() => {
+    if (connectError) {
+      setConnectionError(connectError.message);
+      setIsConnecting(false);
+      setActiveConnector(null);
+    }
+  }, [connectError]);
 
   const addCeloNetwork = async () => {
     try {
@@ -96,16 +114,61 @@ export default function Home() {
     }
   };
 
+  // Direct connection handler with timeout
+  const handleDirectConnect = async (connector: any) => {
+    setIsConnecting(true);
+    setActiveConnector(connector.name);
+    setConnectionError(null);
+    
+    // ttimeout to handle hanging connections
+    const timeout = setTimeout(() => {
+      if (isConnecting) {
+        setIsConnecting(false);
+        setConnectionError("Connection timed out. Please try again.");
+        disconnect();
+      }
+    }, 15000); // 15 secons
+
+    try {
+      await connect({ connector });
+    } catch (error: any) {
+      setConnectionError(error.message || "Connection failed");
+    } finally {
+      clearTimeout(timeout);
+      setIsConnecting(false);
+    }
+  };
+
+  //
+  const handleRainbowConnect = (openConnectModal: () => void) => {
+    setConnectionError(null);
+    setIsConnecting(true);
+    
+    try {
+      openConnectModal();
+    } catch (error: any) {
+      setConnectionError(error.message || "Failed to open wallet selector");
+      setIsConnecting(false);
+    }
+  };
+
+  // Popular wallets for direct connection
+  const popularWallets = useMemo(() => {
+    return connectors.filter(connector => 
+      ["metaMask", "walletConnect", "coinbaseWallet"].includes(connector.id)
+    );
+  }, [connectors]);
+
   return (
     <div className="w-full h-full flex items-center justify-center p-4 overflow-hidden">
-      {/* Cosmic Background */}
+      {/* Background */}
       <div className="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0a0e2a] via-[#13183a] to-[#0a0e2a]">
-        {/* Nebula Effects */}
+        {/* Effects */}
         <div className="absolute top-[15%] left-[15%] w-[400px] h-[400px] bg-[#6d28d9]/10 rounded-full blur-[150px] animate-pulse-slow" />
         <div className="absolute bottom-[20%] right-[20%] w-[350px] h-[350px] bg-[#0ea5e9]/15 rounded-full blur-[120px] animate-pulse-slower" />
         <div className="absolute top-[40%] left-[50%] w-[300px] h-[300px] bg-[#ec4899]/10 rounded-full blur-[100px] animate-pulse-medium" />
         
-        {/* Stars */}
+        {/* */}
         {stars.map(star => (
           <motion.div
             key={star.id}
@@ -145,7 +208,8 @@ export default function Home() {
             Connect to Wallet
           </motion.h1>
           
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-8">
+            {/* RainbowKit Button */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -159,18 +223,15 @@ export default function Home() {
               <ConnectButton.Custom>
                 {({ openConnectModal }) => (
                   <motion.button
-                    onClick={() => {
-                      setIsRainbowLoading(true);
-                      openConnectModal();
-                    }}
-                    disabled={isRainbowLoading}
+                    onClick={() => handleRainbowConnect(openConnectModal)}
+                    disabled={isConnecting}
                     className={`
                       w-full flex flex-col items-center justify-center
-                      p-10 rounded-2xl backdrop-blur-2xl
+                      p-8 rounded-2xl backdrop-blur-2xl
                       border border-white/20
                       transition-all duration-500
                       hover:border-white/40
-                      ${isRainbowLoading ? "opacity-80 cursor-not-allowed" : ""}
+                      ${isConnecting ? "opacity-80 cursor-not-allowed" : ""}
                     `}
                     style={{
                       background: "radial-gradient(circle at center, rgba(55, 48, 107, 0.3) 0%, rgba(30, 27, 75, 0.3) 100%)",
@@ -190,7 +251,7 @@ export default function Home() {
                     }}
                   >
                     <div 
-                      className="p-6 rounded-full mb-6 backdrop-blur-md relative"
+                      className="p-5 rounded-full mb-5 backdrop-blur-md relative"
                       style={{
                         background: "radial-gradient(circle, rgba(139, 92, 246, 0.2), transparent 70%)",
                         boxShadow: `
@@ -200,7 +261,7 @@ export default function Home() {
                       }}
                     >
                       <div className="relative z-10">
-                        <div className="w-16 h-16 relative">
+                        <div className="w-14 h-14 relative">
                           <motion.div 
                             className="absolute inset-0 rounded-full blur-md opacity-50"
                             animate={{ 
@@ -219,7 +280,7 @@ export default function Home() {
                           <svg 
                             xmlns="http://www.w3.org/2000/svg" 
                             viewBox="0 0 24 24" 
-                            className="w-16 h-16"
+                            className="w-14 h-14"
                             fill="none"
                           >
                             <motion.path 
@@ -269,10 +330,10 @@ export default function Home() {
                         ease: "easeInOut"
                       }}
                     >
-                      Portal Access
+                      Multi-Wallet Portal
                     </motion.h3>
                     
-                    {isRainbowLoading ? (
+                    {isConnecting ? (
                       <div className="flex items-center mt-3">
                         <svg 
                           className="animate-spin h-6 w-6 mr-2" 
@@ -296,7 +357,7 @@ export default function Home() {
                             ease: "easeInOut"
                           }}
                         >
-                          Opening Stargate...
+                          Opening Stargate to Vort3x...
                         </motion.span>
                       </div>
                     ) : (
@@ -315,14 +376,101 @@ export default function Home() {
                           ease: "easeInOut"
                         }}
                       >
-                        Multi-dimensional wallet connection
+                        150+ wallet options
                       </motion.p>
                     )}
                   </motion.button>
                 )}
               </ConnectButton.Custom>
             </motion.div>
+            
+            {/* Direct Wallet Connections */}
+            <div className="w-full max-w-md">
+              <motion.h3 
+                className="text-lg font-medium text-center mb-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                style={{
+                  color: "#c7d2fe",
+                }}
+              >
+                Connect Directly
+              </motion.h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {popularWallets.map(connector => (
+                  <motion.button
+                    key={connector.id}
+                    onClick={() => handleDirectConnect(connector)}
+                    disabled={isConnecting}
+                    className={`
+                      py-3 px-4 rounded-xl backdrop-blur-md
+                      border border-white/20 flex flex-col items-center justify-center
+                      transition-all duration-300
+                      hover:border-white/40
+                      ${isConnecting ? "opacity-70 cursor-not-allowed" : ""}
+                    `}
+                    style={{
+                      background: "radial-gradient(circle at center, rgba(55, 48, 107, 0.2) 0%, rgba(30, 27, 75, 0.2) 100%)",
+                    }}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="w-8 h-8 mb-2">
+                      {connector.name === "MetaMask" && (
+                        <svg viewBox="0 0 40 37" className="w-full h-full">
+                          <path d="M36.5 0.5L22.1 13.4L24.9 4.9L36.5 0.5Z" fill="#E2761B" />
+                          <path d="M3.5 0.5L17.7 13.5L15.1 4.9L3.5 0.5Z" fill="#E2761B" />
+                          <path d="M31.2 26.5L28 31.5L35.4 33L37.5 26.6L31.2 26.5Z" fill="#E2761B" />
+                          <path d="M2.5 26.6L4.6 33L12 31.5L8.8 26.5L2.5 26.6Z" fill="#E2761B" />
+                          <path d="M12.9 16.5L11 20.1L18.2 20.5L18 12.1L12.9 16.5Z" fill="#E2761B" />
+                          <path d="M27.1 16.5L21.8 12L21.8 20.5L29 20.1L27.1 16.5Z" fill="#E2761B" />
+                          <path d="M14.7 24.5L18.3 26.5L15.2 28.8L14.7 24.5Z" fill="#233447" />
+                          <path d="M25.3 24.5L24.8 28.8L21.7 26.5L25.3 24.5Z" fill="#233447" />
+                        </svg>
+                      )}
+                      {connector.name === "WalletConnect" && (
+                        <svg viewBox="0 0 40 40" className="w-full h-full">
+                          <path d="M12 15C15.9 11.1 24.1 11.1 28 15L31 12C25.8 6.8 14.2 6.8 9 12L12 15Z" fill="#3B99FC" />
+                          <path d="M32 20C29.8 17.8 26.4 17.8 24.2 20C22 22.2 22 25.6 24.2 27.8L26.8 30.4C23.3 33.9 16.7 33.9 13.2 30.4L8 25.2L10.8 22.4L16 27.6C17.6 29.2 20.4 29.2 22 27.6C23.6 26 23.6 23.2 22 21.6C20.4 20 17.6 20 16 21.6L13.2 24.4C15.4 26.6 18.8 26.6 21 24.4C23.2 22.2 23.2 18.8 21 16.6C18.8 14.4 15.4 14.4 13.2 16.6L10.6 19.2C14.1 15.7 20.7 15.7 24.2 19.2L27 16.4L32 20Z" fill="#3B99FC" />
+                        </svg>
+                      )}
+                      {connector.name === "Coinbase Wallet" && (
+                        <svg viewBox="0 0 40 40" className="w-full h-full">
+                          <path d="M20 40C31.0457 40 40 31.0457 40 20C40 8.9543 31.0457 0 20 0C8.9543 0 0 8.9543 0 20C0 31.0457 8.9543 40 20 40Z" fill="#0052FF" />
+                          <path d="M28 19.5H12V21.5H28V19.5Z" fill="white" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="text-xs font-medium text-[#c7d2fe]">
+                      {connector.name}
+                    </span>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
           </div>
+          
+          {/* Error Message */}
+          {connectionError && (
+            <motion.div 
+              className="mt-6 p-4 rounded-xl bg-red-900/30 backdrop-blur-md border border-red-500/30 text-center"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <p className="text-red-300 font-medium">{connectionError}</p>
+              <button 
+                onClick={() => {
+                  setConnectionError(null);
+                  disconnect();
+                }}
+                className="mt-2 px-4 py-1 text-sm bg-red-700/50 rounded-lg hover:bg-red-600/60 transition-colors"
+              >
+                Try Again
+              </button>
+            </motion.div>
+          )}
           
           <motion.p 
             className="text-center mt-10 text-sm font-light max-w-md mx-auto"
@@ -333,7 +481,9 @@ export default function Home() {
               color: "#a5b4fc",
             }}
           >
-            Secure connection through gateways to 150+ wallets
+            {isMobile 
+              ? "For best mobile experience, use in-app browsers" 
+              : "Secure connection through cosmic gateways to 150+ celestial wallets"}
           </motion.p>
         </div>
       ) : needsNetworkSwitch ? (
@@ -350,7 +500,7 @@ export default function Home() {
               textShadow: "0 0 20px rgba(103, 232, 249, 0.5)"
             }}
           >
-            Align with Celo Constellation
+            Align with Celo Net
           </motion.h1>
           
           <motion.div
@@ -471,4 +621,4 @@ export default function Home() {
       )}
     </div>
   );
-                        }
+          }
