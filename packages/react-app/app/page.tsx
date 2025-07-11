@@ -10,8 +10,8 @@ import {
   createStorage, 
   cookieStorage,
   getWalletClient,
-  SwitchChainError
 } from "@wagmi/core";
+import SwitchChainError from 'viem';
 import { 
   celo,
   optimism,
