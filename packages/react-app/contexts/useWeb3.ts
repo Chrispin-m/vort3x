@@ -99,6 +99,7 @@ export const useWeb3 = () => {
       if (connectors.length === 0) {
         throw new Error("No Wagmi connectors available");
       }
+      const fallback: Connector = connectors[0];
       const data = (await connectAsync({ connector: fallback })) as any;
       const userAcc: string = data.account ?? data.address;
       setAddress(userAcc as `0x${string}`);
