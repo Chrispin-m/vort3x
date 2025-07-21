@@ -58,7 +58,7 @@ const connectors = connectorsForWallets(
   appName: 'Vort3x',
   projectId: PROJECT_ID,
   appDescription: 'AppKit Example',
-  appUrl: 'https://vort3x.xyz/appkit', // origin must match your domain & subdomain
+  appUrl: 'https://vort3x.xyz', // origin must match your domain & subdomain
   appIcon: 'https://assets.reown.com/reown-profile-pic.png',
   }
 );
@@ -477,7 +477,7 @@ export default function Home() {
               </p>
               <div className="flex justify-center gap-3">
                 <a 
-                  href="https://rainbow.me" 
+                  href="#" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-300 hover:text-indigo-100 transition-colors"
@@ -486,7 +486,7 @@ export default function Home() {
                 </a>
                 <span className="text-indigo-400">•</span>
                 <a 
-                  href="https://metamask.io" 
+                  href="#" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-300 hover:text-indigo-100 transition-colors"
@@ -495,7 +495,7 @@ export default function Home() {
                 </a>
                 <span className="text-indigo-400">•</span>
                 <a 
-                  href="https://walletconnect.com" 
+                  href="" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-300 hover:text-indigo-100 transition-colors"
