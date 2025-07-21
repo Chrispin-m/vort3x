@@ -129,9 +129,9 @@ export default function Home() {
         },
       ],
       {
-        appName: 'Vort3x',
+        appName: 'mini',
         projectId: PROJECT_ID,
-        appDescription: 'AppKit Example',
+        appDescription: '',
         appUrl: 'https://vort3x.xyz',
         appIcon: 'https://assets.reown.com/reown-profile-pic.png',
       }
