@@ -4,16 +4,23 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useAccount } from "wagmi";
 import { motion } from "framer-motion";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import {
-  http,
-  createConfig,
-  createStorage,
+import { 
+  http, 
+  createConfig, 
+  createStorage, 
   cookieStorage,
   getWalletClient
 } from "@wagmi/core";
-import {
-  celo, optimism, arbitrum, baseSepolia,
-  optimismSepolia, sei, sepolia, lisk, scroll
+import { 
+  celo,
+  optimism,
+  arbitrum,
+  baseSepolia,
+  optimismSepolia,
+  sei,
+  sepolia,
+  lisk,
+  scroll
 } from "@wagmi/core/chains";
 import {
   coinbaseWallet,
@@ -21,7 +28,7 @@ import {
   metaMaskWallet,
   rabbyWallet,
   rainbowWallet,
-  walletConnectWallet
+  walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import dynamic from "next/dynamic";
@@ -29,58 +36,9 @@ import { SwitchChainError } from "viem";
 
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
-// CONFIG
-const PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID!;
-if (!PROJECT_ID) {
-  throw new Error(
-    "Some dude forgot an ID"
-  );
-}
+// Configuration
+const PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "default-project-id";
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://forno.celo.org";
-
-const connectors = connectorsForWallets(
-  [
-    {
-      groupName: "Recommended",
-      wallets: [
-        metaMaskWallet({ chains: [celo, optimism, arbitrum, baseSepolia, optimismSepolia, sei, sepolia, lisk, scroll] }),
-        rabbyWallet({ chains: [celo] }),
-        coinbaseWallet({ chains: [celo] }),
-        walletConnectWallet({ chains: [celo, optimism, arbitrum], projectId: PROJECT_ID }),
-        injectedWallet({ chains: [celo] }),
-        rainbowWallet({ chains: [celo] }),
-      ],
-    },
-  ],
-  {
-    appName: "Vort3x",
-    projectId: PROJECT_ID,
-    appDescription: "AppKit Example",
-    appUrl: "https://vort3x.xyz",
-    appIcon: "https://assets.reown.com/reown-profile-pic.png",
-  }
-);
-
-const config = createConfig({
-  chains: [celo, optimism, arbitrum, baseSepolia, optimismSepolia, sei, sepolia, lisk, scroll],
-  connectors,
-  transports: {
-    [celo.id]: http(RPC_URL),
-    [optimism.id]: http(),
-    [arbitrum.id]: http(),
-    [baseSepolia.id]: http(),
-    [optimismSepolia.id]: http(),
-    [sei.id]: http(),
-    [sepolia.id]: http(),
-    [lisk.id]: http(),
-    [scroll.id]: http(),
-  },
-  ssr: true,
-  storage: createStorage({
-    storage: cookieStorage,
-  }),
-});
-
 
 // Token data
 const celoTokens = [
@@ -111,7 +69,7 @@ const errorManager = (context: string, error: any, metadata?: any) => {
   console.error(`[${context}]`, error, metadata);
 };
 
-const safeGetWalletClient = async (chainId: number) => {
+const safeGetWalletClient = async (config: any, chainId: number) => {
   try {
     const walletClient = await getWalletClient(config, { chainId });
     if (!walletClient) throw new Error("Wallet client not available");
@@ -144,7 +102,8 @@ const generateStars = () => {
 };
 
 export default function Home() {
-  const { address, isConnected, chain } = useAccount({ config });
+  const [wagmiConfig, setWagmiConfig] = useState<any>(null);
+  const { address, isConnected, chain } = useAccount({ config: wagmiConfig });
   const [needsNetworkSwitch, setNeedsNetworkSwitch] = useState(false);
   const [addingToken, setAddingToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -152,6 +111,64 @@ export default function Home() {
   const connectModalRef = useRef<HTMLButtonElement>(null);
   
   const stars = useMemo(() => generateStars(), []);
+
+  // Initialize config on client-side only
+  useEffect(() => {
+    const connectors = connectorsForWallets(
+      [
+        {
+          groupName: "Recommended",
+          wallets: [
+            metaMaskWallet,
+            rabbyWallet,
+            coinbaseWallet,
+            walletConnectWallet,
+            injectedWallet,
+            rainbowWallet,
+          ],
+        },
+      ],
+      {
+        appName: 'Vort3x',
+        projectId: PROJECT_ID,
+        appDescription: 'AppKit Example',
+        appUrl: 'https://vort3x.xyz',
+        appIcon: 'https://assets.reown.com/reown-profile-pic.png',
+      }
+    );
+
+    const config = createConfig({
+      chains: [
+        celo,
+        optimism,
+        arbitrum,
+        baseSepolia,
+        optimismSepolia,
+        sei,
+        sepolia,
+        lisk,
+        scroll
+      ],
+      connectors,
+      transports: {
+        [celo.id]: http(RPC_URL),
+        [optimism.id]: http(),
+        [arbitrum.id]: http(),
+        [baseSepolia.id]: http(),
+        [optimismSepolia.id]: http(),
+        [sei.id]: http(),
+        [sepolia.id]: http(),
+        [lisk.id]: http(),
+        [scroll.id]: http(),
+      },
+      ssr: true,
+      storage: createStorage({
+        storage: cookieStorage,
+      }),
+    });
+
+    setWagmiConfig(config);
+  }, []);
 
   useEffect(() => {
     if (isConnected && chain?.id !== celo.id) {
@@ -166,7 +183,9 @@ export default function Home() {
     setConnectionError(null);
     
     try {
-      const { walletClient, error } = await safeGetWalletClient(celo.id);
+      if (!wagmiConfig) throw new Error("Wallet not initialized");
+      
+      const { walletClient, error } = await safeGetWalletClient(wagmiConfig, celo.id);
       if (error) throw new Error(error);
       
       await walletClient!.switchChain({ id: celo.id });
@@ -183,7 +202,9 @@ export default function Home() {
     setConnectionError(null);
     
     try {
-      const { walletClient, error } = await safeGetWalletClient(celo.id);
+      if (!wagmiConfig) throw new Error("Wallet not initialized");
+      
+      const { walletClient, error } = await safeGetWalletClient(wagmiConfig, celo.id);
       if (error) throw new Error(error);
       
       await walletClient!.watchAsset({
@@ -640,7 +661,7 @@ export default function Home() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Manifesting...
+                        Adding...
                       </div>
                     ) : (
                       "Add to Wallet"
@@ -656,4 +677,4 @@ export default function Home() {
       )}
     </div>
   );
-  }
+}
