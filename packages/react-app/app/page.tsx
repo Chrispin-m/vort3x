@@ -4,23 +4,16 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useAccount } from "wagmi";
 import { motion } from "framer-motion";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { 
-  http, 
-  createConfig, 
-  createStorage, 
+import {
+  http,
+  createConfig,
+  createStorage,
   cookieStorage,
   getWalletClient
 } from "@wagmi/core";
-import { 
-  celo,
-  optimism,
-  arbitrum,
-  baseSepolia,
-  optimismSepolia,
-  sei,
-  sepolia,
-  lisk,
-  scroll
+import {
+  celo, optimism, arbitrum, baseSepolia,
+  optimismSepolia, sei, sepolia, lisk, scroll
 } from "@wagmi/core/chains";
 import {
   coinbaseWallet,
@@ -28,7 +21,7 @@ import {
   metaMaskWallet,
   rabbyWallet,
   rainbowWallet,
-  walletConnectWallet,
+  walletConnectWallet
 } from "@rainbow-me/rainbowkit/wallets";
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import dynamic from "next/dynamic";
@@ -36,8 +29,13 @@ import { SwitchChainError } from "viem";
 
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
-// Configuration
-const PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "default-project-id";
+// CONFIG
+const PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID!;
+if (!PROJECT_ID) {
+  throw new Error(
+    "Some dude forgot an ID"
+  );
+}
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://forno.celo.org";
 
 const connectors = connectorsForWallets(
@@ -45,36 +43,26 @@ const connectors = connectorsForWallets(
     {
       groupName: "Recommended",
       wallets: [
-        metaMaskWallet,
-        rabbyWallet,
-        coinbaseWallet,
-        walletConnectWallet,
-        injectedWallet,
-        rainbowWallet,
+        metaMaskWallet({ chains: [celo, optimism, arbitrum, baseSepolia, optimismSepolia, sei, sepolia, lisk, scroll] }),
+        rabbyWallet({ chains: [celo] }),
+        coinbaseWallet({ chains: [celo] }),
+        walletConnectWallet({ chains: [celo, optimism, arbitrum], projectId: PROJECT_ID }),
+        injectedWallet({ chains: [celo] }),
+        rainbowWallet({ chains: [celo] }),
       ],
     },
   ],
   {
-  appName: 'Vort3x',
-  projectId: PROJECT_ID,
-  appDescription: 'AppKit Example',
-  appUrl: 'https://vort3x.xyz', // origin must match your domain & subdomain
-  appIcon: 'https://assets.reown.com/reown-profile-pic.png',
+    appName: "Vort3x",
+    projectId: PROJECT_ID,
+    appDescription: "AppKit Example",
+    appUrl: "https://vort3x.xyz",
+    appIcon: "https://assets.reown.com/reown-profile-pic.png",
   }
 );
 
 const config = createConfig({
-  chains: [
-    celo,
-    optimism,
-    arbitrum,
-    baseSepolia,
-    optimismSepolia,
-    sei,
-    sepolia,
-    lisk,
-    scroll
-  ],
+  chains: [celo, optimism, arbitrum, baseSepolia, optimismSepolia, sei, sepolia, lisk, scroll],
   connectors,
   transports: {
     [celo.id]: http(RPC_URL),
@@ -92,6 +80,7 @@ const config = createConfig({
     storage: cookieStorage,
   }),
 });
+
 
 // Token data
 const celoTokens = [
