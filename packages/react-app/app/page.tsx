@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useAccount, useConnect } from "wagmi";
+import { useAccount } from "wagmi";
 import { motion } from "framer-motion";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { 
   http, 
   createConfig, 
   createStorage, 
-  cookieStorage,
   getWalletClient
 } from "@wagmi/core";
 import { 
@@ -122,6 +121,7 @@ export default function Home() {
       icons: ['https://assets.reown.com/reown-profile-pic.png']
     };
 
+    // Define chains as a tuple with at least one element
     const chains = [
       celo,
       optimism,
@@ -132,7 +132,7 @@ export default function Home() {
       sepolia,
       lisk,
       scroll
-    ];
+    ] as const;
 
     const wagmiConfig = defaultWagmiConfig({
       chains,
