@@ -170,7 +170,7 @@ export default function Home() {
       themeVariables: {
         '--w3m-accent': '#6366f1',
         '--w3m-border-radius-master': '12px',
-        '--w3m-z-index': '10000'
+        '--w3m-z-index': 10000
       },
       mobileWallets: [
         {
