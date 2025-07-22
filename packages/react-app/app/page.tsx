@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useConnect } from "wagmi";
 import { motion } from "framer-motion";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { 
@@ -33,6 +33,7 @@ import {
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import dynamic from "next/dynamic";
 import { SwitchChainError } from "viem";
+import { createWeb3Modal, defaultWagmiConfig } from "@web3modal/wagmi/react";
 
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
@@ -114,42 +115,29 @@ export default function Home() {
 
   // Initialize config on client-side only
   useEffect(() => {
-    const connectors = connectorsForWallets(
-      [
-        {
-          groupName: "Recommended",
-          wallets: [
-            metaMaskWallet,
-            rabbyWallet,
-            coinbaseWallet,
-            walletConnectWallet,
-            injectedWallet,
-            rainbowWallet,
-          ],
-        },
-      ],
-      {
-        appName: 'mini',
-        projectId: PROJECT_ID,
-        appDescription: '',
-        appUrl: 'https://vort3x.xyz',
-        appIcon: 'https://assets.reown.com/reown-profile-pic.png',
-      }
-    );
+    const metadata = {
+      name: 'Vort3x',
+      description: 'AppKit Example',
+      url: 'https://vort3x.xyz',
+      icons: ['https://assets.reown.com/reown-profile-pic.png']
+    };
 
-    const config = createConfig({
-      chains: [
-        celo,
-        optimism,
-        arbitrum,
-        baseSepolia,
-        optimismSepolia,
-        sei,
-        sepolia,
-        lisk,
-        scroll
-      ],
-      connectors,
+    const chains = [
+      celo,
+      optimism,
+      arbitrum,
+      baseSepolia,
+      optimismSepolia,
+      sei,
+      sepolia,
+      lisk,
+      scroll
+    ];
+
+    const wagmiConfig = defaultWagmiConfig({
+      chains,
+      projectId: PROJECT_ID,
+      metadata,
       transports: {
         [celo.id]: http(RPC_URL),
         [optimism.id]: http(),
@@ -161,13 +149,29 @@ export default function Home() {
         [lisk.id]: http(),
         [scroll.id]: http(),
       },
-      ssr: true,
+      enableEmail: false,
+      enableWalletConnect: true,
+      enableInjected: true,
+      enableEIP6963: true,
+      enableCoinbase: true,
       storage: createStorage({
-        storage: cookieStorage,
+        storage: localStorage,
       }),
     });
 
-    setWagmiConfig(config);
+    // Create Web3Modal instance for WalletConnect
+    createWeb3Modal({
+      wagmiConfig,
+      projectId: PROJECT_ID,
+      enableAnalytics: false,
+      themeMode: 'dark',
+      themeVariables: {
+        '--w3m-accent': '#6366f1',
+        '--w3m-border-radius-master': '12px',
+      }
+    });
+
+    setWagmiConfig(wagmiConfig);
   }, []);
 
   useEffect(() => {
@@ -487,7 +491,7 @@ export default function Home() {
               </p>
               <div className="flex justify-center gap-3">
                 <a 
-                  href="#" 
+                  href="https://rainbow.me" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-300 hover:text-indigo-100 transition-colors"
@@ -496,7 +500,7 @@ export default function Home() {
                 </a>
                 <span className="text-indigo-400">•</span>
                 <a 
-                  href="#" 
+                  href="https://metamask.io" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-300 hover:text-indigo-100 transition-colors"
@@ -505,7 +509,7 @@ export default function Home() {
                 </a>
                 <span className="text-indigo-400">•</span>
                 <a 
-                  href="" 
+                  href="https://walletconnect.com" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-300 hover:text-indigo-100 transition-colors"
