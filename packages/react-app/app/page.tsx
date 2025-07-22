@@ -236,7 +236,7 @@ export default function Home() {
     const timeout = setTimeout(() => {
       setIsLoading(false);
       setConnectionError("Connection timed out. Please try again.");
-    }, 45000); // 45 seconds timeout
+    }, 65000); // 45 seconds timeout
     
     setConnectionTimeout(timeout);
 
