@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useDisconnect } from "wagmi";
 import { motion } from "framer-motion";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { 
@@ -103,12 +103,15 @@ const generateStars = () => {
 
 export default function Home() {
   const [wagmiConfig, setWagmiConfig] = useState<any>(null);
-  const { address, isConnected, chain } = useAccount({ config: wagmiConfig });
+  const { disconnect } = useDisconnect();
+  const { address, isConnected, chain, connector } = useAccount({ config: wagmiConfig });
   const [needsNetworkSwitch, setNeedsNetworkSwitch] = useState(false);
   const [addingToken, setAddingToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const connectModalRef = useRef<HTMLButtonElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const stars = useMemo(() => generateStars(), []);
 
@@ -158,7 +161,7 @@ export default function Home() {
       }),
     });
 
-    // Create Web3Modal instance for WalletConnect
+    // Create Web3Modal instance for WalletConnect with mobile-friendly settings
     createWeb3Modal({
       wagmiConfig,
       projectId: PROJECT_ID,
@@ -167,7 +170,52 @@ export default function Home() {
       themeVariables: {
         '--w3m-accent': '#6366f1',
         '--w3m-border-radius-master': '12px',
-      }
+        '--w3m-z-index': '10000'
+      },
+      mobileWallets: [
+        {
+          id: 'metamask',
+          name: 'MetaMask',
+          links: {
+            native: 'metamask://',
+            universal: 'https://metamask.app.link'
+          }
+        },
+        {
+          id: 'rainbow',
+          name: 'Rainbow',
+          links: {
+            native: 'rainbow://',
+            universal: 'https://rainbow.me'
+          }
+        },
+        {
+          id: 'trust',
+          name: 'Trust Wallet',
+          links: {
+            native: 'trust://',
+            universal: 'https://link.trustwallet.com'
+          }
+        }
+      ],
+      desktopWallets: [
+        {
+          id: 'metamask',
+          name: 'MetaMask',
+          links: {
+            native: '',
+            universal: ''
+          }
+        },
+        {
+          id: 'rainbow',
+          name: 'Rainbow',
+          links: {
+            native: '',
+            universal: ''
+          }
+        }
+      ]
     });
 
     setWagmiConfig(wagmiConfig);
@@ -179,7 +227,28 @@ export default function Home() {
     } else {
       setNeedsNetworkSwitch(false);
     }
+    
+    // Clear loading state when connection completes
+    if (isConnected) {
+      setIsLoading(false);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    }
   }, [isConnected, chain]);
+
+  // Reset connection state when modal closes
+  useEffect(() => {
+    if (!isModalOpen && isLoading) {
+      setIsLoading(false);
+      setConnectionError("Connection cancelled or timed out");
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    }
+  }, [isModalOpen, isLoading]);
 
   const addCeloNetwork = async () => {
     setIsLoading(true);
@@ -227,11 +296,26 @@ export default function Home() {
   };
 
   const handleConnect = () => {
+    // Clear any previous connection data
+    disconnect();
+    localStorage.removeItem('walletconnect');
+    sessionStorage.clear();
+    
     setIsLoading(true);
     setConnectionError(null);
     
     if (connectModalRef.current) {
+      setIsModalOpen(true);
       connectModalRef.current.click();
+      
+      // Set timeout to prevent infinite loading
+      timeoutRef.current = setTimeout(() => {
+        if (isLoading) {
+          setIsLoading(false);
+          setConnectionError("Connection timed out. Please try again.");
+          setIsModalOpen(false);
+        }
+      }, 30000); // 30 seconds timeout
     } else {
       setConnectionError("Connection failed. Please try again.");
       setIsLoading(false);
@@ -465,7 +549,11 @@ export default function Home() {
                 {({ openConnectModal }) => (
                   <button
                     ref={connectModalRef}
-                    onClick={openConnectModal}
+                    onClick={() => {
+                      openConnectModal();
+                      setIsModalOpen(true);
+                    }}
+                    onBlur={() => setIsModalOpen(false)}
                     aria-hidden="true"
                   />
                 )}
