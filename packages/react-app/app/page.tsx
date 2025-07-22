@@ -117,7 +117,7 @@ export default function Home() {
     const metadata = {
       name: 'Vort3x',
       description: 'AppKit Example',
-      url: 'https://vort3x.xyz',
+      url: 'https://www.vort3x.xyz',
       icons: ['https://assets.reown.com/reown-profile-pic.png']
     };
 
