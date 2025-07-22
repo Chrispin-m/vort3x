@@ -77,7 +77,7 @@ export default function Home() {
 
   useEffect(() => {
     const metadata = {
-      name: 'Vort3x', description: 'AppKit Example',
+      name: 'mini', description: '',
       url: 'https://www.vort3x.xyz', icons: ['https://assets.reown.com/reown-profile-pic.png']
     };
     const chains = [celo, optimism, arbitrum, baseSepolia, optimismSepolia, sei, sepolia, lisk, scroll] as const;
