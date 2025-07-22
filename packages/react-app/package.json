@@ -20,6 +20,8 @@
     "@types/bignumber.js": "^4.0.3",
     "@wagmi/connectors": "^5.8.2",
     "@wagmi/core": "^2.17.2",
+    "@web3modal/react": "^2.7.1",
+    "@web3modal/wagmi": "^5.1.11",
     "axios": "^1.9.0",
     "bignumber.js": "^9.3.0",
     "class-variance-authority": "^0.7.0",
