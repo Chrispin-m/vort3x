@@ -147,13 +147,15 @@ const safeGetWalletClient = async (chainId: number) => {
 const generateStars = () => {
   return Array.from({ length: 100 }).map((_, i) => ({
     id: i,
-    top: ${Math.random() * 100}%,
-    left: ${Math.random() * 100}%,
-    size: ${Math.random() * 3 + 1}px,
+    top: `${Math.random() * 100}%`,
+    left: `${Math.random() * 100}%`,
+    size: `${Math.random() * 3 + 1}px`,
     opacity: Math.random() * 0.7 + 0.3,
     delay: Math.random() * 5,
   }));
 };
+
+
 export default function Home() {
   const { address, isConnected, chain } = useAccount({ config });
   const [needsNetworkSwitch, setNeedsNetworkSwitch] = useState(false);
