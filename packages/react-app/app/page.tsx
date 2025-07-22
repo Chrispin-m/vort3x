@@ -41,7 +41,7 @@ const errorManager = (context: string, error: any, metadata?: any) => {
 const safeGetWalletClient = async (config: any, chainId: number) => {
   try {
     const walletClient = await getWalletClient(config, { chainId });
-    if (!walClient) throw new Error("Wallet client not available");
+    if (!walletClient) throw new Error("Wallet client not available");
     return { walletClient, error: null };
   } catch (err: any) {
     errorManager("Wallet client error", err, { chainId });
