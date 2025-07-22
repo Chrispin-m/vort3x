@@ -149,7 +149,6 @@ export default function Home() {
         [lisk.id]: http(),
         [scroll.id]: http(),
       },
-      enableEmail: false,
       enableWalletConnect: true,
       enableInjected: true,
       enableEIP6963: true,
