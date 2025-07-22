@@ -172,7 +172,7 @@ export default function Home() {
         '--w3m-border-radius-master': '12px',
         '--w3m-z-index': 10000
       },
-      mobileWallets: [
+      customWallets: [
         {
           id: 'metamask',
           name: 'MetaMask',
