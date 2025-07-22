@@ -4,13 +4,8 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 import { motion } from "framer-motion";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { 
-  http, 
-  createConfig, 
-  createStorage, 
-  getWalletClient
-} from "@wagmi/core";
-import { 
+import { http, createConfig as createWagmiConfig, createStorage, getWalletClient } from "@wagmi/core";
+import {
   celo,
   optimism,
   arbitrum,
@@ -21,15 +16,6 @@ import {
   lisk,
   scroll
 } from "@wagmi/core/chains";
-import {
-  coinbaseWallet,
-  injectedWallet,
-  metaMaskWallet,
-  rabbyWallet,
-  rainbowWallet,
-  walletConnectWallet,
-} from "@rainbow-me/rainbowkit/wallets";
-import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import dynamic from "next/dynamic";
 import { SwitchChainError } from "viem";
 import { createWeb3Modal, defaultWagmiConfig } from "@web3modal/wagmi/react";
@@ -42,29 +28,13 @@ const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://forno.celo.org";
 
 // Token data
 const celoTokens = [
-  {
-    symbol: "cUSD",
-    address: "0x765DE816845861e75A25fCA122bb6898B8B1282a",
-    decimals: 18,
-  },
-  {
-    symbol: "USDC",
-    address: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
-    decimals: 6,
-  },
-  {
-    symbol: "CKES",
-    address: "0x1E0433C1769271ECcF4CFF9FDdD515eefE6CdF92",
-    decimals: 6,
-  },
-  {
-    symbol: "USDT",
-    address: "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
-    decimals: 6,
-  },
+  { symbol: "cUSD", address: "0x765DE816845861e75A25fCA122bb6898B8B1282a", decimals: 18 },
+  { symbol: "USDC", address: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C", decimals: 6 },
+  { symbol: "CKES", address: "0x1E0433C1769271ECcF4CFF9FDdD515eefE6CdF92", decimals: 6 },
+  { symbol: "USDT", address: "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e", decimals: 6 }
 ];
 
-// Wallet client utilities
+// Error handling
 const errorManager = (context: string, error: any, metadata?: any) => {
   console.error(`[${context}]`, error, metadata);
 };
@@ -74,37 +44,28 @@ const safeGetWalletClient = async (config: any, chainId: number) => {
     const walletClient = await getWalletClient(config, { chainId });
     if (!walletClient) throw new Error("Wallet client not available");
     return { walletClient, error: null };
-  } catch (error: any) {
-    errorManager("Wallet client error", error, { chainId });
-    
-    // Handle switch chain error specifically
-    const errorMsg = error instanceof SwitchChainError
-      ? "Failed to switch network. Please check your wallet." 
+  } catch (err: any) {
+    errorManager("Wallet client error", err, { chainId });
+    const msg = err instanceof SwitchChainError
+      ? "Failed to switch network. Please check your wallet."
       : "Failed to connect to wallet. Please try again.";
-    
-    return {
-      walletClient: null,
-      error: errorMsg
-    };
+    return { walletClient: null, error: msg };
   }
 };
 
-// Background elements
-const generateStars = () => {
-  return Array.from({ length: 100 }).map((_, i) => ({
+// Stars background
+const generateStars = () =>
+  Array.from({ length: 100 }).map((_, i) => ({
     id: i,
-    top: `${Math.random() * 100}%`,
-    left: `${Math.random() * 100}%`,
-    size: `${Math.random() * 3 + 1}px`,
-    opacity: Math.random() * 0.7 + 0.3,
-    delay: Math.random() * 5,
+    top: `${Math.random() * 100}%`, left: `${Math.random() * 100}%`,
+    size: `${Math.random() * 3 + 1}px`, opacity: Math.random() * 0.7 + 0.3,
+    delay: Math.random() * 5
   }));
-};
 
 export default function Home() {
   const [wagmiConfig, setWagmiConfig] = useState<any>(null);
   const { disconnect } = useDisconnect();
-  const { address, isConnected, chain, connector } = useAccount({ config: wagmiConfig });
+  const { address, isConnected, chain } = useAccount({ config: wagmiConfig });
   const [needsNetworkSwitch, setNeedsNetworkSwitch] = useState(false);
   const [addingToken, setAddingToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -112,58 +73,31 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const connectModalRef = useRef<HTMLButtonElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
   const stars = useMemo(() => generateStars(), []);
 
-  // Initialize config on client-side only
   useEffect(() => {
     const metadata = {
-      name: 'Vort3x',
-      description: 'AppKit Example',
-      url: 'https://www.vort3x.xyz',
-      icons: ['https://assets.reown.com/reown-profile-pic.png']
+      name: 'Vort3x', description: 'AppKit Example',
+      url: 'https://www.vort3x.xyz', icons: ['https://assets.reown.com/reown-profile-pic.png']
     };
-
-    // Define chains as a tuple with at least one element
-    const chains = [
-      celo,
-      optimism,
-      arbitrum,
-      baseSepolia,
-      optimismSepolia,
-      sei,
-      sepolia,
-      lisk,
-      scroll
-    ] as const;
-
-    const wagmiConfig = defaultWagmiConfig({
-      chains,
-      projectId: PROJECT_ID,
-      metadata,
+    const chains = [celo, optimism, arbitrum, baseSepolia, optimismSepolia, sei, sepolia, lisk, scroll] as const;
+    const config = defaultWagmiConfig({
+      chains, projectId: PROJECT_ID, metadata,
       transports: {
         [celo.id]: http(RPC_URL),
-        [optimism.id]: http(),
-        [arbitrum.id]: http(),
-        [baseSepolia.id]: http(),
-        [optimismSepolia.id]: http(),
-        [sei.id]: http(),
-        [sepolia.id]: http(),
-        [lisk.id]: http(),
-        [scroll.id]: http(),
+        [optimism.id]: http(), [arbitrum.id]: http(),
+        [baseSepolia.id]: http(), [optimismSepolia.id]: http(),
+        [sei.id]: http(), [sepolia.id]: http(), [lisk.id]: http(), [scroll.id]: http()
       },
       enableWalletConnect: true,
       enableInjected: true,
       enableEIP6963: true,
       enableCoinbase: true,
-      storage: createStorage({
-        storage: localStorage,
-      }),
+      storage: createStorage({ storage: localStorage })
     });
 
-    // Create Web3Modal instance for WalletConnect with mobile-friendly settings
     createWeb3Modal({
-      wagmiConfig,
+      wagmiConfig: config,
       projectId: PROJECT_ID,
       enableAnalytics: false,
       themeMode: 'dark',
@@ -171,156 +105,77 @@ export default function Home() {
         '--w3m-accent': '#6366f1',
         '--w3m-border-radius-master': '12px',
         '--w3m-z-index': 10000
-      },
-      customWallets: [
-        {
-          id: 'metamask',
-          name: 'MetaMask',
-          links: {
-            native: 'metamask://',
-            universal: 'https://metamask.app.link'
-          }
-        },
-        {
-          id: 'rainbow',
-          name: 'Rainbow',
-          links: {
-            native: 'rainbow://',
-            universal: 'https://rainbow.me'
-          }
-        },
-        {
-          id: 'trust',
-          name: 'Trust Wallet',
-          links: {
-            native: 'trust://',
-            universal: 'https://link.trustwallet.com'
-          }
-        }
-      ],
-      desktopWallets: [
-        {
-          id: 'metamask',
-          name: 'MetaMask',
-          links: {
-            native: '',
-            universal: ''
-          }
-        },
-        {
-          id: 'rainbow',
-          name: 'Rainbow',
-          links: {
-            native: '',
-            universal: ''
-          }
-        }
-      ]
+      }
     });
 
-    setWagmiConfig(wagmiConfig);
+    setWagmiConfig(config);
   }, []);
 
   useEffect(() => {
-    if (isConnected && chain?.id !== celo.id) {
-      setNeedsNetworkSwitch(true);
-    } else {
-      setNeedsNetworkSwitch(false);
-    }
-    
-    // Clear loading state when connection completes
+    setNeedsNetworkSwitch(isConnected && chain?.id !== celo.id);
     if (isConnected) {
       setIsLoading(false);
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
+      if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
     }
   }, [isConnected, chain]);
 
-  // Reset connection state when modal closes
   useEffect(() => {
     if (!isModalOpen && isLoading) {
       setIsLoading(false);
       setConnectionError("Connection cancelled or timed out");
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
+      if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
     }
   }, [isModalOpen, isLoading]);
 
   const addCeloNetwork = async () => {
     setIsLoading(true);
     setConnectionError(null);
-    
     try {
       if (!wagmiConfig) throw new Error("Wallet not initialized");
-      
       const { walletClient, error } = await safeGetWalletClient(wagmiConfig, celo.id);
       if (error) throw new Error(error);
-      
       await walletClient!.switchChain({ id: celo.id });
       setNeedsNetworkSwitch(false);
-    } catch (error: any) {
-      setConnectionError(error.message || "Failed to switch network");
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (err: any) {
+      setConnectionError(err.message || "Failed to switch network");
+    } finally { setIsLoading(false); }
   };
 
   const addTokenToWallet = async (token: typeof celoTokens[0]) => {
     setAddingToken(token.symbol);
     setConnectionError(null);
-    
     try {
       if (!wagmiConfig) throw new Error("Wallet not initialized");
-      
       const { walletClient, error } = await safeGetWalletClient(wagmiConfig, celo.id);
       if (error) throw new Error(error);
-      
       await walletClient!.watchAsset({
         type: "ERC20",
-        options: {
-          address: token.address as `0x${string}`,
-          symbol: token.symbol,
-          decimals: token.decimals,
-          image: ""
-        }
+        options: { address: token.address as `0x${string}`, symbol: token.symbol, decimals: token.decimals, image: "" }
       });
-    } catch (error: any) {
-      setConnectionError(error.message || "Failed to add token");
-    } finally {
-      setAddingToken(null);
-    }
+    } catch (err: any) {
+      setConnectionError(err.message || "Failed to add token");
+    } finally { setAddingToken(null); }
   };
 
   const handleConnect = () => {
-    // Clear any previous connection data
-    disconnect();
-    localStorage.removeItem('walletconnect');
-    sessionStorage.clear();
-    
-    setIsLoading(true);
-    setConnectionError(null);
-    
+    disconnect(); localStorage.removeItem('walletconnect'); sessionStorage.clear();
+    setIsLoading(true); setConnectionError(null);
     if (connectModalRef.current) {
       setIsModalOpen(true);
       connectModalRef.current.click();
-      
-      // Set timeout to prevent infinite loading
       timeoutRef.current = setTimeout(() => {
         if (isLoading) {
           setIsLoading(false);
           setConnectionError("Connection timed out. Please try again.");
           setIsModalOpen(false);
         }
-      }, 30000); // 30 seconds timeout
+      }, 30000);
     } else {
       setConnectionError("Connection failed. Please try again.");
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="w-full h-full flex items-center justify-center p-4 overflow-hidden">
