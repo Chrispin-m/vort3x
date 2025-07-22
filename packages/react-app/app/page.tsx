@@ -36,7 +36,7 @@ import { SwitchChainError } from "viem";
 
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
-// Configuration
+// Configuration - Fixed to prevent session conflicts
 const PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "default-project-id";
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://forno.celo.org";
 
@@ -48,18 +48,18 @@ const connectors = connectorsForWallets(
         metaMaskWallet,
         rabbyWallet,
         coinbaseWallet,
-        walletConnectWallet, // Keep original WalletConnect
+        walletConnectWallet,
         injectedWallet,
         rainbowWallet,
       ],
     },
   ],
   {
-  appName: 'Vort3x',
-  projectId: PROJECT_ID,
-  appDescription: 'AppKit Example',
-  appUrl: 'https://vort3x.xyz',
-  appIcon: 'https://assets.reown.com/reown-profile-pic.png',
+    appName: 'mini',
+    projectId: PROJECT_ID,
+    appDescription: '',
+    appUrl: 'https://www.vort3x.xyz',
+    appIcon: 'https://assets.reown.com/reown-profile-pic.png',
   }
 );
 
@@ -117,7 +117,6 @@ const celoTokens = [
   },
 ];
 
-
 // Wallet client utilities
 const errorManager = (context: string, error: any, metadata?: any) => {
   console.error(`[${context}]`, error, metadata);
@@ -155,27 +154,33 @@ const generateStars = () => {
   }));
 };
 
-
 export default function Home() {
   const { address, isConnected, chain } = useAccount({ config });
   const [needsNetworkSwitch, setNeedsNetworkSwitch] = useState(false);
   const [addingToken, setAddingToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const connectModalRef = useRef<HTMLButtonElement>(null);
+  const [openConnectModalFn, setOpenConnectModalFn] = useState<(() => void) | null>(null);
+  const [connectionTimeout, setConnectionTimeout] = useState<NodeJS.Timeout | null>(null);
   
   const stars = useMemo(() => generateStars(), []);
 
   useEffect(() => {
-    if (isConnected) {
-      setIsLoading(false);
-      if (chain?.id !== celo.id) {
-        setNeedsNetworkSwitch(true);
-      } else {
-        setNeedsNetworkSwitch(false);
-      }
+    if (isConnected && chain?.id !== celo.id) {
+      setNeedsNetworkSwitch(true);
+    } else {
+      setNeedsNetworkSwitch(false);
     }
   }, [isConnected, chain]);
+
+  // Cleanup function to prevent stuck states
+  useEffect(() => {
+    return () => {
+      if (connectionTimeout) {
+        clearTimeout(connectionTimeout);
+      }
+    };
+  }, [connectionTimeout]);
 
   const addCeloNetwork = async () => {
     setIsLoading(true);
@@ -184,9 +189,8 @@ export default function Home() {
     try {
       const { walletClient, error } = await safeGetWalletClient(celo.id);
       if (error) throw new Error(error);
-      if (!walletClient) throw new Error("Wallet client unavailable");
       
-      await walletClient.switchChain({ id: celo.id });
+      await walletClient!.switchChain({ id: celo.id });
       setNeedsNetworkSwitch(false);
     } catch (error: any) {
       setConnectionError(error.message || "Failed to switch network");
@@ -196,33 +200,64 @@ export default function Home() {
   };
 
   const addTokenToWallet = async (token: typeof celoTokens[0]) => {
-    // ... (unchanged)
+    setAddingToken(token.symbol);
+    setConnectionError(null);
+    
+    try {
+      const { walletClient, error } = await safeGetWalletClient(celo.id);
+      if (error) throw new Error(error);
+      
+      await walletClient!.watchAsset({
+        type: "ERC20",
+        options: {
+          address: token.address as `0x${string}`,
+          symbol: token.symbol,
+          decimals: token.decimals,
+          image: ""
+        }
+      });
+    } catch (error: any) {
+      setConnectionError(error.message || "Failed to add token");
+    } finally {
+      setAddingToken(null);
+    }
   };
 
   const handleConnect = () => {
     setIsLoading(true);
     setConnectionError(null);
     
-    // Trigger modal only if ref exists
-    if (connectModalRef.current) {
-      connectModalRef.current.click();
+    // Clear any previous timeout
+    if (connectionTimeout) {
+      clearTimeout(connectionTimeout);
+    }
+
+    // Set timeout to prevent infinite "Opening Stargate" state
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+      setConnectionError("Connection timed out. Please try again.");
+    }, 15000); // 15 seconds timeout
+    
+    setConnectionTimeout(timeout);
+
+    if (openConnectModalFn) {
+      openConnectModalFn();
     } else {
       setConnectionError("Connection failed. Please try again.");
       setIsLoading(false);
     }
   };
 
-  // Reset loading state if connection fails
+  // Reset loading state when connection completes
   useEffect(() => {
-    if (!isConnected && isLoading) {
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-        setConnectionError("Connection timed out. Please try again.");
-      }, 15000); // 15s timeout
-      
-      return () => clearTimeout(timer);
+    if (isConnected && isLoading) {
+      setIsLoading(false);
+      if (connectionTimeout) {
+        clearTimeout(connectionTimeout);
+        setConnectionTimeout(null);
+      }
     }
-  }, [isConnected, isLoading]);
+  }, [isConnected, isLoading, connectionTimeout]);
 
   return (
     <div className="w-full h-full flex items-center justify-center p-4 overflow-hidden">
@@ -445,29 +480,31 @@ export default function Home() {
               </motion.button>
             </motion.div>
 
-             {/* Hidden RainbowKit button */}
-          <div className="absolute opacity-0 h-0 overflow-hidden">
+            {/* Store openConnectModal function */}
             <ConnectButton.Custom>
-              {({ openConnectModal }) => (
-                <button
-                  ref={connectModalRef}
-                  onClick={openConnectModal}
-                  aria-hidden="true"
-                />
-              )}
+              {({ openConnectModal }) => {
+                // Store the modal function when available
+                useEffect(() => {
+                  setOpenConnectModalFn(() => openConnectModal);
+                }, [openConnectModal]);
+                
+                return null;
+              }}
             </ConnectButton.Custom>
-          </div>
 
-          {/* Error message */}
-          {connectionError && (
-            <motion.div
-              className="mt-4 p-3 rounded-lg bg-red-500/20 backdrop-blur-sm border border-red-500/30 text-red-100 text-center max-w-md"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              {connectionError}
-            </motion.div>
-          )}
+            {/* Error message */}
+            {connectionError && (
+              <motion.div
+                className="mt-4 p-3 rounded-lg bg-red-500/20 backdrop-blur-sm border border-red-500/30 text-red-100 text-center max-w-md"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                {connectionError}
+                <div className="mt-2 text-xs">
+                  Tip: Try clearing wallet connections and refreshing
+                </div>
+              </motion.div>
+            )}
 
             {/* Mobile wallet options */}
             <div className="mt-6 text-center">
@@ -476,7 +513,7 @@ export default function Home() {
               </p>
               <div className="flex justify-center gap-3">
                 <a 
-                  href="#" 
+                  href="https://rainbow.me" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-300 hover:text-indigo-100 transition-colors"
@@ -485,7 +522,7 @@ export default function Home() {
                 </a>
                 <span className="text-indigo-400">•</span>
                 <a 
-                  href="#" 
+                  href="https://metamask.io" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-300 hover:text-indigo-100 transition-colors"
@@ -494,7 +531,7 @@ export default function Home() {
                 </a>
                 <span className="text-indigo-400">•</span>
                 <a 
-                  href="" 
+                  href="https://walletconnect.com" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-300 hover:text-indigo-100 transition-colors"
@@ -666,4 +703,4 @@ export default function Home() {
       )}
     </div>
   );
-  }
+}
