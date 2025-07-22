@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useAccount, useDisconnect } from "wagmi";
 import { motion } from "framer-motion";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { http, createConfig as createWagmiConfig, createStorage, getWalletClient } from "@wagmi/core";
+import { http, createConfig, createStorage, getWalletClient } from "@wagmi/core";
 import {
   celo,
   optimism,
@@ -34,7 +34,6 @@ const celoTokens = [
   { symbol: "USDT", address: "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e", decimals: 6 }
 ];
 
-// Error handling
 const errorManager = (context: string, error: any, metadata?: any) => {
   console.error(`[${context}]`, error, metadata);
 };
@@ -42,7 +41,7 @@ const errorManager = (context: string, error: any, metadata?: any) => {
 const safeGetWalletClient = async (config: any, chainId: number) => {
   try {
     const walletClient = await getWalletClient(config, { chainId });
-    if (!walletClient) throw new Error("Wallet client not available");
+    if (!walClient) throw new Error("Wallet client not available");
     return { walletClient, error: null };
   } catch (err: any) {
     errorManager("Wallet client error", err, { chainId });
@@ -53,7 +52,6 @@ const safeGetWalletClient = async (config: any, chainId: number) => {
   }
 };
 
-// Stars background
 const generateStars = () =>
   Array.from({ length: 100 }).map((_, i) => ({
     id: i,
@@ -74,6 +72,22 @@ export default function Home() {
   const connectModalRef = useRef<HTMLButtonElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stars = useMemo(() => generateStars(), []);
+
+  // Improved connection state handling
+  useEffect(() => {
+    const handleConnectionUpdate = () => {
+      if (isConnected) {
+        setIsLoading(false);
+        setConnectionError(null);
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+      }
+    };
+
+    handleConnectionUpdate();
+  }, [isConnected]);
 
   useEffect(() => {
     const metadata = {
@@ -113,17 +127,16 @@ export default function Home() {
 
   useEffect(() => {
     setNeedsNetworkSwitch(isConnected && chain?.id !== celo.id);
-    if (isConnected) {
-      setIsLoading(false);
-      if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
-    }
   }, [isConnected, chain]);
 
   useEffect(() => {
     if (!isModalOpen && isLoading) {
       setIsLoading(false);
       setConnectionError("Connection cancelled or timed out");
-      if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
     }
   }, [isModalOpen, isLoading]);
 
@@ -158,18 +171,24 @@ export default function Home() {
   };
 
   const handleConnect = () => {
-    disconnect(); localStorage.removeItem('walletconnect'); sessionStorage.clear();
-    setIsLoading(true); setConnectionError(null);
+    disconnect(); 
+    localStorage.removeItem('walletconnect'); 
+    sessionStorage.clear();
+    setIsLoading(true); 
+    setConnectionError(null);
+    
     if (connectModalRef.current) {
       setIsModalOpen(true);
       connectModalRef.current.click();
+      
+      // Set a shorter timeout (15 seconds instead of 30)
       timeoutRef.current = setTimeout(() => {
         if (isLoading) {
           setIsLoading(false);
           setConnectionError("Connection timed out. Please try again.");
           setIsModalOpen(false);
         }
-      }, 30000);
+      }, 15000);
     } else {
       setConnectionError("Connection failed. Please try again.");
       setIsLoading(false);
