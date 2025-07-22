@@ -95,8 +95,28 @@ const config = createConfig({
 
 // Token data
 const celoTokens = [
-  // ... (unchanged token data)
+  {
+    symbol: "cUSD",
+    address: "0x765DE816845861e75A25fCA122bb6898B8B1282a",
+    decimals: 18,
+  },
+  {
+    symbol: "USDC",
+    address: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
+    decimals: 6,
+  },
+  {
+    symbol: "CKES",
+    address: "0x1E0433C1769271ECcF4CFF9FDdD515eefE6CdF92",
+    decimals: 6,
+  },
+  {
+    symbol: "USDT",
+    address: "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e",
+    decimals: 6,
+  },
 ];
+
 
 // Wallet client utilities
 const errorManager = (context: string, error: any, metadata?: any) => {
@@ -125,9 +145,15 @@ const safeGetWalletClient = async (chainId: number) => {
 
 // Background elements
 const generateStars = () => {
-  // ... (unchanged)
+  return Array.from({ length: 100 }).map((_, i) => ({
+    id: i,
+    top: ${Math.random() * 100}%,
+    left: ${Math.random() * 100}%,
+    size: ${Math.random() * 3 + 1}px,
+    opacity: Math.random() * 0.7 + 0.3,
+    delay: Math.random() * 5,
+  }));
 };
-
 export default function Home() {
   const { address, isConnected, chain } = useAccount({ config });
   const [needsNetworkSwitch, setNeedsNetworkSwitch] = useState(false);
