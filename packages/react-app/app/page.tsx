@@ -36,7 +36,7 @@ import { SwitchChainError } from "viem";
 
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
-// Configuration - Fixed to prevent session conflicts
+// Configuration
 const PROJECT_ID = process.env.NEXT_PUBLIC_WC_PROJECT_ID || "default-project-id";
 const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://forno.celo.org";
 
@@ -57,9 +57,6 @@ const connectors = connectorsForWallets(
   {
     appName: 'mini',
     projectId: PROJECT_ID,
-    appDescription: '',
-    appUrl: 'https://www.vort3x.xyz',
-    appIcon: 'https://assets.reown.com/reown-profile-pic.png',
   }
 );
 
@@ -130,7 +127,6 @@ const safeGetWalletClient = async (chainId: number) => {
   } catch (error: any) {
     errorManager("Wallet client error", error, { chainId });
     
-    // Handle switch chain error specifically
     const errorMsg = error instanceof SwitchChainError
       ? "Failed to switch network. Please check your wallet." 
       : "Failed to connect to wallet. Please try again.";
@@ -166,10 +162,13 @@ export default function Home() {
   const stars = useMemo(() => generateStars(), []);
 
   useEffect(() => {
-    if (isConnected && chain?.id !== celo.id) {
-      setNeedsNetworkSwitch(true);
-    } else {
-      setNeedsNetworkSwitch(false);
+    if (isConnected) {
+      setIsLoading(false);
+      if (chain?.id !== celo.id) {
+        setNeedsNetworkSwitch(true);
+      } else {
+        setNeedsNetworkSwitch(false);
+      }
     }
   }, [isConnected, chain]);
 
@@ -227,16 +226,14 @@ export default function Home() {
     setIsLoading(true);
     setConnectionError(null);
     
-    // Clear any previous timeout
     if (connectionTimeout) {
       clearTimeout(connectionTimeout);
     }
 
-    // Set timeout to prevent infinite "Opening Stargate" state
     const timeout = setTimeout(() => {
       setIsLoading(false);
       setConnectionError("Connection timed out. Please try again.");
-    }, 65000); // 45 seconds timeout
+    }, 60000); // 60 seconds timeout
     
     setConnectionTimeout(timeout);
 
@@ -248,22 +245,11 @@ export default function Home() {
     }
   };
 
-  // Reset loading state when connection completes
-  useEffect(() => {
-    if (isConnected && isLoading) {
-      setIsLoading(false);
-      if (connectionTimeout) {
-        clearTimeout(connectionTimeout);
-        setConnectionTimeout(null);
-      }
-    }
-  }, [isConnected, isLoading, connectionTimeout]);
-
   return (
     <div className="w-full h-full flex items-center justify-center p-4 overflow-hidden">
-      {/* Cosmic Background */}
+      {/* Background */}
       <div className="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0a0e2a] via-[#13183a] to-[#0a0e2a]">
-        {/* Nebula Effects */}
+        {/* Effects */}
         <div className="absolute top-[15%] left-[15%] w-[400px] h-[400px] bg-[#6d28d9]/10 rounded-full blur-[150px] animate-pulse-slow" />
         <div className="absolute bottom-[20%] right-[20%] w-[350px] h-[350px] bg-[#0ea5e9]/15 rounded-full blur-[120px] animate-pulse-slower" />
         <div className="absolute top-[40%] left-[50%] w-[300px] h-[300px] bg-[#ec4899]/10 rounded-full blur-[100px] animate-pulse-medium" />
@@ -305,7 +291,7 @@ export default function Home() {
               textShadow: "0 0 20px rgba(165, 180, 252, 0.5)"
             }}
           >
-            Connect to the Cosmos
+            Connect Your Wallet
           </motion.h1>
           
           <div className="flex flex-col items-center">
@@ -428,7 +414,7 @@ export default function Home() {
                     ease: "easeInOut"
                   }}
                 >
-                  Portal Access
+                  Connect Wallet
                 </motion.h3>
                 
                 {isLoading ? (
@@ -455,7 +441,7 @@ export default function Home() {
                         ease: "easeInOut"
                       }}
                     >
-                      Opening Stargate...
+                      Connecting...
                     </motion.span>
                   </div>
                 ) : (
@@ -474,7 +460,7 @@ export default function Home() {
                       ease: "easeInOut"
                     }}
                   >
-                    Multi-dimensional wallet connection
+                    Connect your wallet to get started
                   </motion.p>
                 )}
               </motion.button>
@@ -483,7 +469,6 @@ export default function Home() {
             {/* Store openConnectModal function */}
             <ConnectButton.Custom>
               {({ openConnectModal }) => {
-                // Store the modal function when available
                 useEffect(() => {
                   setOpenConnectModalFn(() => openConnectModal);
                 }, [openConnectModal]);
@@ -551,7 +536,7 @@ export default function Home() {
               color: "#a5b4fc",
             }}
           >
-            Secure connection through cosmic gateways to 150+ celestial wallets
+            Secure connection to 150+ wallets
           </motion.p>
         </div>
       ) : needsNetworkSwitch ? (
@@ -568,7 +553,7 @@ export default function Home() {
               textShadow: "0 0 20px rgba(103, 232, 249, 0.5)"
             }}
           >
-            Align with Celo Constellation
+            Switch to Celo Network
           </motion.h1>
           
           <motion.div
@@ -601,7 +586,7 @@ export default function Home() {
               You're connected to <span className="font-medium text-cyan-50">{chain?.name}</span>
             </p>
             <p className="text-center text-cyan-200 font-medium mb-8">
-              Please align with the Celo Mainnet constellation
+              Please switch to the Celo network
             </p>
             
             <motion.button
@@ -626,14 +611,14 @@ export default function Home() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Aligning...
+                  Switching...
                 </div>
               ) : (
                 <>
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
                   </svg>
-                  Align with Celo Constellation
+                  Switch to Celo
                 </>
               )}
             </motion.button>
@@ -645,7 +630,7 @@ export default function Home() {
             transition={{ delay: 0.6 }}
           >
             <h2 className="text-xl font-bold text-center mb-8 text-cyan-50">
-              Cosmic Assets
+              Celo Tokens
             </h2>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -687,7 +672,7 @@ export default function Home() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Manifesting...
+                        Adding...
                       </div>
                     ) : (
                       "Add to Wallet"
