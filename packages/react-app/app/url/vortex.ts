@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const BASE_URL = "https://vortex-dapbe.onrender.com/api/stake";
-const OFFCHAIN_URL = "https://vortex-dapbe.onrender.com/api/offchain";
+const BASE_URL = "https://vortex-dapbe2.onrender.com/api/stake";
+const OFFCHAIN_URL = "https://vortex-dapbe2.onrender.com/api/offchain";
 
 export interface SpinTransaction {
   amount: number;
