@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useConnect } from "wagmi";
 import { motion } from "framer-motion";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { 
@@ -33,6 +33,7 @@ import {
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import dynamic from "next/dynamic";
 import { SwitchChainError } from "viem";
+import { injected } from 'wagmi/connectors';
 
 const Spin = dynamic(() => import("../components/Spin"), { ssr: false });
 
@@ -152,14 +153,37 @@ const generateStars = () => {
 
 export default function Home() {
   const { address, isConnected, chain } = useAccount({ config });
+  const { connectAsync } = useConnect();
   const [needsNetworkSwitch, setNeedsNetworkSwitch] = useState(false);
   const [addingToken, setAddingToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [openConnectModalFn, setOpenConnectModalFn] = useState<(() => void) | null>(null);
   const [connectionTimeout, setConnectionTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isCheckingWallet, setIsCheckingWallet] = useState(true);
   
   const stars = useMemo(() => generateStars(), []);
+
+  // Check for injected wallet on mount
+  useEffect(() => {
+    const checkAndConnectWallet = async () => {
+      try {
+        // Check if we're in browser and MiniPay is available
+        if (typeof window !== "undefined" && (window as any).ethereum?.isMiniPay) {
+          setIsLoading(true);
+          await connectAsync({ connector: injected() });
+        }
+      } catch (error) {
+        console.error("Auto-connect failed:", error);
+        setConnectionError("Automatic connection failed. Please connect manually.");
+      } finally {
+        setIsCheckingWallet(false);
+        setIsLoading(false);
+      }
+    };
+
+    checkAndConnectWallet();
+  }, [connectAsync]);
 
   useEffect(() => {
     if (isConnected) {
@@ -244,6 +268,48 @@ export default function Home() {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while checking for wallet
+  if (isCheckingWallet) {
+    return (
+      <div className="w-full h-full flex items-center justify-center p-4 overflow-hidden">
+        {/* Background */}
+        <div className="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0a0e2a] via-[#13183a] to-[#0a0e2a]">
+          {/* Effects */}
+          <div className="absolute top-[15%] left-[15%] w-[400px] h-[400px] bg-[#6d28d9]/10 rounded-full blur-[150px] animate-pulse-slow" />
+          <div className="absolute bottom-[20%] right-[20%] w-[350px] h-[350px] bg-[#0ea5e9]/15 rounded-full blur-[120px] animate-pulse-slower" />
+          <div className="absolute top-[40%] left-[50%] w-[300px] h-[300px] bg-[#ec4899]/10 rounded-full blur-[100px] animate-pulse-medium" />
+          
+          {/* Stars */}
+          {stars.map(star => (
+            <motion.div
+              key={star.id}
+              className="absolute rounded-full bg-white"
+              style={{
+                top: star.top,
+                left: star.left,
+                width: star.size,
+                height: star.size,
+                opacity: star.opacity,
+              }}
+              animate={{ opacity: [star.opacity, star.opacity * 0.5, star.opacity] }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                delay: star.delay,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+        </div>
+        
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="w-16 h-16 border-t-4 border-b-4 border-purple-500 rounded-full animate-spin"></div>
+          <p className="mt-6 text-lg text-purple-200 font-light">Checking for wallet...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full flex items-center justify-center p-4 overflow-hidden">
@@ -688,4 +754,4 @@ export default function Home() {
       )}
     </div>
   );
-}
+    }
