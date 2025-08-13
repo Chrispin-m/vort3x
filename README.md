@@ -17,8 +17,8 @@ Every spin is built for **fun**, **fairness**, and **transparency**, with **play
 Small token balances often go unused — Vortex changes that.  
 It transforms them into an **interactive game** where users spin to multiply rewards in two ways:
 
-1. **On-chain spinning** — 100% blockchain-verified spins, no deposits required.  
-2. **Off-chain spinning** — Lightning-fast gameplay using preloaded in-app balances.
+1. **On-chain spinning** - 100% blockchain-verified spins, no deposits required.  
+2. **Off-chain spinning** - Lightning-fast gameplay using preloaded in-app balances.
 
 💡 In both modes, results are **auditable** and powered by secure smart contracts.
 
@@ -77,22 +77,24 @@ Open an issue or submit a pull request to make Vortex even better.
 
 ---
 
-## 📊 GitHub Analytics Dashboard (Live)
+## 📊 GitHub Repo 
 
-**Repository Stats**
-![Repo Stats](https://github-readme-stats.vercel.app/api?username=Chrispin-m\&repo=vort3x\&show_icons=true\&theme=radical)
 
-**Top Languages**
-![Top Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=Chrispin-m\&repo=vort3x\&layout=compact\&theme=radical)
 
-**Contributors**
+
+Analytics Dashboard (Live)
+
+**Repository Overview**
+![Repo Stats](https://github-readme-stats.vercel.app/api/pin/?username=Chrispin-m&repo=vort3x&theme=radical)
+
+**Languages Used in This Repo**
+![Top Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=Chrispin-m&repo=vort3x&layout=compact&theme=radical)
+
+**Active Contributors**
 ![Contributors](https://contrib.rocks/image?repo=Chrispin-m/vort3x)
 
-**Commit Activity**
-![Commit Graph](https://github-readme-activity-graph.vercel.app/graph?username=Chrispin-m\&repo=vort3x\&theme=react-dark\&hide_border=true)
-
-**Profile Contribution Heatmap**
-![Contribution Heatmap](https://github-readme-streak-stats.herokuapp.com/?user=Chrispin-m\&theme=radical)
+**Commit Activity for This Repo**
+![Commit Graph](https://github-readme-activity-graph.vercel.app/graph?username=Chrispin-m&repo=vort3x&theme=react-dark&hide_border=true)
 
 ---
 
