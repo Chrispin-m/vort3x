@@ -44,7 +44,7 @@ flowchart TD
     B -->|Spin Request| C{Spin Mode?}
     C -->|On-chain| D[Smart Contract]
     C -->|Off-chain| E[Game Server]
-    D -->|Blockchain Transaction| F[Prize Pool Smart Contract]
+    D -->|Blockchain Transaction| F[Prize Pool]
     E -->|Process Result| F
     F -->|Send Result| B
     B -->|Update Balance| A
