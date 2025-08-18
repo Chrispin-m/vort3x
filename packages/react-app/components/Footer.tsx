@@ -132,7 +132,7 @@ export default function Footer() {
                   "0 0 8px rgba(100,200,255,0.7), 0 0 16px rgba(180,100,255,0.5)",
               }}
             >
-              © {new Date().getFullYear()} Built for Minipay
+              © {new Date().getFullYear()} Built for Celo Network
             </p>
           </div>
         </div>
