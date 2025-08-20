@@ -6,8 +6,8 @@ import Layout from "../components/Layout";
 import type { ReactNode } from "react";
 
 export const metadata = {
-  title: "Vort3x Spin DApp",
-  description: "Spin to win on Celo Alfajores",
+  title: "Vort3x Spin dApp",
+  description: "Spin to win on Celo Vort3x dApp",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
